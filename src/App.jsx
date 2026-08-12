@@ -712,10 +712,10 @@ export const logVisit = async (path = null) => {
   if (sessionStorage.getItem(sessionKey)) return;
   sessionStorage.setItem(sessionKey, 'true');
 
-  // 6. Gather visitor analytics data
-  const ua = navigator.userAgent;
-  const utmSource = urlParams.get('utm_source')?.toLowerCase() || '';
-  const referrer = document.referrer.toLowerCase();
+  // 6. Gather visitor analytics data safely
+  const ua = navigator.userAgent || "";
+  const utmSource = urlParams.get('utm_source')?.toLowerCase() || "";
+  const referrer = document.referrer ? document.referrer.toLowerCase() : "";
 
   // 7. Invoke backend tracking function
   try {
@@ -723,7 +723,7 @@ export const logVisit = async (path = null) => {
       body: {
         page_path: loggingPath,
         user_agent: ua,
-        referrer,
+        referrer: referrer,
         utm_source: utmSource,
         is_webdriver: navigator.webdriver || false
       }
@@ -3975,7 +3975,7 @@ function App() {
   // =======================================================================
   // 32. INITIAL ROUTE & DEEP-LINKING HANDLER
   // =======================================================================
- 
+
   useEffect(() => {
     if (hasHandledDeepLink.current) return;
 
@@ -3992,7 +3992,7 @@ function App() {
 
       if (!targetPlace) {
         toast.error("Location not found.");
-        pendingRouteRef.current = { type: null, slug: null }; 
+        pendingRouteRef.current = { type: null, slug: null };
         return;
       }
 
@@ -4000,7 +4000,7 @@ function App() {
         setActiveId(targetPlace.id);
       } else if (type === 'place') {
         // 👇 TRIGGER YOUR EXISTING FUNCTION INSTEAD OF MANUAL STATES
-        handleOpenArticle(targetPlace); 
+        handleOpenArticle(targetPlace);
       }
 
       hasHandledDeepLink.current = true;
