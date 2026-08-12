@@ -1,0 +1,212 @@
+{
+  "common": {
+    "title": "My Journal",
+    "subtitle": "Exploring nature, one destination at a time.",
+    "filters": "Filters",
+    "close": "Close",
+    "accept": "Accept and Continue",
+    "dismiss": "Dismiss"
+  },
+  "headers": {
+    "directory_title": "Detailed Exploration Directory & Field Guides"
+  },
+  "hub": {
+    "engine": "Engine",
+    "engine_hint": "Tap \"Engine\" to build your route",
+    "add": "Add",
+    "plan": "Plan"
+  },
+  "filters": {
+    "search_placeholder": "Search destinations...",
+    "sort_newest": "Newest First",
+    "sort_nearest": "Nearest First",
+    "apply_close": "Apply & Close Filters"
+  },
+  "places": {
+    "status": {
+      "visited": "✨ Visited",
+      "bucket_list": "⏳ Bucket List"
+    },
+    "labels": {
+      "explore": "Explore",
+      "km_away": "KM AWAY",
+      "location_required": "Location Access Required",
+      "maps": "Maps",
+      "gallery": "Gallery",
+      "read": "Read"
+    }
+  },
+  "categories": {
+    "all": "All",
+    "waterfall": "Waterfall",
+    "mountain": "Mountain",
+    "trail": "Trail",
+    "viewpoint": "Viewpoint",
+    "beach": "Beach",
+    "park": "Park",
+    "plateaus": "Plateaus",
+    "reserved_forest": "Reserved Forest",
+    "monastery": "Monastery",
+    "archaeology": "Archaeology",
+    "reservoir": "Reservoir",
+    "pool": "Pool",
+    "stream": "Stream",
+    "location": "Location",
+    "desc_all": "A comprehensive expedition directory detailing remote geographical locations across Sri Lanka. Explore mapped coordinates, terrain conditions, and photographic field notes spanning waterfalls, highland mountain trails, historical monasteries, and hidden natural streams.",
+    "desc_waterfall": "Documenting Sri Lanka's spectacular hydrological systems and hidden cascade clusters. This index details trail routes, baseline water volumes, seasonal patterns, and safe approaches for photographing remote waterfalls embedded within the island's central tea valley basins and mountain ranges.",
+    "desc_mountain": "High-altitude alpine formations, mountain peaks, and challenging ridges across Sri Lanka's central highlands. Access field telemetry regarding elevation statistics, cloud forest borders, geographic exposure profiles, and wild camping layout vectors.",
+    "desc_trail": "Backcountry trekking pathways, wilderness hiking loops, and primitive footpaths. Tracks technical navigation indicators, terrain difficulty scales, path visibility parameters, and essential equipment prep benchmarks for foot expeditions.",
+    "desc_viewpoint": "Panoramic geographical lookouts, sheer cliff drop-offs, and high-altitude observation horizons across mountain passes. Includes solar tracking visibility timelines and optimal ambient conditions for wide-angle landscape photography.",
+    "desc_beach": "Remote coastal formations, pristine sandy shorelines, and maritime boundaries across Sri Lanka's marine belts. Documenting reef layouts, localized tidal tendencies, and uncrowded coastal horizons suited for adventure tracking.",
+    "desc_park": "National parks, strictly handled wildlife sanctuaries, and ecological reserves. Information focuses on protected habitat limits, migration corridors, Department of Wildlife Conservation (DWC) access rules, and field safety protocols.",
+    "desc_plateaus": "High-altitude tablelands and unique highland plains ecosystems characterized by distinct dwarf forest flora and open montane grasslands. Field metrics map shifting cloud cover, high wind exposures, and overnight trail conditions.",
+    "desc_reserved_forest": "Highly protected tropical rainforests, pristine endemic biomes, and protected buffer woodland zones. These technical logs emphasize strict wilderness conservation ethics, deep jungle path navigation, and biological diversity indices.",
+    "desc_monastery": "Ancient rock-cut forest hermitages and meditative sanctuary complexes tucked away inside isolated canopies. These field reports outline historic architectural structures, step routes, cave inscriptions, and respect-driven exploration rules.",
+    "desc_archaeology": "Preserved historic ruins, ancient structural components, stupas, and royal gardens throughout Sri Lanka's historic capitals. Mapping spatial networks between historic stone masonry, ancient inscription coordinates, and guardstones.",
+    "desc_reservoir": "Massive historical man-made lake systems and catchments engineered throughout the island's river basins. Tracks surrounding forest buffers, protective embankment pathways, and visual vantage horizons for photography.",
+    "desc_pool": "Pristine natural rock pools, secluded stream basins, and wild swimming water bodies found along mountain river beds. Emphasizes depth assessments, water flow safety vectors, and seasonal water volume updates.",
+    "desc_stream": "Clear natural waterways, cold-water channels, and minor river tributaries flowing through dense reserves. Ideal reference points for identifying clean mountain water collection nodes, micro-climate variations, and aquatic biodiversity clusters.",
+    "desc_location": "Geographic landmarks, notable rural waypoints, and specialized exploratory points of interest across Sri Lanka. Serves as a localized spatial reference framework connecting different natural terrains and tracking coordinates."
+  },
+  "discovery": {
+    "index_heading": "Active Discovery Index Vector",
+    "scope_label": "Scope",
+    "all_records": "All Records",
+    "meta_topographic": "Topographic Mapping",
+    "meta_backcountry": "Sri Lanka Backcountry Logs",
+    "meta_geospatial": "Geospatial Field Verification",
+    "meta_route_index": "Route Planning Index"
+  },
+  "restriction": {
+    "public": "Public Access",
+    "permit": "Permit Needed (DWC/Forest Dept)",
+    "guide": "Local Guide Required",
+    "restricted": "High Security / Restricted"
+  },
+  "gallery": {
+    "title": "Location Gallery",
+    "total_images": "{{count}} Total Images"
+  },
+  "ai_articles": {
+    "loading": "Generating intelligence brief...",
+    "fallback_notice": "AI breakdown translation unavailable. Showing default English log."
+  },
+  "article": {
+    "close": "Close",
+    "share": "Share",
+    "view_maps": "View on Maps",
+    "classification": "Classification",
+    "region": "Region Location",
+    "coordinates": "Coordinates Mapping",
+    "access_status": "Access Status",
+    "elevation": "Elevation",
+    "difficulty": "Difficulty",
+    "expedition_highlights": "Expedition Highlights",
+    "terrain": "Terrain",
+    "trailhead_access": "Trailhead Access",
+    "history_heritage": "History & Local Heritage",
+    "governing_body": "Governing Body",
+    "access_restriction": "Access Restriction Level",
+    "technical_specs": "Technical Specifications & Exploration Parameters",
+    "compliance_title": "Field Notes, Compliance & Regional Regulations",
+    "compliance_prose_1": "When exploring {{place}}, backcountry travellers must maintain strict adherence to local regulatory frameworks. This sector falls under the direct jurisdiction and administrative oversight of the {{org}}.",
+    "current_status_label": "Current field access status is categorized as:",
+    "faq_title": "Quick Answers & AI Engine Discovery Index",
+    "question_prefix": "Q:",
+    "archived_by": "Journal Archived by",
+    "record_ref": "Verified Record Reference:",
+    "fallback_desc": "Geospatial expedition routing details and environmental terrain telemetry are indexed below for programmatic reference layout clusters.",
+    "load_journal_btn": "Load Complete Technical Journal Vector",
+    "discussion_count": "Discussion",
+    "discussion_count_plural": "Discussion ({{count}})",
+    "author_response": "Author Response",
+    "comment_placeholder": "Add your trail note...",
+    "send_comment": "Send Comment",
+    "close_journal_btn": "Close Journal",
+    "gallery_btn": "Gallery"
+  },
+  "directives": {
+    "waterfall": "Hydrological Safety Directive: Exercise extreme caution near flash-flood corridors. Avoid altering natural rock-pool blockades, preserve downstream river clarity, and pack out all synthetic refuse to save delicate riparian eco-zones.",
+    "wilderness": "Backcountry Wilderness Directive: Adhere to strict 'Leave No Trace' doctrines. Extinguish all campfire embers completely, avoid clearing native undergrowth for tent configurations, and avoid establishing unofficial trail forks.",
+    "heritage": "Heritage Preservation Directive: Maintain deep cultural reverence, respect photography boundary markers, and do not touch or alter ancient masonry, stone carvings, or structural brick layers.",
+    "transit": "Remote Transit Directive: Drive cautiously along loose unpaved gravel paths and steep mountain passes. Respect wildlife crossing points, minimize engine noise in wildlife corridors, and clear all tracking vehicles before sundown.",
+    "standard": "Standard Field Directive: Ensure you obtain necessary clearances where applicable, respect natural wildlife habitats, and follow environmental preservation guidelines set forth by the governing body before attempting trail entry."
+  },
+  "safety_overlay": {
+    "title": "Location Safety Brief",
+    "notice_title": "Permission & Safety Notice",
+    "jurisdiction": "is under the jurisdiction of the",
+    "controlled": "Entry is strictly controlled. You must obtain a valid permit from the local office prior to your visit.",
+    "guidelines": "Please ensure you follow the local guidelines set by the authorities for this area.",
+    "footer_disclaimer": "By proceeding to view the map, you acknowledge that trekking conditions are subject to rapid change. You assume full responsibility for your safety.",
+    "button": "I Understand, View Map",
+    "no_restriction": "No Restriction",
+    "tickets_required": "Tickets Required",
+    "permit_required": "Permit Required",
+    "no_entry": "No Entry",
+    "default_authority": "Local Authorities"
+  },
+  "about": {
+    "about_title": "About Platform & Explorer",
+    "subtitle": "My Journal Sri Lanka",
+    "myself_title": "About Myself",
+    "myself_body": "Hi, I'm Hasitha Gunasekera. I'm an explorer, road-tripper, and outdoor photographer dedicated to tracking down unknown spaces across Sri Lanka. My true passion lies in backcountry trekking, remote high-altitude wilderness camping, and exploring uncharted waterfall cascades tucked deep within mountain ranges.",
+    "site_title": "About the Site",
+    "site_body": "My Journal serves as a specialized, technical field log detailing remote coordinates, spatial records, and trail notes across Sri Lanka. Engineered to integrate backcountry mapping indicators, weather monitors, and route telemetry, it aims to connect adventure travelers safely to hidden destinations while establishing strict environmental safety standards.",
+    "spots_title": "Sri Lankan Natural Attractions",
+    "spots_body": "Sri Lanka houses phenomenal geographic biodiversity, stretching from the dense mountain ridges of the Knuckles Forest Reserve to pristine cascade clusters like Bambarakanda and Diyaluma Falls. This open ledger indexes mountain plain tablelands, deep natural pools, and historic forest hermitages to showcase raw island terrain while advocating for strict nature preserve conservation metrics.",
+    "media_title": "Media & Copyright",
+    "media_body": "All photographic content featured on this platform is captured personally by me using my iPhone and Drone. Images undergo only light, mobile-device editing to preserve their raw, authentic essence. All rights to every photo are strictly reserved under my name, Hasitha Gunasekera. Unauthorized reproduction or commercial use is prohibited."
+  },
+  "legal": {
+    "privacy_title": "Privacy Policy",
+    "privacy_body": "Your privacy is monitored strictly. Personal spatial parameters and tracking telemetry are managed purely client-side.",
+    "privacy_s1_title": "01. Information Collection",
+    "privacy_s1_desc": "To provide distance calculations and routing, we may access approximate location data. We also collect usage data to optimize performance.",
+    "privacy_s2_title": "02. Google AdSense & Cookies",
+    "privacy_s2_desc": "This site uses Google AdSense to serve ads. Google uses cookies to serve ads based on your visits. You may opt out via Google's Ad Settings.",
+    "terms_title": "Terms of Service",
+    "terms_body": "Use data routes responsibly. Backcountry expeditions carry risks; field metrics serve as geographical markers only.",
+    "terms_s1_title": "01. Acceptance of Terms",
+    "terms_s1_desc": "By using My Journal, you agree to these terms, all applicable laws, and regulations in Sri Lanka.",
+    "terms_s2_title": "02. Liability Disclaimer",
+    "terms_s2_desc": "Trekking and drone usage involve risks. Information provided is for reference; users are responsible for their own safety and legal compliance.",
+    "btn_privacy": "Privacy",
+    "btn_terms": "Terms",
+    "btn_about": "About Journal"
+  },
+  "general_disclaimer": {
+    "title": "Legal Disclaimer & Safety Warning",
+    "risk_title": "1. Assumption of Risk",
+    "risk_desc": "The hiking trails, waterfalls, and archaeological sites featured on My Journal involve inherent physical risks. Users assume full responsibility for safety.",
+    "accuracy_title": "2. Information Accuracy",
+    "accuracy_desc": "While we strive for accuracy, trail conditions, weather patterns, and access permissions can change without notice. Always verify conditions locally.",
+    "drone_title": "3. Drone Operations",
+    "drone_desc": "Drone pilots must adhere to all Civil Aviation Authority of Sri Lanka (CAASL) regulations. Flying in National Parks or High-Security Zones without explicit clearance is strictly prohibited.",
+    "liability_title": "4. No Liability",
+    "liability_desc": "Hasitha Gunasekera and My Journal are not liable for any injuries, legal penalties, or damages resulting from the use of information provided on this platform."
+  },
+  "policies": {
+    "drone_title": "Drone & Content Policy",
+    "drone_subtitle": "Civil Aviation Authority Legal Compliance",
+    "drone_body": "Drone pilots utilizing routing data parameters are strictly required to ensure full compliance with Civil Aviation Authority of Sri Lanka (CAASL) regulations. Flying drone configurations within active National Parks, high security military networks, or sanctuary parameters requires formal Department of Wildlife Conservation (DWC) documentation.",
+    "liability_title": "Safety & Liability Disclaimer",
+    "liability_subtitle": "Informational Reference Clause",
+    "liability_body": "All hiking trails, remote waterfalls, and route data vectors displayed within My Journal are generated for open-source geographical reference. Users assume absolute risk regarding trail difficulty, landscape hazards, and weather adjustments."
+  },
+  "footer": {
+    "safety_title": "Safety & Liability Disclaimer",
+    "safety_body": "Trekking, hiking, and exploring remote areas in Sri Lanka involve inherent risks. Information on My Journal is for reference only; trail conditions, weather, and access permissions can change without notice. Users are responsible for their own safety, equipment, and insurance.",
+    "drone_title": "Drone & Content Policy",
+    "drone_body": "All drone footage is captured in compliance with CAASL regulations. Flying in National Parks or High-Security Zones without Ministry of Defence and DWC permits is strictly prohibited.",
+    "contact_support": "Contact & Support",
+    "location": "Western Province, Sri Lanka",
+    "privacy": "Privacy Policy",
+    "terms": "Terms & Conditions",
+    "about": "About Platform"
+  },
+  "newsletter": {
+    "title": "Join the Expedition",
+    "subtitle": "Get coordinates, field notes, and remote terrain tracking straight to your inbox."
+  }
+}

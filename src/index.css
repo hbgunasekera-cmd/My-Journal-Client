@@ -1,0 +1,68 @@
+@import "tailwindcss";
+
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap');
+
+/* --- Base Styles --- */
+html, body, #root {
+    height: 100%;
+    margin: 0;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    /* Force white background to match desktop regardless of mobile system settings */
+    background-color: #ffffff;
+    color: #0f172a;
+}
+
+/* --- Layered Utility & Protection Styles --- */
+@layer base {
+    .no-copy {
+        user-select: none;
+        -webkit-touch-callout: none;
+    }
+
+    img {
+        -webkit-user-drag: none;
+        user-select: none;
+        pointer-events: none;
+    }
+
+    .touch-none {
+        -webkit-tap-highlight-color: transparent;
+        touch-action: none;
+    }
+}
+
+/* --- Tailwind v4 Absolute Hide Utilities --- */
+
+/* Utility 1: Explicitly hides scrollbars when applied */
+@utility no-scrollbar {
+    scrollbar-width: none !important; /* Firefox */
+    -ms-overflow-style: none !important; /* IE and Edge */
+    
+    &::-webkit-scrollbar {
+        display: none !important; /* Chrome, Safari, and Opera */
+        width: 0 !important;
+        height: 0 !important;
+    }
+}
+
+/* Utility 2: Safety Override (If your elements are still using custom-scrollbar, this forces them hidden too) */
+@utility custom-scrollbar {
+    scrollbar-width: none !important; /* Firefox */
+    -ms-overflow-style: none !important; /* IE/Edge */
+
+    &::-webkit-scrollbar {
+        display: none !important; /* Chrome, Safari, and Opera */
+        width: 0 !important;
+        height: 0 !important;
+    }
+}
+
+/* --- Google Places AutoComplete --- */
+.pac-container {
+    z-index: 9999 !important;
+    border-radius: 16px;
+    border: 1px solid #f1f5f9 !important;
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1) !important;
+    font-family: 'Plus Jakarta Sans', sans-serif !important;
+    background-color: #ffffff;
+}

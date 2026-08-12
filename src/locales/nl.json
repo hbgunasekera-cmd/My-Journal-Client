@@ -1,0 +1,212 @@
+{
+  "common": {
+    "title": "My Journal",
+    "subtitle": "Exploring nature, one destination at a time.",
+    "filters": "Filters",
+    "close": "Sluiten",
+    "accept": "Accepteren en doorgaan",
+    "dismiss": "Verwerpen"
+  },
+  "headers": {
+    "directory_title": "Gedetailleerde Exploratiedirectory & Veldgidsen"
+  },
+  "hub": {
+    "engine": "Motor",
+    "engine_hint": "Tik op \"Motor\" om je route samen te stellen",
+    "add": "Toevoegen",
+    "plan": "Plannen"
+  },
+  "filters": {
+    "search_placeholder": "Zoek bestemmingen...",
+    "sort_newest": "Nieuwste eerst",
+    "sort_nearest": "Dichtstbijzijnde eerst",
+    "apply_close": "Filters toepassen en sluiten"
+  },
+  "places": {
+    "status": {
+      "visited": "✨ Bezocht",
+      "bucket_list": "⏳ Verlanglijst"
+    },
+    "labels": {
+      "explore": "Verkennen",
+      "km_away": "KM AFSTAND",
+      "location_required": "Locatietoegang vereist",
+      "maps": "Kaarten",
+      "gallery": "Galerij",
+      "read": "Lezen"
+    }
+  },
+  "categories": {
+    "all": "Alle",
+    "waterfall": "Waterval",
+    "mountain": "Berg",
+    "trail": "Pad",
+    "viewpoint": "Uitzichtpunt",
+    "beach": "Strand",
+    "park": "Park",
+    "plateaus": "Plateaus",
+    "reserved_forest": "Beschermd Bos",
+    "monastery": "Klooster",
+    "archaeology": "Archeologie",
+    "reservoir": "Stuwmeer",
+    "pool": "Poel",
+    "stream": "Beek",
+    "location": "Locatie",
+    "desc_all": "Een uitgebreide expeditiedirectory met gedetailleerde informatie over afgelegen geografische locaties in Sri Lanka. Verken in kaart gebrachte coördinaten, terreinomstandigheden en fotografische veldnotities over watervallen, bergpaden in de hooglanden, historische kloosters en verborgen natuurlijke beken.",
+    "desc_waterfall": "Documentatie van de spectaculaire hydrologische systemen en verborgen watervalclusters van Sri Lanka. Deze index beschrijft wandelroutes, basiswatervolumes, seizoenspatronen en veilige benaderingen voor het fotograferen van afgelegen watervallen in de centrale theevalleibekkens en bergketens van het eiland.",
+    "desc_mountain": "Alpiene formaties op grote hoogte, bergtoppen en uitdagende bergkammen in de centrale hooglanden van Sri Lanka. Krijg toegang tot veldtelemetrie met betrekking tot hoogtestatistieken, nevelwoudgrenzen, geografische blootstellingsprofielen en lay-outvectoren voor wildkamperen.",
+    "desc_trail": "Trekkingroutes in de wildernis, wandelroutes en primitieve voetpaden. Volgt technische navigatie-indicatoren, terreinmoeilijkheidsschalen, zichtbaarheidsparameters van paden en essentiële uitrustingsbenchmarks voor voetexpedities.",
+    "desc_viewpoint": "Panoramische geografische uitkijkpunten, steile kliffen en observatiehorizons op grote hoogte over bergpassen. Inclusief tijdlijnen voor zichtbaarheid van zonne-tracking en optimale omgevingsomstandigheden voor groothoeklandschapsfotografie.",
+    "desc_beach": "Afgelegen kustformaties, ongerepte zandstranden en maritieme grenzen langs de mariene gordels van Sri Lanka. Documentatie van rifindelingen, gelokaliseerde getijdentendensen en rustige kusthorizons die geschikt zijn voor avontuurlijke verkenning.",
+    "desc_park": "Nationale parken, streng beheerde wildreservaten en ecologische reservaten. Informatie richt zich op beschermde habitatgrenzen, migratiecorridors, toegangsregels van de Department of Wildlife Conservation (DWC) en veldveiligheidsprotocollen.",
+    "desc_plateaus": "Tafelvlakten op grote hoogte en unieke hooglandvlakte-ecosystemen gekenmerkt door typische dwergbosflora en open berggraslanden. Veldstatistieken brengen verschuivende bewolking, blootstelling aan harde wind en nachtelijke wandelomstandigheden in kaart.",
+    "desc_reserved_forest": "Sterk beschermde tropische regenwouden, ongerepte endemische biomen en beschermde bufferboszones. Deze technische logboeken benadrukken strikte wildernisconservatie-ethiek, navigatie door diepe junglepaden en biologische diversiteitsindices.",
+    "desc_monastery": "Oude in de rotsen uitgehouwen boskluizenaarshuizen en meditatieve heiligdomcomplexen verscholen in geïsoleerde boomkronen. Deze veldrapporten schetsen historische architecturale structuren, trappenroutes, grotinscripties en op respect gebaseerde exploratieregels.",
+    "desc_archaeology": "Bewaarde historische ruïnes, oude structurele componenten, stoepa's en koninklijke tuinen in de historische hoofdsteden van Sri Lanka. Het in kaart brengen van ruimtelijke netwerken tussen historisch steenmetselwerk, oude inscriptiecoördinaten en grensstenen.",
+    "desc_reservoir": "Enorme historische door mensen gemaakte merensystemen en stroomgebieden ontworpen in de rivierbekkens van het eiland. Volgt omringende bosbuffers, beschermende dijkpaden en visuele uitzichtbezienswaardigheden voor fotografie.",
+    "desc_pool": "Ongerepte natuurlijke rotspoelen, afgelegen bekkens en wilde zwemwateren langs bergrivierbeddingen. Benadrukt dieptebeoordelingen, veiligheidsvectoren voor waterstroom en updates van seizoensgebonden watervolumes.",
+    "desc_stream": "Heldere natuurlijke waterwegen, koudwaterkanalen en kleine riviertakken die door dichte reservaten stromen. Ideale referentiepunten voor het identificeren van schone bergwaterverzamelpunten, microklimaatvariaties en aquatische biodiversiteitsclusters.",
+    "desc_location": "Geografische herkenningspunten, opmerkelijke landelijke routepunten en gespecialiseerde verkennende bezienswaardigheden in Sri Lanka. Dient als een gelokaliseerd ruimtelijk referentiekader dat verschillende natuurlijke terreinen en trackingcoördinaten verbindt."
+  },
+  "discovery": {
+    "index_heading": "Actieve Discovery Index-vector",
+    "scope_label": "Bereik",
+    "all_records": "Alle records",
+    "meta_topographic": "Topografische cartografie",
+    "meta_backcountry": "Sri Lanka Backcountry-logboeken",
+    "meta_geospatial": "Geospatiale veldverificatie",
+    "meta_route_index": "Routeplanning-index"
+  },
+  "restriction": {
+    "public": "Openbare toegang",
+    "permit": "Vergunning vereist (DWC/Bosbouwafdeling)",
+    "guide": "Lokale gids vereist",
+    "restricted": "Hoge beveiliging / Beperkt"
+  },
+  "gallery": {
+    "title": "Locatiegallerij",
+    "total_images": "Totaal {{count}} afbeeldingen"
+  },
+  "ai_articles": {
+    "loading": "Inlichtingenevaluatie genereren...",
+    "fallback_notice": "AI-uitlegvertaling niet beschikbaar. Standaard Engelse logboek wordt weergegeven."
+  },
+  "article": {
+    "close": "Sluiten",
+    "share": "Delen",
+    "view_maps": "Bekijken op kaarten",
+    "classification": "Classificatie",
+    "region": "Regio-locatie",
+    "coordinates": "Coördinatenmapping",
+    "access_status": "Toegangsstatus",
+    "elevation": "Hoogte",
+    "difficulty": "Moeilijkheidsgraad",
+    "expedition_highlights": "Expeditiehoogtepunten",
+    "terrain": "Terrein",
+    "trailhead_access": "Toegang tot startpunt",
+    "history_heritage": "Geschiedenis & Lokaal Erfgoed",
+    "governing_body": "Besturend orgaan",
+    "access_restriction": "Toegangsbeperkingsniveau",
+    "technical_specs": "Technische specificaties & Exploratieparameters",
+    "compliance_title": "Veldnotities, Naleving & Regionale Regelgeving",
+    "compliance_prose_1": "Bij het verkennen van {{place}} moeten reizigers in het achterland zich strikt houden aan de lokale regelgevingskaders. Deze sector valt onder de directe jurisdictie en het administratieve toezicht van de {{org}}.",
+    "current_status_label": "De huidige veldtoegangsstatus is gecategoriseerd als:",
+    "faq_title": "Snelle antwoorden & AI-engine Discovery Index",
+    "question_prefix": "V:",
+    "archived_by": "Logboek gearchiveerd door",
+    "record_ref": "Geverifieerde recordreferentie:",
+    "fallback_desc": "Geospatiale expeditierouteringsdetails en omgivende terreintelemetrie worden hieronder geïndexeerd voor programmatische referentielay-outclusters.",
+    "load_journal_btn": "Laad volledige technische logboekvector",
+    "discussion_count": "Discussie",
+    "discussion_count_plural": "Discussie ({{count}})",
+    "author_response": "Reactie van auteur",
+    "comment_placeholder": "Voeg je wandelnoot toe...",
+    "send_comment": "Reactie verzenden",
+    "close_journal_btn": "Logboek sluiten",
+    "gallery_btn": "Gallerij"
+  },
+  "directives": {
+    "waterfall": "Hydrologische veiligheidsrichtlijn: Wees uiterst voorzichtig in de buurt van flitsvloedcorridors. Vermijd het veranderen van natuurlijke rotspoelblokkades, behoud de helderheid van de stroomafwaartse rivier en ruim al het synthetische afval op om kwetsbare oeverzones te beschermen.",
+    "wilderness": "Wildernisrichtlijn achterland: Houd u strikt aan de 'Leave No Trace'-doctrine. Doof alle kampvuurresten volledig, vermijd het ruimen van inheemse ondergroei voor tentconfiguraties en vermijd het creëren van onofficiële wandelvorken.",
+    "heritage": "Erfgoedbehoudrichtlijn: Bewaar diep cultureel ontzag, respecteer fotografiegrensmarkeringen en raak geen oude metselwerken, snijwerken of structurele baksteenlagen aan en wijzig ze niet.",
+    "transit": "Richtlijn voor doorvoer op afstand: Rij voorzichtig over losse, onverharde gravelpaden en steile bergpassen. Respecteer wildoversteekplaatsen, minimaliseer motorgeluid in wildcorridors en ruim alle volgvoertuigen op voor zonsondergang.",
+    "standard": "Standaard veldrichtlijn: Zorg ervoor dat u waar nodig de benodigde vergunningen verkrijgt, respecteer natuurlijke wildlife-habitats en volg de richtlijnen voor milieubehoud op die zijn opgesteld door het besturend orgaan voordat u een pad betreedt."
+  },
+  "safety_overlay": {
+    "title": "Locatieveiligheidsoverzicht",
+    "notice_title": "Toestemmings- & Veiligheidsmelding",
+    "jurisdiction": "valt onder de jurisdictie van",
+    "controlled": "Toegang is strikt gecontroleerd. U moet voorafgaand aan uw bezoek een geldige vergunning verkrijgen bij het lokale kantoor.",
+    "guidelines": "Zorg ervoor dat u de lokale richtlijnen volgt die door de autoriteiten voor dit gebied zijn opgesteld.",
+    "footer_disclaimer": "Door door te gaan met het bekijken van de kaart, erkent u dat de trekkingsomstandigheden onderhevig zijn aan snelle veranderingen. U neemt de volledige verantwoordelijkheid voor uw veiligheid.",
+    "button": "Ik begrijp het, bekijk kaart",
+    "no_restriction": "Geen beperking",
+    "tickets_required": "Tickets vereist",
+    "permit_required": "Vergunning vereist",
+    "no_entry": "Geen toegang",
+    "default_authority": "Lokale autoriteiten"
+  },
+  "about": {
+    "about_title": "Over Platform & Verkenner",
+    "subtitle": "My Journal Sri Lanka",
+    "myself_title": "Over mijzelf",
+    "myself_body": "Hoi, ik ben Hasitha Gunasekera. Ik ben een ontdekkingsreiziger, roadtripper en buitenfotograaf die zich toelegt op het opsporen van onbekende plekken in Sri Lanka. Mijn echte passie ligt in wandeltochten in het achterland, afgelegen wilderniskampen op grote hoogte en het verkennen van niet-gekartoografeerde watervalcascades diep verscholen in bergketens.",
+    "site_title": "Over de site",
+    "site_body": "My Journal dient als een gespecialiseerd, technisch veldlogboek met gedetailleerde informatie over afgelegen coördinaten, ruimtelijke records en wandelnotities in Sri Lanka. Ontworpen om backcountry-mapping-indicatoren, weerbewakers en routetelemetrie te integreren, is het erop gericht avontuurlijke reizigers veilig te verbinden met verborgen bestemmingen en tegelijkertijd strikte milieuveiligheidsnormen vast te stellen.",
+    "spots_title": "Sri Lankaanse Natuurlijke Attracties",
+    "spots_body": "Sri Lanka herbergt een fenomenale geografische biodiversiteit, variërend van de dichte bergkammen van het Knuckles Forest Reserve tot ongerepte cascadeclusters zoals de Bambarakanda- en Diyaluma-watervallen. Dit open register indexeert hooglandvlaktes, diepe natuurlijke poelen en historische boskluizenaarshuizen om ruw eilandterrein te tonen en te pleiten voor strikte conservatiestandaarden voor natuurreservaten.",
+    "media_title": "Media & Auteursrecht",
+    "media_body": "Alle fotografische inhoud op dit platform is persoonlijk door mij vastgelegd met behulp van mijn iPhone en drone. Afbeeldingen ondergaan slechts lichte bewerkingen via mobiele apparaten om hun rauwe, authentieke karakter te behouden. Alle rechten op elke foto zijn strikt voorbehouden onder mijn naam, Hasitha Gunasekera. Ongeautoriseerde reproductie of commercieel gebruik is verboden."
+  },
+  "legal": {
+    "privacy_title": "Privacybeleid",
+    "privacy_body": "Uw privacy wordt strikt bewaakt. Persoonlijke ruimtelijke parameters en trackingtelemetrie worden puur client-side beheerd.",
+    "privacy_s1_title": "01. Informatieverzameling",
+    "privacy_s1_desc": "Om afstandsrijberekeningen en routing te bieden, hebben we mogelijk toegang tot geschatte locatiegegevens. We verzamelen ook gebruiksgegevens om de prestaties te optimaliseren.",
+    "privacy_s2_title": "02. Google AdSense & Cookies",
+    "privacy_s2_desc": "Deze site gebruikt Google AdSense om advertenties weer te geven. Google gebruikt cookies om advertenties weer te geven op basis van uw bezoeken. U kunt zich afmelden via de advertentie-instellingen van Google.",
+    "terms_title": "Servicevoorwaarden",
+    "terms_body": "Gebruik dataroutes verantwoordelijk. Expeditietochten in het achterland brengen risico's met zich meebrengen; veldmetrieken dienen uitsluitend als geografische markeringen.",
+    "terms_s1_title": "01. Acceptatie van Voorwaarden",
+    "terms_s1_desc": "Door My Journal te gebruiken, gaat u akkoord met deze voorwaarden en alle toepasselijke wet- en regelgeving in Sri Lanka.",
+    "terms_s2_title": "02. Aansprakelijkheids disclaimer",
+    "terms_s2_desc": "Trekking en dronegebruik brengen risico's met zich mee. Verstrekte informatie is ter referentie; gebruikers zijn verantwoordelijk voor hun eigen veiligheid en naleving van de wet.",
+    "btn_privacy": "Privacy",
+    "btn_terms": "Voorwaarden",
+    "btn_about": "Over Journal"
+  },
+  "general_disclaimer": {
+    "title": "Juridische disclaimer & Veiligheidswaarschuwing",
+    "risk_title": "1. Risicoaanvaarding",
+    "risk_desc": "De wandelpaden, watervallen en archeologische vindplaatsen op My Journal brengen inherente fysieke risico's met zich mee. Gebruikers nemen de volledige verantwoordelijkheid voor hun veiligheid.",
+    "accuracy_title": "2. Informatie-accuratesse",
+    "accuracy_desc": "Hoewel we naar nauwkeurigheid streven, kunnen wandelcondities, weerpatronen en toegangsrechten zonder voorafgaande kennisgeving veranderen. Controleer de omstandigheden altijd ter plaatse.",
+    "drone_title": "3. Drone-operaties",
+    "drone_desc": "Dronepiloten moeten zich houden aan alle regelgeving van de Civil Aviation Authority of Sri Lanka (CAASL). Vliegen in nationale parken of beveiligde zones zonder uitdrukkelijke toestemming is ten strengste verboden.",
+    "liability_title": "4. Geen Aansprakelijkheid",
+    "liability_desc": "Hasitha Gunasekera en My Journal zijn niet aansprakelijk voor eventuele verwondingen, juridische boetes of schade als gevolg van het gebruik van informatie op dit platform."
+  },
+  "policies": {
+    "drone_title": "Drone- & Inhoudsbeleid",
+    "drone_subtitle": "Wettelijke naleving van de Luchtvaartautoriteit",
+    "drone_body": "Dronepiloten die routeringsgegevensparameters gebruiken, zijn strikt verplicht om volledige naleving te garanderen van de regelgeving van de Civil Aviation Authority of Sri Lanka (CAASL). Het vliegen met droneconfiguraties binnen actieve nationale parken, sterk beveiligde militaire netwerken of heiligdomparameters vereist formele documentatie van de Department of Wildlife Conservation (DWC).",
+    "liability_title": "Veiligheids- & Aansprakelijkheidsdisclaimer",
+    "liability_subtitle": "Informatieve referentieclausule",
+    "liability_body": "Alle wandelpaden, afgelegen watervallen en routedatavectoren die in My Journal worden weergegeven, worden gegenereerd voor open-source geografische referentie. Gebruikers aanvaarden absoluut risico met betrekking tot padmoeilijkheden, landschapsgevaren en weeraanpassingen."
+  },
+  "footer": {
+    "safety_title": "Veiligheids- & Aansprakelijkheidsdisclaimer",
+    "safety_body": "Trekking, wandelen en het verkennen van afgelegen gebieden in Sri Lanka brengen inherente risico's met zich mee. Informatie op My Journal is uitsluitend ter referentie; wandelomstandigheden, weer en toegangsrechten kunnen zonder voorafgaande kennisgeving veranderen. Gebruikers zijn zelf verantwoordelijk voor hun eigen veiligheid, uitrusting en verzekering.",
+    "drone_title": "Drone- & Inhoudsbeleid",
+    "drone_body": "Alle dronebeelden zijn vastgelegd in overeenstemming met de CAASL-regelgeving. Vliegen in nationale parken of beveiligde zones zonder vergunning van het Ministerie van Defensie en DWC is ten strengste verboden.",
+    "contact_support": "Contact & Ondersteuning",
+    "location": "Westelijke Provincie, Sri Lanka",
+    "privacy": "Privacybeleid",
+    "terms": "Algemene Voorwaarden",
+    "about": "Over Platform"
+  },
+  "newsletter": {
+    "title": "Word lid van de Expeditie",
+    "subtitle": "Ontvang coördinaten, veldnotities en terreintracking rechtstreeks in je inbox."
+  }
+}

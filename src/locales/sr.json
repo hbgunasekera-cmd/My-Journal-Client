@@ -1,0 +1,212 @@
+{
+  "common": {
+    "title": "My Journal",
+    "subtitle": "Exploring nature, one destination at a time.",
+    "filters": "Filteri",
+    "close": "Zatvori",
+    "accept": "Prihvati i nastavi",
+    "dismiss": "Odbaci"
+  },
+  "headers": {
+    "directory_title": "Detaljan direktorijum istraživanja i terenski vodiči"
+  },
+  "hub": {
+    "engine": "Motor",
+    "engine_hint": "Dodirnite \"Motor\" da kreirate svoju rutu",
+    "add": "Dodaj",
+    "plan": "Plan"
+  },
+  "filters": {
+    "search_placeholder": "Pretraži destinacije...",
+    "sort_newest": "Najnovije prvo",
+    "sort_nearest": "Najbliže prvo",
+    "apply_close": "Primeni i zatvori filtere"
+  },
+  "places": {
+    "status": {
+      "visited": "✨ Posećeno",
+      "bucket_list": "⏳ Lista želja"
+    },
+    "labels": {
+      "explore": "Istraži",
+      "km_away": "KM OD VAS",
+      "location_required": "Potreban pristup lokaciji",
+      "maps": "Mape",
+      "gallery": "Galerija",
+      "read": "Pročitaj"
+    }
+  },
+  "categories": {
+    "all": "Sve",
+    "waterfall": "Vodopad",
+    "mountain": "Planina",
+    "trail": "Staza",
+    "viewpoint": "Vidikovac",
+    "beach": "Plaža",
+    "park": "Park",
+    "plateaus": "Visoravni",
+    "reserved_forest": "Rezervisana šuma",
+    "monastery": "Manastir",
+    "archaeology": "Arheologija",
+    "reservoir": "Rezervoar",
+    "pool": "Bazen",
+    "stream": "Potok",
+    "location": "Lokacija",
+    "desc_all": "Sveobuhvatni direktorijum ekspedicija koji detaljno opisuje udaljene geografske lokacije širom Šri Lanke. Istražite mapirane koordinate, uslove terena i fotografske terenske beleške koje obuhvataju vodopade, planinske staze u visoravnima, istorijske manastire i skrivene prirodne potoke.",
+    "desc_waterfall": "Dokumentovanje spektakularnih hidroloških sistema Šri Lanke i skrivenih kaskadnih grupa. Ovaj indeks detaljno opisuje rute staza, osnovne zapremine vode, sezonske obrasce i bezbedne pristupe za fotografisanje udaljenih vodopada smeštenih unutar centralnih basena čajnih dolina i planinskih venaca ostrva.",
+    "desc_mountain": "Visokoplaninske alpske formacije, planinski vrhovi i izazovni grebeni širom centralnih visoravni Šri Lanke. Pristupite terenskoj telemetriji u vezi sa statistikom nadmorske visine, granicama oblačnih šuma, profilima geografske izloženosti i vektorima rasporeda divljeg kampovanja.",
+    "desc_trail": "Putevi za treking u divljini, kružne staze za pešačenje i primitivne pešačke staze. Prati indikatore tehničke navigacije, skale težine terena, parametre vidljivosti staza i osnovne kriterijume pripreme opreme za pešačke ekspedicije.",
+    "desc_viewpoint": "Panoramski geografski vidikovci, strme litice i visokoplaninski horizonti osmatranja preko planinskih prevoja. Uključuje vremenske rokove vidljivosti solarnog praćenja i optimalne ambijentalne uslove za širokougaonu pejzažnu fotografiju.",
+    "desc_beach": "Udaljene obalne formacije, netaknute peščane obale i pomorske granice širom morskih pojaseva Šri Lanke. Dokumentovanje rasporeda grebena, lokalizovanih plimskih tendencija i nepretrpanih obalnih horizonata pogodnih za praćenje avantura.",
+    "desc_park": "Nacionalni parkovi, strogo upravljana svetilišta divljih životinja i ekološki rezervati. Informacije se fokusiraju na zaštićena ograničenja staništa, migracione koridore, pravila pristupa Odeljenja za očuvanje divljih životinja (DWC) i protokole terenske bezbednosti.",
+    "desc_plateaus": "Visokoplaninski platoi i jedinstveni ekosistemi visočijih ravnica karakteristični po distinctivoj flori patuljastih šuma i otvorenim brdskim travnjacima. Terenske metrike mapiraju pokrivenost oblacima koja se menja, visoku izloženost vetru i noćne uslove na stazi.",
+    "desc_reserved_forest": "Visoko zaštićene tropske kišne šume, netaknuti endemični biomi i zaštićene zone šumskih pufera. Ovi tehnički dnevnici naglašavaju etiku strogog očuvanja divljine, navigaciju dubokim stazama džungle i indekse biološke raznovrsnosti.",
+    "desc_monastery": "Drevni šumski pustinjački domovi isklesani u steni i meditativni kompleksi svetilišta uvučeni unutar izolovanih krošnji. Ovi terenski izveštaji ocrtavaju istorijske arhitektonske strukture, rute sa stepenicama, natpise u pećinama i pravila istraživanja zasnovana na poštovanju.",
+    "desc_archaeology": "Sačuvane istorijske ruševine, drevne strukturalne komponente, stupe i kraljevski vrtovi širom istorijskih prestonica Šri Lanke. Mapiranje prostornih mreža između istorijskog kamenog zida, koordinata drevnih natpisa i graničnih stubova.",
+    "desc_reservoir": "Masivni istorijski sistemi veštačkih jezera i slivova projektovani širom rečnih basena ostrva. Prati okolne šumske pufere, zaštitne staze nasipa i vizuelne vidikovce za fotografiju.",
+    "desc_pool": "Netaknuti prirodni kameni bazeni, izolovani baseni potoka i vodene površine za divlje kupanje pronađene duž korita planinskih reka. Naglašava procene dubine, vektore bezbednosti protoka vode i ažuriranja sezonske zapremine vode.",
+    "desc_stream": "Čisti prirodni vodotoci, kanali sa hladnom vodom i sporedne rečne pritoke koje teku kroz guste rezervate. Idealne referentne tačke za identifikaciju čvorova sakupljanja čiste planinske vode, varijacija mikroklime i klastera vodnog biodiverziteta.",
+    "desc_location": "Geografski orijentiri, značajne seoske tačke i specijalizovane istraživačke tačke interesovanja širom Šri Lanke. Služi kao lokalizovani prostorni referentni okvir koji povezuje različite prirodne terene i prati koordinate."
+  },
+  "discovery": {
+    "index_heading": "Aktivni vektor indeksa otkrića",
+    "scope_label": "Opseg",
+    "all_records": "Svi zapisi",
+    "meta_topographic": "Topografsko mapiranje",
+    "meta_backcountry": "Dnevnici divljine Šri Lanke",
+    "meta_geospatial": "Geoprostorna terenska verifikacija",
+    "meta_route_index": "Indeks planiranja rute"
+  },
+  "restriction": {
+    "public": "Javni pristup",
+    "permit": "Potrebna dozvola (DWC/Šumsko odeljenje)",
+    "guide": "Obavezan lokalni vodič",
+    "restricted": "Visoka bezbednost / Ograničeno"
+  },
+  "gallery": {
+    "title": "Galerija lokacije",
+    "total_images": "Ukupno {{count}} slika"
+  },
+  "ai_articles": {
+    "loading": "Generisanje obaveštajnog izveštaja...",
+    "fallback_notice": "Prevodi veštačke inteligencije nisu dostupni. Prikazuje se podrazumevani engleski zapis."
+  },
+  "article": {
+    "close": "Zatvori",
+    "share": "Podeli",
+    "view_maps": "Pogledaj na mapama",
+    "classification": "Klasifikacija",
+    "region": "Lokacija regiona",
+    "coordinates": "Mapiranje koordinata",
+    "access_status": "Status pristupa",
+    "elevation": "Nadmorska visina",
+    "difficulty": "Težina",
+    "expedition_highlights": "Najvažniji delovi ekspedicije",
+    "terrain": "Terren",
+    "trailhead_access": "Pristup početku staze",
+    "history_heritage": "Istorija i lokalno nasleđe",
+    "governing_body": "Upravno telo",
+    "access_restriction": "Nivo ograničenja pristupa",
+    "technical_specs": "Tehničke specifikacije i parametri istraživanja",
+    "compliance_title": "Terenske beleške, usklađenost i regionalni propisi",
+    "compliance_prose_1": "Prilikom istraživanja {{place}}, putnici u divljini moraju se striktno pridržavati lokalnih regulatornih okvira. Ovaj sektor spada pod direktnu nadležnost i administrativni nadzor {{org}}.",
+    "current_status_label": "Trenutni status terenskog pristupa je kategorisan kao:",
+    "faq_title": "Brzi odgovori i indeks otkrića AI motora",
+    "question_prefix": "P:",
+    "archived_by": "Dnevnik arhivirao",
+    "record_ref": "Referenca verifikovanog zapisa:",
+    "fallback_desc": "Detalji rutiranja geoprostorne ekspedicije i telemetrija terena životne sredine indeksirani su ispod za programske klastere referentnih rasporeda.",
+    "load_journal_btn": "Učitaj kompletan vektor tehničkog dnevnika",
+    "discussion_count": "Diskusija",
+    "discussion_count_plural": "Diskusija ({{count}})",
+    "author_response": "Odgovor autora",
+    "comment_placeholder": "Dodajte svoju belešku sa staze...",
+    "send_comment": "Pošalji komentar",
+    "close_journal_btn": "Zatvori dnevnik",
+    "gallery_btn": "Galerija"
+  },
+  "directives": {
+    "waterfall": "Direktiva o hidrološkoj bezbednosti: Budite izuzetno oprezni u blizini koridora bujičnih poplava. Izbegavajte menjanje blokada prirodnih kamenih bazena, sačuvajte bistrinu reke nizvodno i spakujte sav sintetički otpad kako biste spasili osetljive priobalne eko-zone.",
+    "wilderness": "Direktiva o divljini u zaleđu: Strogo se pridržavajte doktrina 'Leave No Trace'. Potpuno ugasite žar logorske vatre, izbegavajte raščišćavanje domaćeg rastinja za konfiguraciju šatora i izbegavajte uspostavljanje nezvaničnih račvanja staza.",
+    "heritage": "Direktiva o očuvanju nasleđa: Održavajte duboko kulturno poštovanje, poštujte markere granica fotografisanja i ne dirajte niti menjajte drevno zidarstvo, rezbarije u kamenu ili slojeve građevinske cigle.",
+    "transit": "Direktiva o daljinskom tranzitu: Vozite oprezno duž labavih neasfaltiranih šljunkovitih puteva i strmih planinskih prevoja. Poštujte mesta prelaza divljih životinja, minimizirajte buku motora u koridorima divljih životinja i sklonite sva vozila za praćenje pre zalaska sunca.",
+    "standard": "Standardna terenska direktiva: Pobrinite se da pribavite neophodne dozvole gde je primenljivo, poštujte prirodna staništa divljih životinja i pratite smernice za očuvanje životne sredine koje je propisalo upravno telo pre nego što pokušate ulazak na stazu."
+  },
+  "safety_overlay": {
+    "title": "Kratak pregled bezbednosti lokacije",
+    "notice_title": "Obaveštenje o dozvolama i bezbednosti",
+    "jurisdiction": "je pod nadležnošću",
+    "controlled": "Ulaz je strogo kontrolisan. Pre posete morate pribaviti važeću dozvolu u lokalnoj kancelariji.",
+    "guidelines": "Molimo vas da pratite lokalne smernice koje su postavile vlasti za ovo područje.",
+    "footer_disclaimer": "Nastavkom pregledanja mape potvrđujete da su uslovi za treking podložni brzim promenama. Preuzimate punu odgovornost za svoju bezbednost.",
+    "button": "Razumem, prikaži mapu",
+    "no_restriction": "Bez ograničenja",
+    "tickets_required": "Potrebne ulaznice",
+    "permit_required": "Potrebna dozvola",
+    "no_entry": "Ulaz zabranjen",
+    "default_authority": "Lokalne vlasti"
+  },
+  "about": {
+    "about_title": "O platformi i istraživaču",
+    "subtitle": "My Journal Sri Lanka",
+    "myself_title": "O meni",
+    "myself_body": "Zdravo, ja sam Hasita Gunasekera. Ja sam istraživač, putnik i fotograf na otvorenom posvećen pronalaženju nepoznatih prostora širom Šri Lanke. Moja prava strast leži u trekingu u zaleđu, daljinskom kampovanju u divljini na velikim nadmorskim visinama i istraživanju nepoznatih kaskada vodopada uvučenih duboko u planinske lance.",
+    "site_title": "O sajtu",
+    "site_body": "My Journal služi kao specijalizovani, tehnički terenski dnevnik koji detaljno opisuje udaljene koordinate, prostorne zapise i beleške sa staza širom Šri Lanke. Projektovan da integriše indikatore mapiranja divljine, monitore vremenskih prilika i telemetriju ruta, ima za cilj da bezbedno poveže putnike avanturiste sa skrivenim destinacijama uz uspostavljanje strogih standarda ekološke bezbednosti.",
+    "spots_title": "Prirodne atrakcije Šri Lanke",
+    "spots_body": "Šri Lanke poseduje fenomenalan geografski biodiverzitet, koji se proteže od gustih planinskih grebena šumskog rezervata Nakls do netaknutih kaskadnih grupa kao što su vodopadi Bambarakanda i Dijaluma. Ova otvorena knjiga indeksira visoravni planinskih ravnica, duboke prirodne bazene i istorijske šumske isposnice kako bi prikazala surov ostrvski teren uz zagovaranje strogih metrika očuvanja prirodnih rezervata.",
+    "media_title": "Mediji i autorska prava",
+    "media_body": "Sav fotografski sadržaj predstavljen na ovoj platformi lično sam snimio koristeći svoj iPhone i dron. Slike prolaze samo kroz laku obradu na mobilnim uređajima kako bi se sačuvala njihova sirova, autentična suština. Sva prava na svaku fotografiju su strogo rezervisana pod mojim imenom, Hasita Gunasekera. Neovlašćena reprodukcija ili komercijalna upotreba je zabranjena."
+  },
+  "legal": {
+    "privacy_title": "Politika privatnosti",
+    "privacy_body": "Vaša privatnost se strogo nadgleda. Lični prostorni parametri i telemetrija praćenja se upravljaju čisto na strani klijenta.",
+    "privacy_s1_title": "01. Prikupljanje informacija",
+    "privacy_s1_desc": "Da bismo obezbedili izračunavanje rastojanja i rutiranje, možemo pristupiti približnim podacima o lokaciji. Takođe sakupljamo podatke o korišćenju radi optimizacije performansi.",
+    "privacy_s2_title": "02. Google AdSense i kolačići",
+    "privacy_s2_desc": "Ovaj sajt koristi Google AdSense za prikazivanje oglasa. Google koristi kolačiće za prikazivanje oglasa na osnovu vaših poseta. Možete da se odjavite preko Google-ovih podešavanja oglasa.",
+    "terms_title": "Uslovi korišćenja",
+    "terms_body": "Koristite rute podataka odgovorno. Ekspedicije u zaleđu nose rizike; terenske metrike služe samo kao geografske oznake.",
+    "terms_s1_title": "01. Prihvatanje uslova",
+    "terms_s1_desc": "Korišćenjem aplikacije My Journal slažete se sa ovim uslovima, svim važećim zakonima i propisima u Šri Lanki.",
+    "terms_s2_title": "02. Izjava o odricanju odgovornosti",
+    "terms_s2_desc": "Trening i upotreba dronova nose rizike. Pružene informacije služe kao referenca; korisnici su sami odgovorni za svoju bezbednost i pravnu usklađenost.",
+    "btn_privacy": "Privatnost",
+    "btn_terms": "Uslovi",
+    "btn_about": "O dnevniku"
+  },
+  "general_disclaimer": {
+    "title": "Pravno odricanje odgovornosti i bezbednosno upozorenje",
+    "risk_title": "1. Preuzimanje rizika",
+    "risk_desc": "Pešačke staze, vodopadi i arheološki lokaliteti predstavljeni na My Journal-u nose inherentne fizičke rizike. Korisnici preuzimaju punu odgovornost za bezbednost.",
+    "accuracy_title": "2. Tačnost informacija",
+    "accuracy_desc": "Iako težimo tačnosti, uslovi na stazi, vremenski obrasci i dozvole za pristup mogu se promeniti bez prethodne najave. Uvek proverite uslove na licu mesta.",
+    "drone_title": "3. Upravljanje dronovima",
+    "drone_desc": "Piloti dronova moraju da se pridržavaju svih propisa Uprave civilnog vazduhoplovstva Šri Lanke (CAASL). Letenje u nacionalnim parkovima ili zonama visoke bezbednosti bez izričitog odobrenja je strogo zabranjeno.",
+    "liability_title": "4. Nema odgovornosti",
+    "liability_desc": "Hasita Gunasekera i My Journal nisu odgovorni za bilo kakve povrede, pravne kazne ili štete proistekle iz korišćenja informacija pruženih na ovoj platformi."
+  },
+  "policies": {
+    "drone_title": "Politika o dronovima i sadržaju",
+    "drone_subtitle": "Usklađenost sa zakonom Uprave civilnog vazduhoplovstva",
+    "drone_body": "Piloti dronova koji koriste parametre podataka rutiranja strogo su u obavezi da osiguraju potpunu usklađenost sa propisima Uprave civilnog vazduhoplovstva Šri Lanke (CAASL). Letenje konfiguracijama dronova unutar aktivnih nacionalnih parkova, visoko bezbednosnih vojnih mreža ili parametara svetilišta zahteva formalnu dokumentaciju Odeljenja za očuvanje divljih životinja (DWC).",
+    "liability_title": "Izjava o odricanju odgovornosti za bezbednost",
+    "liability_subtitle": "Klauzula o informativnoj referenci",
+    "liability_body": "Sve pešačke staze, udaljeni vodopadi i vektori podataka o rutama prikazani u okviru My Journal-a generisani su za geografsku referencu otvorenog koda. Korisnici preuzimaju apsolutni rizik u vezi sa težinom staze, opasnostima pejzaža i vremenskim prilagođavanjima."
+  },
+  "footer": {
+    "safety_title": "Izjava o odricanju odgovornosti za bezbednost",
+    "safety_body": "Treking, pešačenje i istraživanje udaljenih područja u Šri Lanki nose inherentne rizike. Informacije na My Journal-u služe samo kao referenca; uslovi staza, vreme i dozvole za pristup mogu se promeniti bez prethodne najave. Korisnici su sami odgovorni za svoju bezbednost, opremu i osiguranje.",
+    "drone_title": "Politika o dronovima i sadržaju",
+    "drone_body": "Svi snimci sa dronova zabeleženi su u skladu sa CAASL propisima. Letenje u nacionalnim parkovima ili zonama visoke bezbednosti bez dozvola Ministarstva odbrane i DWC-a je strogo zabranjeno.",
+    "contact_support": "Kontakt i podrška",
+    "location": "Zapadna provincija, Šri Lanka",
+    "privacy": "Politika privatnosti",
+    "terms": "Uslovi korišćenja",
+    "about": "O platformi"
+  },
+  "newsletter": {
+    "title": "Pridružite se ekspediciji",
+    "subtitle": "Dobijajte koordinate, terenske beleške i praćenje udaljenog terena direktno u svoje prijemno sanduče."
+  }
+}

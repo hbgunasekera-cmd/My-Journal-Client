@@ -1,0 +1,212 @@
+{
+  "common": {
+    "title": "My Journal",
+    "subtitle": "Exploring nature, one destination at a time.",
+    "filters": "Filtreler",
+    "close": "Kapat",
+    "accept": "Kabul Et ve Devam Et",
+    "dismiss": "Yoksay"
+  },
+  "headers": {
+    "directory_title": "Ayrıntılı Keşif Dizini ve Saha Rehberleri"
+  },
+  "hub": {
+    "engine": "Motor",
+    "engine_hint": "Rotanızı oluşturmak için \"Motor\" öğesine dokunun",
+    "add": "Ekle",
+    "plan": "Planla"
+  },
+  "filters": {
+    "search_placeholder": "Destinasyonları ara...",
+    "sort_newest": "En Yeni Önce",
+    "sort_nearest": "En Yakın Önce",
+    "apply_close": "Filtreleri Uygula ve Kapat"
+  },
+  "places": {
+    "status": {
+      "visited": "✨ Ziyaret Edildi",
+      "bucket_list": "⏳ Yapılacaklar Listesi"
+    },
+    "labels": {
+      "explore": "Keşfet",
+      "km_away": "KM UZAKTA",
+      "location_required": "Konum İzni Gerekli",
+      "maps": "Haritalar",
+      "gallery": "Galeri",
+      "read": "Oku"
+    }
+  },
+  "categories": {
+    "all": "Tümü",
+    "waterfall": "Şelale",
+    "mountain": "Dağ",
+    "trail": "Patika",
+    "viewpoint": "Gözlem Noktası",
+    "beach": "Plaj",
+    "park": "Park",
+    "plateaus": "Platolar",
+    "reserved_forest": "Koruma Altındaki Orman",
+    "monastery": "Manastır",
+    "archaeology": "Arkeoloji",
+    "reservoir": "Baraj Gölü",
+    "pool": "Havuz",
+    "stream": "Akarsu",
+    "location": "Konum",
+    "desc_all": "Sri Lanka genelindeki uzak coğrafi konumları detaylandıran kapsamlı bir keşif dizini. Şelaleleri, dağ yaylası patikalarını, tarihi manastırları ve gizli doğal akarsuları kapsayan haritalandırılmış koordinatları, arazi koşullarını ve fotoğrafik saha notlarını keşfedin.",
+    "desc_waterfall": "Sri Lanka'nın muhteşem hidrolojik sistemlerini ve gizli şelale kümelerini belgelemektedir. Bu indeks; patika rotalarını, temel su hacimlerini, mevsimsel örüntüleri ve adanın merkezi çay vadisi havzaları ile sıradağları arasına gömülmüş uzak şelaleleri fotoğraflamak için güvenli yaklaşımları detaylandırır.",
+    "desc_mountain": "Sri Lanka'nın orta yaylalarındaki yüksek rakımlı alpin oluşumlar, dağ zirveleri ve zorlu sırtlar. Yükseklik istatistikleri, bulut ormanı sınırları, coğrafi maruziyet profilleri ve yaban hayatı kamp düzeni vektörleri hakkında saha telemetrisine erişin.",
+    "desc_trail": "Kırsal alan trekking yolları, doğa yürüyüşü döngüleri ve ilginç patikalar. Yürüyüş seferleri için teknik navigasyon göstergelerini, arazi zorluk ölçeklerini, yol görünürlük parametrelerini ve temel ekipman hazırlık kıstaslarını takip eder.",
+    "desc_viewpoint": "Dağ geçitlerindeki panoramik coğrafi gözetleme noktaları, dik kayalık uçurumları ve yüksek rakımlı gözlem ufukları. Güneş takibi görünürlük zaman çizelgelerini ve geniş açılı manzara fotoğrafçılığı için en uygun ortam koşullarını içerir.",
+    "desc_beach": "Sri Lanka'nın deniz kuşakları boyunca uzak kıyı oluşumları, el değmemiş killi kıyılar ve deniz sınırları. Macera takibine uygun resif düzenlerini, yerelleştirilmiş gelgit eğilimlerini ve kalabalık olmayan kıyı ufuklarını belgelemektedir.",
+    "desc_park": "Milli parklar, katı bir şekilde yönetilen yaban hayatı sığınakları ve ekolojik rezervler. Bilgiler korunan yaşam alanı sınırlarına, göç koridorlarına, Yaban Hayatı Koruma Departmanı (DWC) erişim kurallarına ve saha güvenlik protokollerine odaklanır.",
+    "desc_plateaus": "Belirgin cüce orman florası ve açık dağ meraları ile karakterize edilen yüksek rakımlı yaylalar ve benzersiz yayla ovaları ekosistemleri. Saha ölçümleri; değişen bulut örtüsünü, yüksek rüzgar maruziyetini ve gece patika koşullarını haritalandırır.",
+    "desc_reserved_forest": "Yüksek düzeyde korunan tropikal yağmur ormanları, el değmemiş endemik biyomlar ve korunan tampon orman bölgeleri. Bu teknik günlükler, katı doğa koruma etiğini, derin orman patikası navigasyonunu ve biyolojik çeşitlilik indekslerini vurgular.",
+    "desc_monastery": "İzole gölgeliklerin içine gizlenmiş antik kaya oyma orman inzivaları ve meditasyon sığınak kompleksleri. Bu saha raporları tarihi mimari yapıları, merdiven rotalarını, mağara yazıtlarını ve saygı odaklı keşif kurallarını özetlemektedir.",
+    "desc_archaeology": "Sri Lanka'nın tarihi başkentleri genelinde korunmuş tarihi kalıntılar, antik yapısal bileşenler, stupalar ve kraliyet bahçeleri. Tarihi taş işçiliği, antik yazıt koordinatları ve koruma taşları arasındaki uzamsal ağların haritalandırılması.",
+    "desc_reservoir": "Adanın nehir havzaları genelinde tasarlanmış devasa tarihi yapay göl sistemleri ve su toplama havzaları. Çevreleyen orman tamponlarını, koruyucu set yollarını ve fotoğrafçılık için görsel bakış açılarını takip eder.",
+    "desc_pool": "Dağ nehir yatakları boyunca bulunan el değmemiş doğal kaya havuzları, sakin akarsu havzaları ve vahşi yüzme su kütleleri. Derinlik değerlendirmelerini, su akış güvenliği vektörlerini ve mevsimsel su hacmi güncellemelerini vurgular.",
+    "desc_stream": "Yoğun rezervlerden akan berrak doğal su yolları, soğuk su kanalları ve küçük nehir kolları. Temiz dağ suyu toplama düğümlerini, iklim mikro varyasyonlarını ve sucul biyolojik çeşitlilik kümelerini belirlemek için ideal referans noktaları.",
+    "desc_location": "Sri Lanka genelinde coğrafi simge yapılar, dikkat çeken kırsal ara nokta noktaları ve özel keşif ilgi noktaları. Farklı doğal arazileri birbirine bağlayan ve takip koordinatlarını izleyen yerelleştirilmiş bir mekansal referans çerçevesi görevi görür."
+  },
+  "discovery": {
+    "index_heading": "Aktif Keşif İndeksi Vektörü",
+    "scope_label": "Kapsam",
+    "all_records": "Tüm Kayıtlar",
+    "meta_topographic": "Topografik Haritalandırma",
+    "meta_backcountry": "Sri Lanka Kırsal Günlükleri",
+    "meta_geospatial": "Coğrafi Uzamsal Saha Doğrulaması",
+    "meta_route_index": "Rota Planlama İndeksi"
+  },
+  "restriction": {
+    "public": "Genel Erişim",
+    "permit": "İzin Gerekli (DWC / Orman Müdürlüğü)",
+    "guide": "Yerel Rehber Gerekli",
+    "restricted": "Yüksek Güvenlik / Kısıtlı"
+  },
+  "gallery": {
+    "title": "Konum Galerisi",
+    "total_images": "Toplam {{count}} Görsel"
+  },
+  "ai_articles": {
+    "loading": "İstihbarat brifingi oluşturuluyor...",
+    "fallback_notice": "Yapay zeka analiz çevirisi kullanılamıyor. Varsayılan İngilizce günlük gösteriliyor."
+  },
+  "article": {
+    "close": "Kapat",
+    "share": "Paylaş",
+    "view_maps": "Haritalarda Görüntüle",
+    "classification": "Sınıflandırma",
+    "region": "Bölge Konumu",
+    "coordinates": "Koordinat Haritalandırması",
+    "access_status": "Erişim Durumu",
+    "elevation": "Rakım",
+    "difficulty": "Zorluk",
+    "expedition_highlights": "Sefer Önemli Noktaları",
+    "terrain": "Arazi",
+    "trailhead_access": "Patika Başı Erişimi",
+    "history_heritage": "Tarih ve Yerel Miras",
+    "governing_body": "Yönetici Organ",
+    "access_restriction": "Erişim Kısıtlama Düzeyi",
+    "technical_specs": "Teknik Özellikler ve Keşif Parametreleri",
+    "compliance_title": "Saha Notları, Uyumluluk ve Bölgesel Düzenlemeler",
+    "compliance_prose_1": "{{place}} keşfedilirken, kırsal seyyahlar yerel düzenleyici çerçevelere sıkı sıkıya uymalıdır. Bu sektör, {{org}} kuruluşunun doğrudan yetki alanı ve idari denetimi altındadır.",
+    "current_status_label": "Mevcut saha erişim durumu şu şekilde sınıflandırılmaktadır:",
+    "faq_title": "Hızlı Yanıtlar ve Yapay Zeka Motoru Keşif İndeksi",
+    "question_prefix": "S:",
+    "archived_by": "Günlüğü Arşivleyen",
+    "record_ref": "Doğrulanmış Kayıt Referansı:",
+    "fallback_desc": "Coğrafi uzamsal sefer yönlendirme detayları ve çevresel arazi telemetrisi, programlı referans düzeni kümeleri için aşağıda indekslenmiştir.",
+    "load_journal_btn": "Tam Teknik Günlük Vektörünü Yükle",
+    "discussion_count": "Tartışma",
+    "discussion_count_plural": "Tartışma ({{count}})",
+    "author_response": "Yazar Yanıtı",
+    "comment_placeholder": "Patika notunuzu ekleyin...",
+    "send_comment": "Yorum Gönder",
+    "close_journal_btn": "Günlüğü Kapat",
+    "gallery_btn": "Galeri"
+  },
+  "directives": {
+    "waterfall": "Hidrolojik Güvenlik Yönergesi: Ani sel koridorları yakınında aşırı dikkatli olun. Doğal kaya havuzu blokajlarını değiştirmekten kaçının, akış altındaki nehir berraklığını koruyun ve hassas kıyı ekosistemlerini kurtarmak için tüm sentetik atıkları toplayıp götürün.",
+    "wilderness": "Kırsal Yaban Hayatı Yönergesi: 'İz Bırakma' ilkelerine sıkı sıkıya uyun. Kamp ateşi közlerini tamamen söndürün, çadır yapıları için yerli bitki örtüsünü temizlemekten kaçının ve resmi olmayan patika çatalları oluşturmaktan kaçının.",
+    "heritage": "Miras Koruma Yönergesi: Derin kültürel saygıyı sürdürün, fotoğrafçılık sınır işaretlerine saygı gösterin ve antik duvarcılığa, taş oymalarına veya yapısal tuğla katmanlarına dokunmayın veya bunları değiştirmeyin.",
+    "transit": "Uzak Ulaşım Yönergesi: Gevşek asfaltlanmamış çakıl yollarda ve dik dağ geçitlerinde dikkatli sürün. Vahşi yaşam geçiş noktalarına saygı gösterin, yaban hayatı koridorlarında motor gürültüsünü en aza indirin ve gün batımından önce tüm takip araçlarını temizleyin.",
+    "standard": "Standart Saha Yönergesi: Uygun durumlarda gerekli izinleri aldığınızdan emin olun, doğal yaban hayatı habitatlarına saygı gösterin ve patikaya girmeye çalışmadan önce yönetici organ tarafından belirlenen çevre koruma yönergelerini izleyin."
+  },
+  "safety_overlay": {
+    "title": "Konum Güvenlik Brifingi",
+    "notice_title": "İzin ve Güvenlik Bildirimi",
+    "jurisdiction": "kuruluşunun yetki alanı altındadır:",
+    "controlled": "Giriş sıkı bir şekilde kontrol edilmektedir. Ziyaretinizden önce yerel ofisten geçerli bir izin almanız gerekmektedir.",
+    "guidelines": "Lütfen bu alan için yetkililer tarafından belirlenen yerel yönergeleri izlediğinizden emin olun.",
+    "footer_disclaimer": "Haritayı görüntülemeye devam ederek, trekking koşullarının hızlı değişime tabi olduğunu kabul edersiniz. Güvenliğinizin tüm sorumluluğunu üstlenirsiniz.",
+    "button": "Anlıyorum, Haritayı Görüntüle",
+    "no_restriction": "Kısıtlama Yok",
+    "tickets_required": "Bilet Gerekli",
+    "permit_required": "İzin Gerekli",
+    "no_entry": "Giriş Yasak",
+    "default_authority": "Yerel Yetkililer"
+  },
+  "about": {
+    "about_title": "Platform ve Kaşif Hakkında",
+    "subtitle": "My Journal Sri Lanka",
+    "myself_title": "Hakkımda",
+    "myself_body": "Merhaba, ben Hasitha Gunasekera. Sri Lanka genelindeki bilinmeyen mekanları bulmaya adanmış bir kaşif, yol gezgini ve açık hava fotoğrafçısıyım. Gerçek tutkum kırsal trekking, uzak yüksek rakımlı yaban hayatı kampçılığı ve sıra dağların derinliklerine saklanmış keşfedilmemiş şelale kaskadlarını keşfetmektir.",
+    "site_title": "Site Hakkında",
+    "site_body": "My Journal; Sri Lanka genelindeki uzak koordinatları, mekansal kayıtları ve patika notlarını detaylandıran özel, teknik bir saha günlüğü görevi görür. Kırsal haritalama göstergelerini, hava durumu monitörlerini ve rota telemetrisini entegre etmek için tasarlanmış olup, macera gezginlerini güvenli bir şekilde gizli destinasyonlara bağlamayı ve katı çevre güvenliği standartları oluşturmayı amaçlamaktadır.",
+    "spots_title": "Sri Lanka Doğal Cazibe Merkezleri",
+    "spots_body": "Sri Lanka; Knuckles Orman Rezervi'nin yoğun dağ sırtlarından Bambarakanda ve Diyaluma Şelaleleri gibi el değmemiş kaskad kümelerine kadar uzanan olağanüstü bir coğrafi biyolojik çeşitliliğe ev sahipliği yapar. Bu açık defter; ham ada arazisini sergilemek ve katı doğa koruma metriklerini savunmak için dağ yaylası platolarını, derin doğal havuzları ve tarihi orman inzivalarını indeksler.",
+    "media_title": "Medya ve Telif Hakkı",
+    "media_body": "Bu platformda yer alan tüm fotoğrafik içerikler, iPhone'um ve dronum kullanılarak şahsen tarafımdan çekilmiştir. Görüntüler, ham, otantik özlerini korumak için yalnızca hafif mobil cihaz düzenlemesinden geçer. Her fotoğrafa ait tüm haklar adımla, yani Hasitha Gunasekera ile sıkı bir şekilde saklıdır. İzinsiz çoğaltma veya ticari kullanım yasaktır."
+  },
+  "legal": {
+    "privacy_title": "Gizlilik Politikası",
+    "privacy_body": "Gizliliğiniz sıkı bir şekilde izlenir. Kişisel mekansal parametreler ve takip telemetrisi tamamen istemci tarafında yönetilir.",
+    "privacy_s1_title": "01. Bilgi Toplama",
+    "privacy_s1_desc": "Mesafe hesaplamaları ve yönlendirme sağlamak için tahmini konum verilerine erişebiliriz. Performansı optimize etmek için kullanım verilerini de topluyoruz.",
+    "privacy_s2_title": "02. Google AdSense ve Çerezler",
+    "privacy_s2_desc": "Bu site, reklam sunmak için Google AdSense kullanır. Google, ziyaretlerinize dayanarak reklam sunmak için çerezler kullanır. Google'ın Reklam Ayarları üzerinden devre dışı bırakabilirsiniz.",
+    "terms_title": "Kullanım Koşulları",
+    "terms_body": "Veri rotalarını sorumlu bir şekilde kullanın. Kırsal seferler riskler taşır; saha ölçümleri yalnızca coğrafi belirteçler olarak hizmet eder.",
+    "terms_s1_title": "01. Koşulların Kabulü",
+    "terms_s1_desc": "My Journal'ı kullanarak bu koşulları, Sri Lanka'daki tüm geçerli yasa ve yönetmelikleri kabul etmiş olursunuz.",
+    "terms_s2_title": "02. Sorumluluk Sınırlandırması",
+    "terms_s2_desc": "Trekking ve dron kullanımı riskler içerir. Sağlanan bilgiler yalnızca referans amaçlıdır; kullanıcılar kendi güvenliklerinden ve yasal uyumluluklarından sorumludur.",
+    "btn_privacy": "Gizlilik",
+    "btn_terms": "Koşullar",
+    "btn_about": "Günlük Hakkında"
+  },
+  "general_disclaimer": {
+    "title": "Yasal Sorumluluk Reddi ve Güvenlik Uyarısı",
+    "risk_title": "1. Risklerin Üstlenilmesi",
+    "risk_desc": "My Journal'da yer alan yürüyüş patikaları, şelaleler ve arkeolojik siteler doğası gereği fiziksel riskler içerir. Kullanıcılar güvenliğin tüm sorumluluğunu üstlenir.",
+    "accuracy_title": "2. Bilgi Doğruluğu",
+    "accuracy_desc": "Doğruluk için çabalasak da patika koşulları, hava durumu modelleri ve erişim izinleri bildirimde bulunulmaksızın değişebilir. Koşulları her zaman yerinde doğrulayın.",
+    "drone_title": "3. Dron Operasyonları",
+    "drone_desc": "Dron pilotları, Sri Lanka Sivil Havacılık Otoritesi'nin (CAASL) tüm düzenlemelerine uymalıdır. Açık izin alınmadan Milli Parklarda veya Yüksek Güvenlik Bölgelerinde uçmak kesinlikle yasaktır.",
+    "liability_title": "4. Sorumluluk Bulunmaması",
+    "liability_desc": "Hasitha Gunasekera ve My Journal, bu platformda sağlanan bilgilerin kullanımından kaynaklanan herhangi bir yaralanma, yasal ceza veya zarardan sorumlu tutulamaz."
+  },
+  "policies": {
+    "drone_title": "Dron ve İçerik Politikası",
+    "drone_subtitle": "Sivil Havacılık Otoritesi Yasal Uyumluluğu",
+    "drone_body": "Rota veri parametrelerini kullanan dron pilotlarının, Sri Lanka Sivil Havacılık Otoritesi (CAASL) düzenlemelerine tam uyum sağlaması kesinlikle zorunludur. Aktif Milli Parklar, yüksek güvenlikli askeri ağlar veya sığınak parametreleri içinde dron yapılandırmaları uçurmak, Yaban Hayatı Koruma Departmanı'ndan (DWC) resmi belgelendirme gerektirir.",
+    "liability_title": "Güvenlik ve Sorumluluk Reddi",
+    "liability_subtitle": "Bilgilendirici Referans Maddesi",
+    "liability_body": "My Journal içerisinde görüntülenen tüm yürüyüş patikaları, uzak şelaleler ve rota veri vektörleri açık kaynaklı coğrafi referans için oluşturulmuştur. Kullanıcılar patika zorluğu, peyzaj tehlikeleri ve hava durumu ayarlamalarıyla ilgili mutlak riski üstlenir."
+  },
+  "footer": {
+    "safety_title": "Güvenlik ve Sorumluluk Reddi",
+    "safety_body": "Sri Lanka'da uzak bölgelerde trekking yapmak, yürümek ve keşif yapmak doğal riskler içerir. My Journal üzerindeki bilgiler yalnızca referans amaçlıdır; patika koşulları, hava durumu ve erişim izinleri bildirimde bulunulmaksızın değişebilir. Kullanıcılar kendi güvenliklerinden, ekipmanlarından ve sigortalarından sorumludur.",
+    "drone_title": "Dron ve İçerik Politikası",
+    "drone_body": "Tüm dron görüntüleri CAASL düzenlemelerine uygun olarak yakalanmıştır. Savunma Bakanlığı ve DWC izni olmadan Milli Parklarda veya Yüksek Güvenlik Bölgelerinde uçmak kesinlikle yasaktır.",
+    "contact_support": "İletişim ve Destek",
+    "location": "Batı Eyaleti, Sri Lanka",
+    "privacy": "Gizlilik Politikası",
+    "terms": "Şartlar ve Koşullar",
+    "about": "Platform Hakkında"
+  },
+  "newsletter": {
+    "title": "Sefere Katılın",
+    "subtitle": "Koordinatları, saha notlarını ve uzak arazi takibini doğrudan gelen kutunuza alın."
+  }
+}

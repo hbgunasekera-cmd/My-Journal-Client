@@ -1,0 +1,41 @@
+# -------------------------------------------------------------------------
+# SECTION 1: BLOCK PURE TRAINING BOTS & SCRAPERS
+# -------------------------------------------------------------------------
+User-agent: GPTBot
+User-agent: Google-Extended
+User-agent: ClaudeBot
+User-agent: Anthropic-AI
+User-agent: Meta-ExternalAgent
+User-agent: FacebookBot
+User-agent: CCBot
+User-agent: Omgilibot
+User-agent: Diffbot
+User-agent: Bytespider
+User-agent: Cookiebot
+User-agent: CookieYesbot
+Disallow: /
+
+# -------------------------------------------------------------------------
+# SECTION 2: EXPLICITLY ALLOW AI SEARCH & SOCIAL PREVIEWS
+# -------------------------------------------------------------------------
+User-agent: ChatGPT-User
+User-agent: PerplexityBot
+User-agent: facebookexternalhit
+Allow: /
+
+# -------------------------------------------------------------------------
+# SECTION 3: ALLOW ALL TRADITIONAL SEARCH ENGINES (Including Naver)
+# -------------------------------------------------------------------------
+# Explicitly allow Naver's crawler (Yeti)
+User-agent: Yeti
+Allow: /
+
+# Allow all other standard search engines
+User-agent: *
+Allow: /
+
+# -------------------------------------------------------------------------
+# SECTION 4: METADATA & SITE INDEX
+# -------------------------------------------------------------------------
+Host: www.myjournalview.com
+Sitemap: https://www.myjournalview.com/sitemap.xml

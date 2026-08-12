@@ -1,0 +1,212 @@
+{
+  "common": {
+    "title": "My Journal",
+    "subtitle": "Exploring nature, one destination at a time.",
+    "filters": "筛选",
+    "close": "关闭",
+    "accept": "接受并继续",
+    "dismiss": "忽略"
+  },
+  "headers": {
+    "directory_title": "详细探索目录与实地指南"
+  },
+  "hub": {
+    "engine": "引擎",
+    "engine_hint": "点击“引擎”以规划您的路线",
+    "add": "添加",
+    "plan": "计划"
+  },
+  "filters": {
+    "search_placeholder": "搜索目的地...",
+    "sort_newest": "最新优先",
+    "sort_nearest": "最近优先",
+    "apply_close": "应用并关闭筛选"
+  },
+  "places": {
+    "status": {
+      "visited": "✨ 已访问",
+      "bucket_list": "⏳ 心愿单"
+    },
+    "labels": {
+      "explore": "探索",
+      "km_away": "公里外",
+      "location_required": "需要位置访问权限",
+      "maps": "地图",
+      "gallery": "画廊",
+      "read": "阅读"
+    }
+  },
+  "categories": {
+    "all": "全部",
+    "waterfall": "瀑布",
+    "mountain": "山峰",
+    "trail": "步道",
+    "viewpoint": "观景台",
+    "beach": "海滩",
+    "park": "公园",
+    "plateaus": "高原",
+    "reserved_forest": "保护林",
+    "monastery": "寺院",
+    "archaeology": "考古",
+    "reservoir": "水库",
+    "pool": "水潭",
+    "stream": "溪流",
+    "location": "位置",
+    "desc_all": "一份详尽的远征目录，详细介绍斯里兰卡各地的偏远地理位置。探索地图坐标、地形条件以及涵盖瀑布、高山步道、历史寺院和隐秘自然溪流的摄影实地笔记。",
+    "desc_waterfall": "记录斯里兰卡壮观的水文系统和隐秘的瀑布群。本索引详细介绍了路线、基准水量、季节性模式以及拍摄嵌入岛屿中心茶谷盆地与山脉中的偏远瀑布的安全方法。",
+    "desc_mountain": "斯里兰卡中部高地的高海拔高山地形、山峰和具有挑战性的山脊。获取有关海拔统计、云雾林边界、地理暴露特征和野外露营布局向量的实地遥测数据。",
+    "desc_trail": "荒野徒步小径、荒野远足环路和原始小路。追踪技术导航指标、地形难度等级、路径能见度参数以及徒步远征的基本装备准备基准。",
+    "desc_viewpoint": "跨越山隘的全景地理瞭望台、陡峭悬崖和高海拔观测地平线。包括太阳追踪能见度时间表和适合广角风景摄影的最佳环境条件。",
+    "desc_beach": "斯里兰卡海洋带的偏远海岸地貌、原始沙质海岸线和海洋边界。记录适合探险追踪的珊瑚礁布局、局部潮汐趋势和人迹罕至的海岸地平线。",
+    "desc_park": "国家公园、管理严格的野生动物保护区和生态保护区。信息重点关注受保护的栖息地边界、迁徙走廊、野生动物保护部 (DWC) 访问规则以及实地安全协议。",
+    "desc_plateaus": "以独特的矮林植物群和开阔的山地草甸为特征的高原和独特的高地平原生态系统。实地指标绘制了多变的云层覆盖、强风暴露和夜间小径状况。",
+    "desc_reserved_forest": "高度保护的热带雨林、原始特有生物群落和受保护的缓冲区林区。这些技术日志强调了严格的荒野保护伦理、深山丛林路径导航和生物多样性指数。",
+    "desc_monastery": "隐藏在孤立树冠内的古老岩刻森林静修处和冥想圣地综合体。这些实地报告概述了历史建筑结构、阶梯路线、洞穴铭文和注重尊重的探索规则。",
+    "desc_archaeology": "斯里兰卡历史古都中保存完好的历史遗迹、古代结构构件、佛塔和皇家花园。绘制历史石雕、古代铭文坐标和界石之间的空间网络。",
+    "desc_reservoir": "在全岛河流域工程化建设的大型历史人工湖泊系统和集水区。追踪周围的森林缓冲区、保护性路堤小径以及用于摄影的视觉视野。",
+    "desc_pool": "沿着山间河床发现的原始天然岩潭、幽静的溪流盆地和野生游泳水体。强调深度评估、水流安全向量和季节性水量更新。",
+    "desc_stream": "流经稠密保护区的清澈天然水道、冷水通道和小型河流支流。识别干净的高山水源收集节点、小气候变化和水生生物多样性集群的理想参考点。",
+    "desc_location": "斯里兰卡各地的地理地标、显著的乡村路标和专门的探索兴趣点。作为一个本地化的空间参考框架，连接不同的自然地形和追踪坐标。"
+  },
+  "discovery": {
+    "index_heading": "活动发现索引向量",
+    "scope_label": "范围",
+    "all_records": "所有记录",
+    "meta_topographic": "地形测绘",
+    "meta_backcountry": "斯里兰卡偏远地区日志",
+    "meta_geospatial": "地理空间实地验证",
+    "meta_route_index": "路线规划索引"
+  },
+  "restriction": {
+    "public": "公共访问",
+    "permit": "需要许可证 (DWC/林业部)",
+    "guide": "需要本地导游",
+    "restricted": "高度安全/受限制"
+  },
+  "gallery": {
+    "title": "地点画廊",
+    "total_images": "共 {{count}} 张图片"
+  },
+  "ai_articles": {
+    "loading": "正在生成情报简报...",
+    "fallback_notice": "AI 分析翻译不可用。正在显示默认的英文日志。"
+  },
+  "article": {
+    "close": "关闭",
+    "share": "分享",
+    "view_maps": "在地图上查看",
+    "classification": "分类",
+    "region": "区域位置",
+    "coordinates": "坐标测绘",
+    "access_status": "访问状态",
+    "elevation": "海拔",
+    "difficulty": "难度",
+    "expedition_highlights": "远征亮点",
+    "terrain": "地形",
+    "trailhead_access": "步道起点访问",
+    "history_heritage": "历史与地方遗产",
+    "governing_body": "管理机构",
+    "access_restriction": "访问限制级别",
+    "technical_specs": "技术规格与探索参数",
+    "compliance_title": "实地笔记、合规性与区域法规",
+    "compliance_prose_1": "在探索 {{place}} 时，偏远地区旅行者必须严格遵守当地的监管框架。该部门受 {{org}} 的直接管辖和行政监督。",
+    "current_status_label": "当前的实地访问状态分类为：",
+    "faq_title": "快速解答与 AI 引擎发现索引",
+    "question_prefix": "问：",
+    "archived_by": "日志归档人",
+    "record_ref": "已验证的记录参考：",
+    "fallback_desc": "地理空间远征路线详情和环境地形遥测数据在下方索引，用于程序化参考布局集群。",
+    "load_journal_btn": "加载完整技术日志向量",
+    "discussion_count": "讨论",
+    "discussion_count_plural": "讨论 ({{count}})",
+    "author_response": "作者回复",
+    "comment_placeholder": "添加您的步道笔记...",
+    "send_comment": "发送评论",
+    "close_journal_btn": "关闭日志",
+    "gallery_btn": "画廊"
+  },
+  "directives": {
+    "waterfall": "水文安全指令：在突发洪水走廊附近请务必格外小心。避免改变天然岩潭的封锁，保持下游河水清澈，并带走所有合成垃圾以拯救脆弱的河岸生态区。",
+    "wilderness": "荒野探险指令：严格遵守“不留痕迹”原则。彻底熄灭营火余烬，避免为搭建帐篷而清除原生下层植被，并避免建立非官方的小径分叉。",
+    "heritage": "遗产保护指令：保持深深的文化敬意，尊重摄影边界标记，切勿触摸或改变古老的砖石、石雕或结构性砖层。",
+    "transit": "远程交通指令：在未铺砂石路和陡峭山隘上小心驾驶。尊重野生动物穿越点，尽量减少野生动物走廊中的发动机噪音，并在日落前清理所有追踪车辆。",
+    "standard": "标准实地指令：确保在适用的情况下获得必要的许可，尊重自然野生动物栖息地，并在尝试进入步道之前遵循管理机构制定的环境保护准则。"
+  },
+  "safety_overlay": {
+    "title": "地点安全简报",
+    "notice_title": "许可与安全须知",
+    "jurisdiction": "受以下机构管辖：",
+    "controlled": "入场受到严格控制。您必须在访问前从当地办公室获得有效许可证。",
+    "guidelines": "请确保您遵守当局为该地区制定的本地准则。",
+    "footer_disclaimer": "继续查看地图即表示您承认徒步条件可能会迅速变化。您须为自身安全承担全部责任。",
+    "button": "我明白了，查看地图",
+    "no_restriction": "无限制",
+    "tickets_required": "需要门票",
+    "permit_required": "需要许可证",
+    "no_entry": "禁止进入",
+    "default_authority": "地方当局"
+  },
+  "about": {
+    "about_title": "关于平台与探索者",
+    "subtitle": "My Journal Sri Lanka",
+    "myself_title": "关于我自己",
+    "myself_body": "你好，我是 Hasitha Gunasekera。我是一名探索者、自驾旅行者和户外摄影师，致力于寻找斯里兰卡各地的未知空间。我真正的热情在于荒野徒步、偏远的高海拔荒野露营，以及探索隐藏在山脉深处鲜为人知的瀑布。",
+    "site_title": "关于网站",
+    "site_body": "My Journal 作为一个专门的技术实地日志，详细记录了斯里兰卡各地的偏远坐标、空间记录和步道笔记。它旨在集成荒野测绘指标、天气监视器和路线遥测技术，旨在将探险旅行者安全地连接到隐藏的目的地，同时建立严格的环境安全标准。",
+    "spots_title": "斯里兰卡自然景点",
+    "spots_body": "斯里兰卡拥有非凡的地理生物多样性，从 Knuckles 森林保护区的茂密山脊到 Bambarakanda 和 Diyaluma 瀑布等原始瀑布群。这份开放账本索引了山地高原、深邃的天然水潭和历史悠久的森林静修处，展示了原始的岛屿地形，同时倡导严格的自然保护区保护指标。",
+    "media_title": "媒体与版权",
+    "media_body": "本平台上展示的所有摄影内容均由我本人使用 iPhone 和无人机亲自拍摄。图像仅经过轻微的移动设备编辑，以保持其原始、真实的本质。每张照片的所有权均严格保留在我的名下 Hasitha Gunasekera。未经授权的复制或商业使用是被禁止的。"
+  },
+  "legal": {
+    "privacy_title": "隐私政策",
+    "privacy_body": "您的隐私受到严格监控。个人的空间参数和追踪遥测完全在客户端进行管理。",
+    "privacy_s1_title": "01. 信息收集",
+    "privacy_s1_desc": "为了提供距离计算和路径规划，我们可能会访问大致的位置数据。我们还收集使用数据以优化性能。",
+    "privacy_s2_title": "02. Google AdSense 与 Cookie",
+    "privacy_s2_desc": "本网站使用 Google AdSense 来投放广告。Google 使用 Cookie 根据您的访问记录投放广告。您可以通过 Google 的广告设置进行选择退出。",
+    "terms_title": "服务条款",
+    "terms_body": "负责任地使用数据路线。荒野远征带有风险；实地指标仅作为地理标记。",
+    "terms_s1_title": "01. 接受条款",
+    "terms_s1_desc": "通过使用 My Journal，您同意这些条款以及斯里兰卡的所有适用法律法规。",
+    "terms_s2_title": "02. 免责声明",
+    "terms_s2_desc": "徒步和无人机使用涉及风险。提供的信息仅供参考；用户需自行负责其安全和法律合规性。",
+    "btn_privacy": "隐私",
+    "btn_terms": "条款",
+    "btn_about": "关于日志"
+  },
+  "general_disclaimer": {
+    "title": "法律免责声明与安全警告",
+    "risk_title": "1. 风险承担",
+    "risk_desc": "My Journal 上推荐的徒步小径、瀑布和考古遗址涉及固有的身体风险。用户须对自身安全承担全部责任。",
+    "accuracy_title": "2. 信息准确性",
+    "accuracy_desc": "尽管我们努力确保准确性，但步道状况、天气模式和访问权限可能会随时更改，恕不另行通知。请务必在当地核实情况。",
+    "drone_title": "3. 无人机操作",
+    "drone_desc": "无人机飞行员必须遵守斯里兰卡民航局 (CAASL) 的所有规定。未经明确许可，严禁在国家公园或高度安全区域内飞行。",
+    "liability_title": "4. 无责任",
+    "liability_desc": "Hasitha Gunasekera 和 My Journal 对因使用本平台提供的信息而导致的任何伤害、法律处罚或损害不承担任何责任。"
+  },
+  "policies": {
+    "drone_title": "无人机与内容政策",
+    "drone_subtitle": "民航局法律合规性",
+    "drone_body": "使用路由数据参数的无人机飞行员严格要求确保完全遵守斯里兰卡民航局 (CAASL) 的规定。在活跃的国家公园、高安全军事网络或保护区参数范围内飞行无人机配置需要野生动物保护部 (DWC) 的正式文件。",
+    "liability_title": "安全与责任免责声明",
+    "liability_subtitle": "信息参考条款",
+    "liability_body": "My Journal 中显示的所有徒步小径、偏远瀑布和路线数据向量均是为了开源地理参考而生成的。用户须承担有关步道难度、景观危险和天气调整的绝对风险。"
+  },
+  "footer": {
+    "safety_title": "安全与责任免责声明",
+    "safety_body": "在斯里兰卡偏远地区进行徒步、远足和探索涉及固有风险。My Journal 上的信息仅供参考；步道状况、天气和访问权限可能会随时更改，恕不另行通知。用户需自行负责其安全、设备和保险。",
+    "drone_title": "无人机与内容政策",
+    "drone_body": "所有无人机镜头均在遵守 CAASL 规定的情况下拍摄。未经国防部和 DWC 许可，严禁在国家公园或高度安全区域内飞行。",
+    "contact_support": "联系与支持",
+    "location": "斯里兰卡西部省",
+    "privacy": "隐私政策",
+    "terms": "条款与条件",
+    "about": "关于平台"
+  },
+  "newsletter": {
+    "title": "加入远征",
+    "subtitle": "将坐标、实地笔记和偏远地形追踪直接发送到您的收件箱。"
+  }
+}

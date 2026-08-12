@@ -1,0 +1,212 @@
+{
+  "common": {
+    "title": "My Journal",
+    "subtitle": "Exploring nature, one destination at a time.",
+    "filters": "Filter",
+    "close": "Tutup",
+    "accept": "Terima dan Lanjutkan",
+    "dismiss": "Abaikan"
+  },
+  "headers": {
+    "directory_title": "Direktori Eksplorasi Mendetail & Panduan Lapangan"
+  },
+  "hub": {
+    "engine": "Mesin",
+    "engine_hint": "Ketuk \"Mesin\" untuk membangun rute Anda",
+    "add": "Tambah",
+    "plan": "Rencana"
+  },
+  "filters": {
+    "search_placeholder": "Cari destinasi...",
+    "sort_newest": "Terbaru Dulu",
+    "sort_nearest": "Terdekat Dulu",
+    "apply_close": "Terapkan & Tutup Filter"
+  },
+  "places": {
+    "status": {
+      "visited": "✨ Dikunjungi",
+      "bucket_list": "⏳ Daftar Keinginan"
+    },
+    "labels": {
+      "explore": "Jelajahi",
+      "km_away": "KM JAUHNYA",
+      "location_required": "Akses Lokasi Diperlukan",
+      "maps": "Peta",
+      "gallery": "Galeri",
+      "read": "Baca"
+    }
+  },
+  "categories": {
+    "all": "Semua",
+    "waterfall": "Air Terjun",
+    "mountain": "Gunung",
+    "trail": "Jalur",
+    "viewpoint": "Titik Pandang",
+    "beach": "Pantai",
+    "park": "Taman",
+    "plateaus": "Dataran Tinggi",
+    "reserved_forest": "Hutan Lindung",
+    "monastery": "Biara",
+    "archaeology": "Arkeologi",
+    "reservoir": "Waduk",
+    "pool": "Kolam",
+    "stream": "Sungai Kecil",
+    "location": "Lokasi",
+    "desc_all": "Direktori ekspedisi komprehensif yang merinci lokasi geografis terpencil di seluruh Sri Lanka. Jelajahi koordinat yang dipetakan, kondisi medan, dan catatan lapangan fotografis yang mencakup air terjun, jalur pegunungan dataran tinggi, biara bersejarah, dan aliran air alami yang tersembunyi.",
+    "desc_waterfall": "Mendokumentasikan sistem hidrologi spektakuler di Sri Lanka dan gugusan kaskade tersembunyi. Indeks ini merinci rute jalur, volume air dasar, pola musiman, dan pendekatan aman untuk memotret air terjun terpencil yang tertanam di dalam cekungan lembah teh pusat dan jajaran pegunungan pulau ini.",
+    "desc_mountain": "Formasi alpen dataran tinggi, puncak gunung, dan punggung bukit yang menantang di dataran tinggi tengah Sri Lanka. Akses telemetri lapangan mengenai statistik ketinggian, batas hutan awan, profil paparan geografis, dan vektor tata letak perkemahan liar.",
+    "desc_trail": "Jalur penjelajahan pedalaman, jalur hiking alam liar, dan jalan setapak primitif. Melacak indikator navigasi teknis, skala kesulitan medan, parameter visibilitas jalur, dan tolok ukur persiapan peralatan penting untuk ekspedisi berjalan kaki.",
+    "desc_viewpoint": "Pandangan geografis panorama, tebing curam, dan cakrawala pengamatan dataran tinggi di seberang celah gunung. Termasuk garis waktu visibilitas pelacakan matahari dan kondisi sekitar yang optimal untuk fotografi lanskap sudut lebar.",
+    "desc_beach": "Formasi pesisir terpencil, garis pantai berpasir yang asri, dan batas maritim di seluruh sabuk laut Sri Lanka. Mendokumentasikan tata letak terumbu karang, kecenderungan pasang surut lokal, dan cakrawala pesisir yang tidak padat yang cocok untuk pelacakan petualangan.",
+    "desc_park": "Taman nasional, suaka margasatwa yang dikelola ketat, dan cagar ekologi. Informasi berfokus pada batas habitat yang dilindungi, koridor migrasi, aturan akses Departemen Konservasi Satwa Liar (DWC), dan protokol keselamatan lapangan.",
+    "desc_plateaus": "Dataran tinggi dan ekosistem dataran tinggi unik yang dicirikan oleh flora hutan kerdil yang khas dan padang rumput pegunungan terbuka. Metrik lapangan memetakan pergeseran tutupan awan, paparan angin kencang, dan kondisi jalur semalam.",
+    "desc_reserved_forest": "Hutan hujan tropis yang sangat dilindungi, biom endemik murni, dan zona penyangga hutan yang dilindungi. Catatan teknis ini menekankan etika konservasi alam liar yang ketat, navigasi jalur hutan yang dalam, dan indeks keanekaragaman biologi.",
+    "desc_monastery": "Pertapaan hutan potong batu kuno dan kompleks suaka meditatif yang terselip di dalam kanopi terpencil. Laporan lapangan ini menguraikan struktur arsitektur historis, rute tangga, prasasti gua, dan aturan eksplorasi yang didorong oleh rasa hormat.",
+    "desc_archaeology": "Reruntuhan bersejarah yang dilindungi, komponen struktural kuno, stupa, dan taman kerajaan di seluruh ibu kota bersejarah Sri Lanka. Memetakan jaringan spasial antara batuan masonry bersejarah, koordinat prasasti kuno, dan batu penjaga.",
+    "desc_reservoir": "Sistem dan tangkapan air buatan manusia historis besar yang direkayasa di seluruh DAS pulau ini. Melacak penyangga hutan di sekitarnya, jalur tanggul pelindung, dan cakrawala pandang visual untuk fotografi.",
+    "desc_pool": "Kolam batu alam yang murni, cekungan sungai terpencil, dan badan air renang liar yang ditemukan di sepanjang dasar sungai gunung. Menekankan penilaian kedalaman, vektor keamanan aliran air, dan pembaruan volume air musiman.",
+    "desc_stream": "Saluran air alami yang jernih, saluran air dingin, dan anak sungai kecil yang mengalir melalui cagar alam yang lebat. Titik referensi ideal untuk mengidentifikasi simpul pengumpulan air gunung yang bersih, variasi iklim mikro, dan gugus keanekaragaman hayati akuatik.",
+    "desc_location": "Landmark geografis, titik jalan pedesaan yang penting, dan titik minat eksplorasi khusus di seluruh Sri Lanka. Berfungsi sebagai kerangka acuan spasial lokal yang menghubungkan medan alami yang berbeda dan melacak koordinat."
+  },
+  "discovery": {
+    "index_heading": "Vektor Indeks Penemuan Aktif",
+    "scope_label": "Cakupan",
+    "all_records": "Semua Catatan",
+    "meta_topographic": "Pemetaan Topografi",
+    "meta_backcountry": "Catatan Pedalaman Sri Lanka",
+    "meta_geospatial": "Verifikasi Lapangan Geospasial",
+    "meta_route_index": "Indeks Perencanaan Rute"
+  },
+  "restriction": {
+    "public": "Akses Publik",
+    "permit": "Perlu Izin (DWC/Dept Hutan)",
+    "guide": "Panduan Lokal Diperlukan",
+    "restricted": "Keamanan Tinggi / Terbatas"
+  },
+  "gallery": {
+    "title": "Galeri Lokasi",
+    "total_images": "{{count}} Total Gambar"
+  },
+  "ai_articles": {
+    "loading": "Menghasilkan ringkasan intelijen...",
+    "fallback_notice": "Terjemahan rincian AI tidak tersedia. Menampilkan log bahasa Inggris default."
+  },
+  "article": {
+    "close": "Tutup",
+    "share": "Bagikan",
+    "view_maps": "Lihat di Peta",
+    "classification": "Klasifikasi",
+    "region": "Lokasi Wilayah",
+    "coordinates": "Pemetaan Koordinat",
+    "access_status": "Status Akses",
+    "elevation": "Ketinggian",
+    "difficulty": "Kesulitan",
+    "expedition_highlights": "Sorotan Ekspedisi",
+    "terrain": "Medan",
+    "trailhead_access": "Akses Titik Awal Jalur",
+    "history_heritage": "Sejarah & Warisan Lokal",
+    "governing_body": "Badan Pengatur",
+    "access_restriction": "Tingkat Pembatasan Akses",
+    "technical_specs": "Spesifikasi Teknis & Parameter Eksplorasi",
+    "compliance_title": "Catatan Lapangan, Kepatuhan & Peraturan Regional",
+    "compliance_prose_1": "Saat menjelajahi {{place}}, pelancong pedalaman harus menjaga kepatuhan ketat terhadap kerangka kerja peraturan lokal. Sektor ini berada di bawah yurisdiksi langsung dan pengawasan administratif dari {{org}}.",
+    "current_status_label": "Status akses lapangan saat ini dikategorikan sebagai:",
+    "faq_title": "Jawaban Cepat & Indeks Penemuan Mesin AI",
+    "question_prefix": "T:",
+    "archived_by": "Jurnal Diarsipkan oleh",
+    "record_ref": "Referensi Catatan Terverifikasi:",
+    "fallback_desc": "Detail perutean ekspedisi geospasial dan telemetri medan lingkungan diindeks di bawah ini untuk kluster tata letak referensi terprogram.",
+    "load_journal_btn": "Muat Vektor Jurnal Teknis Lengkap",
+    "discussion_count": "Diskusi",
+    "discussion_count_plural": "Diskusi ({{count}})",
+    "author_response": "Tanggapan Penulis",
+    "comment_placeholder": "Tambahkan catatan jalur Anda...",
+    "send_comment": "Kirim Komentar",
+    "close_journal_btn": "Tutup Jurnal",
+    "gallery_btn": "Galeri"
+  },
+  "directives": {
+    "waterfall": "Arahan Keselamatan Hidrologi: Berhati-hatilah di dekat koridor banjir bandang. Hindari mengubah blokade kolam batu alam, lestarikan kejernihan sungai hilir, dan kemas semua sampah sintetis untuk menyelamatkan zona eko riparian yang rapuh.",
+    "wilderness": "Arahan Alam Liar Pedalaman: Patuhi doktrin 'Leave No Trace' secara ketat. Padamkan semua bara api unggun sepenuhnya, hindari membersihkan semak belukar asli untuk konfigurasi tenda, dan hindari membuat percabangan jalur resmi.",
+    "heritage": "Arahan Pelestarian Warisan: Pertahankan rasa hormat budaya yang mendalam, hormati penanda batas fotografi, dan jangan menyentuh atau mengubah batuan masonry kuno, ukiran batu, atau lapisan bata struktural.",
+    "transit": "Arahan Transit Jarak Jauh: Berkendaralah dengan hati-hati di sepanjang jalur kerikil lepas yang tidak beraspal dan celah gunung yang curam. Hormati titik penyeberangan satwa liar, minimalkan kebisingan mesin di koridor satwa liar, dan bersihkan semua kendaraan pelacak sebelum matahari terbenam.",
+    "standard": "Arahan Lapangan Standar: Pastikan Anda mendapatkan izin yang diperlukan jika berlaku, hormati habitat satwa liar alami, dan ikuti pedoman pelestarian lingkungan yang ditetapkan oleh badan pengatur sebelum mencoba memasuki jalur."
+  },
+  "safety_overlay": {
+    "title": "Ringkasan Keamanan Lokasi",
+    "notice_title": "Pemberitahuan Izin & Keselamatan",
+    "jurisdiction": "berada di bawah yurisdiksi",
+    "controlled": "Entri dikontrol secara ketat. Anda harus mendapatkan izin yang valid dari kantor lokal sebelum kunjungan Anda.",
+    "guidelines": "Harap pastikan Anda mengikuti pedoman lokal yang ditetapkan oleh pihak berwenang untuk area ini.",
+    "footer_disclaimer": "Dengan melanjutkan untuk melihat peta, Anda mengakui bahwa kondisi penjelajahan rentan terhadap perubahan cepat. Anda bertanggung jawab penuh atas keselamatan Anda.",
+    "button": "Saya Mengerti, Lihat Peta",
+    "no_restriction": "Tanpa Pembatasan",
+    "tickets_required": "Tiket Diperlukan",
+    "permit_required": "Perizinan Diperlukan",
+    "no_entry": "Dilarang Masuk",
+    "default_authority": "Otoritas Lokal"
+  },
+  "about": {
+    "about_title": "Tentang Platform & Penjelajah",
+    "subtitle": "My Journal Sri Lanka",
+    "myself_title": "Tentang Diri Saya",
+    "myself_body": "Halo, saya Hasitha Gunasekera. Saya seorang penjelajah, pelancong jalan darat, dan fotografer luar ruangan yang berdedikasi melacak ruang-ruang tak dikenal di seluruh Sri Lanka. Gairah sejati saya terletak pada penjelajahan pedalaman, perkemahan alam liar dataran tinggi terpencil, dan menjelajahi air terjun yang belum dipetakan yang terselip jauh di dalam jajaran pegunungan.",
+    "site_title": "Tentang Situs",
+    "site_body": "My Journal berfungsi sebagai catatan lapangan teknis khusus yang merinci koordinat jarak jauh, catatan spasial, dan catatan jalur di seluruh Sri Lanka. Direkayasa untuk mengintegrasikan indikator pemetaan pedalaman, monitor cuaca, dan telemetri rute, tujuannya adalah untuk menghubungkan wisatawan petualang dengan aman ke destinasi tersembunyi sambil menetapkan standar keselamatan lingkungan yang ketat.",
+    "spots_title": "Atraksi Alam Sri Lanka",
+    "spots_body": "Sri Lanka menaungi keanekaragaman hayati geografis yang fenomenal, mulai dari punggung bukit gunung yang lebat di Cagar Alam Hutan Knuckles hingga gugusan kaskade murni seperti Air Terjun Bambarakanda dan Diyaluma. Buku besar terbuka ini mengindeks dataran tinggi dataran gunung, kolam alami yang dalam, dan pertapaan hutan bersejarah untuk memamerkan medan pulau mentah sambil mengadvokasi metrik konservasi cagar alam yang ketat.",
+    "media_title": "Media & Hak Cipta",
+    "media_body": "Semua konten fotografis yang ditampilkan pada platform ini diambil secara pribadi oleh saya menggunakan iPhone dan Drone saya. Gambar hanya menjalani pengeditan perangkat seluler yang ringan untuk melestarikan esensi mentah dan otentiknya. Semua hak atas setiap foto dilindungi undang-undang secara ketat atas nama saya, Hasitha Gunasekera. Reproduksi atau penggunaan komersial yang tidak sah dilarang."
+  },
+  "legal": {
+    "privacy_title": "Kebijakan Privasi",
+    "privacy_body": "Privasi Anda dipantau secara ketat. Parameter spasial pribadi dan telemetri pelacakan dikelola murni dari sisi klien.",
+    "privacy_s1_title": "01. Pengumpulan Informasi",
+    "privacy_s1_desc": "Untuk memberikan perhitungan jarak dan perutean, kami dapat mengakses data lokasi perkiraan. Kami juga mengumpulkan data penggunaan untuk mengoptimalkan kinerja.",
+    "privacy_s2_title": "02. Google AdSense & Cookie",
+    "privacy_s2_desc": "Situs ini menggunakan Google AdSense untuk menayangkan iklan. Google menggunakan cookie untuk menayangkan iklan berdasarkan kunjungan Anda. Anda dapat memilih tidak ikut melalui Pengaturan Iklan Google.",
+    "terms_title": "Ketentuan Layanan",
+    "terms_body": "Gunakan rute data secara bertanggung jawab. Ekspedisi pedalaman membawa risiko; metrik lapangan hanya berfungsi sebagai penanda geografis.",
+    "terms_s1_title": "01. Penerimaan Ketentuan",
+    "terms_s1_desc": "Dengan menggunakan My Journal, Anda menyetujui ketentuan ini, semua hukum dan peraturan yang berlaku di Sri Lanka.",
+    "terms_s2_title": "02. Penafian Tanggung Jawab",
+    "terms_s2_desc": "Penjelajahan dan penggunaan drone melibatkan risiko. Informasi yang disediakan adalah untuk referensi; pengguna bertanggung jawab atas keselamatan dan kepatuhan hukum mereka sendiri.",
+    "btn_privacy": "Privasi",
+    "btn_terms": "Ketentuan",
+    "btn_about": "Tentang Jurnal"
+  },
+  "general_disclaimer": {
+    "title": "Penafian Hukum & Peringatan Keselamatan",
+    "risk_title": "1. Asumsi Risiko",
+    "risk_desc": "Jalur hiking, air terjun, dan situs arkeologi yang ditampilkan di My Journal melibatkan risiko fisik yang melekat. Pengguna mengambil tanggung jawab penuh atas keselamatan.",
+    "accuracy_title": "2. Keakuratan Informasi",
+    "accuracy_desc": "Meskipun kami mengupayakan keakuratan, kondisi jalur, pola cuaca, dan izin akses dapat berubah tanpa pemberitahuan. Selalu verifikasi kondisi secara lokal.",
+    "drone_title": "3. Operasi Drone",
+    "drone_desc": "Pilot drone harus mematuhi semua peraturan Otoritas Penerbangan Sipil Sri Lanka (CAASL). Terbang di Taman Nasional atau Zona Keamanan Tinggi tanpa izin eksplisit dilarang keras.",
+    "liability_title": "4. Tidak Ada Tanggung Jawab",
+    "liability_desc": "Hasitha Gunasekera dan My Journal tidak bertanggung jawab atas cedera, hukuman hukum, atau kerusakan apa pun yang dihasilkan dari penggunaan informasi yang disediakan di platform ini."
+  },
+  "policies": {
+    "drone_title": "Kebijakan Drone & Konten",
+    "drone_subtitle": "Kepatuhan Hukum Otoritas Penerbangan Sipil",
+    "drone_body": "Pilot drone yang menggunakan parameter data perutean diwajibkan secara ketat untuk memastikan kepatuhan penuh terhadap peraturan Otoritas Penerbangan Sipil Sri Lanka (CAASL). Menerbangkan konfigurasi drone di dalam Taman Nasional aktif, jaringan militer keamanan tinggi, atau parameter suaka memerlukan dokumentasi formal Departemen Konservasi Satwa Liar (DWC).",
+    "liability_title": "Penafian Keselamatan & Tanggung Jawab",
+    "liability_subtitle": "Klausul Referensi Informatif",
+    "liability_body": "Semua jalur hiking, air terjun terpencil, dan vektor data rute yang ditampilkan di dalam My Journal dihasilkan untuk referensi geografis sumber terbuka. Pengguna menanggung risiko mutlak mengenai kesulitan jalur, bahaya pemandangan, dan penyesuaian cuaca."
+  },
+  "footer": {
+    "safety_title": "Penafian Keselamatan & Tanggung Jawab",
+    "safety_body": "Penjelajahan, hiking, dan menjelajahi daerah terpencil di Sri Lanka melibatkan risiko yang melekat. Informasi di My Journal hanya untuk referensi; kondisi jalur, cuaca, dan izin akses dapat berubah tanpa pemberitahuan. Pengguna bertanggung jawab atas keselamatan, peralatan, dan asuransi mereka sendiri.",
+    "drone_title": "Kebijakan Drone & Konten",
+    "drone_body": "Semua rekaman drone ditangkap sesuai dengan peraturan CAASL. Terbang di Taman Nasional atau Zona Keamanan Tinggi tanpa izin Kementerian Pertahanan dan DWC dilarang keras.",
+    "contact_support": "Kontak & Dukungan",
+    "location": "Provinsi Barat, Sri Lanka",
+    "privacy": "Kebijakan Privasi",
+    "terms": "Syarat & Ketentuan",
+    "about": "Tentang Platform"
+  },
+  "newsletter": {
+    "title": "Bergabunglah dengan Ekspedisi",
+    "subtitle": "Dapatkan koordinat, catatan lapangan, dan pelacakan medan terpencil langsung ke kotak masuk Anda."
+  }
+}

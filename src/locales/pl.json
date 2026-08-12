@@ -1,0 +1,212 @@
+{
+  "common": {
+    "title": "My Journal",
+    "subtitle": "Exploring nature, one destination at a time.",
+    "filters": "Filtry",
+    "close": "Zamknij",
+    "accept": "Zaakceptuj i kontynuuj",
+    "dismiss": "Odrzuć"
+  },
+  "headers": {
+    "directory_title": "Szczegółowy katalog eksploracji i przewodnik terenowy"
+  },
+  "hub": {
+    "engine": "Silnik",
+    "engine_hint": "Stuknij \"Silnik\", aby zaplanować trasę",
+    "add": "Dodaj",
+    "plan": "Plan"
+  },
+  "filters": {
+    "search_placeholder": "Szukaj miejsc docelowych...",
+    "sort_newest": "Najnowsze najpierw",
+    "sort_nearest": "Najbliższe najpierw",
+    "apply_close": "Zastosuj i zamknij filtry"
+  },
+  "places": {
+    "status": {
+      "visited": "✨ Odwiedzone",
+      "bucket_list": "⏳ Lista życzeń"
+    },
+    "labels": {
+      "explore": "Eksploruj",
+      "km_away": "KM STĄD",
+      "location_required": "Wymagany dostęp do lokalizacji",
+      "maps": "Mapy",
+      "gallery": "Galeria",
+      "read": "Przeczytaj"
+    }
+  },
+  "categories": {
+    "all": "Wszystkie",
+    "waterfall": "Wodospad",
+    "mountain": "Góra",
+    "trail": "Szlak",
+    "viewpoint": "Punkt widokowy",
+    "beach": "Plaża",
+    "park": "Park",
+    "plateaus": "Płaskowyże",
+    "reserved_forest": "Las rezerwatowy",
+    "monastery": "Klasztor",
+    "archaeology": "Archeologia",
+    "reservoir": "Zbiornik wodny",
+    "pool": "Basen",
+    "stream": "Strumień",
+    "location": "Lokalizacja",
+    "desc_all": "Kompleksowy katalog wypraw szczegółowo opisujący odległe lokalizacje geograficzne na Sri Lance. Przeglądaj odwzorowane współrzędne, warunki terenu oraz fotograficzne notatki terenowe obejmujące wodospady, górskie szlaki wyżynne, historyczne klasztory i ukryte naturalne strumienie.",
+    "desc_waterfall": "Dokumentowanie spektakularnych systemów hydrologicznych Sri Lanki i ukrytych klastrów kaskad. Ten indeks szczegółowo opisuje trasy szlaków, podstawowe objętości wody, wzorce sezonowe oraz bezpieczne podejścia do fotografowania odległych wodospadów osadzonych w centralnych basenach dolin herbacianych i pasmach górskich wyspy.",
+    "desc_mountain": "Wysokogórskie formacje alpejskie, szczyty górskie i wymagające granie w centralnych wyżynach Sri Lanki. Uzyskaj dostęp do telemetrii terenowej dotyczącej statystyk wysokości, granic lasów mglistych, geograficznych profili ekspozycji oraz wektorów układu dzikiego biwakowania.",
+    "desc_trail": "Ścieżki trekkingowe w głębi lądu, pętle wędrówek po dzikiej przyrodzie i prymitywne ścieżki piesze. Śledzi wskaźniki nawigacji technicznej, skale trudności terenu, parametry widoczności ścieżek oraz podstawowe punkty odniesienia przygotowania sprzętu do wypraw pieszych.",
+    "desc_viewpoint": "Panoramiczne punkty widokowe, strome klify i wysokogórskie horyzonty obserwacyjne w poprzek przełęczy górskich. Obejmuje osie czasu widoczności śledzenia słonecznego oraz optymalne warunki otoczenia do szerokokątnej fotografii krajobrazowej.",
+    "desc_beach": "Odległe formacje przybrzeżne, nietknięte piaszczyste brzegi i granice morskie w pasach morskich Sri Lanki. Dokumentowanie układów raf, zlokalizowanych tendencji pływowych i niezłomnych horyzontów przybrzeżnych odpowiednich do śledzenia przygód.",
+    "desc_park": "Parki narodowe, ściśle zarządzane rezerwaty dzikiej przyrody i rezerwaty ekologiczne. Informacje skupiają się na chronionych limitach siedlisk, korytarzach migracyjnych, zasadach dostępu Departamentu Ochrony Dzikiej Przyrody (DWC) oraz protokołach bezpieczeństwa terenowego.",
+    "desc_plateaus": "Wysokogórskie płaskowyże i unikalne ekosystemy wyżynnych równin charakteryzujące się odrębną florą lasów karłowatych i otwartymi łąkami montanskimi. Metryki terenowe odwzorowują zmieniające się zachmurzenie, silne ekspozycje na wiatr i nocne warunki na szlaku.",
+    "desc_reserved_forest": "Wysoce chronione wilgotne lasy równikowe, nietknięte biomu endemiczne i chronione strefy buforowe lasów. Te dzienniki techniczne kładą nacisk na rygorystyczną etykę ochrony dzikiej przyrody, nawigację po głębokich ścieżkach dżungli i wskaźniki różnorodności biologicznej.",
+    "desc_monastery": "Starożytne skalne pustelnie leśne i medytacyjne kompleksy sanktuariów ukryte w izolowanych koronach drzew. Te raporty terenowe przedstawiają historyczne struktury architektoniczne, trasy schodowe, napisy jaskiniowe i zasady eksploracji oparte na szacunku.",
+    "desc_archaeology": "Zachowane ruiny historyczne, starożytne elementy strukturalne, stupy i ogrody królewskie w historycznych stolicach Sri Lanki. Mapowanie sieci przestrzennych między historycznym kamieniarstwem, współrzędnymi starożytnych napisów i kamieniami strażniczymi.",
+    "desc_reservoir": "Masywne historyczne systemy sztucznych jezior i zlewnie zaprojektowane w dorzeczach wyspy. Śledzi otaczające bufory leśne, ochronne ścieżki wałów i wizualne horyzonty perspektywiczne do fotografii.",
+    "desc_pool": "Nietknięte naturalne baseny skalne, odizolowane baseny strumieni i dzikie akweny kąpielowe znajdujące się wzdłuż koryt rzek górskich. Podkreśla oceny głębokości, wektory bezpieczeństwa przepływu wody i aktualizacje sezonowej objętości wody.",
+    "desc_stream": "Czyste naturalne cieki wodne, kanały zimnej wody i pomniejsze dopływy rzek przepływające przez gęste rezerwaty. Idealne punkty odniesienia do identyfikacji czystych węzłów gromadzenia wody górskiej, wariacji mikroklimatycznych i klastrów różnorodności biologicznej w wodzie.",
+    "desc_location": "Punkty orientacyjne geograficzne, godne uwagi wiejskie punkty trasy i specjalistyczne punkty zainteresowania eksploracyjnego na Sri Lance. Służy jako zlokalizowany przestrzenny punkt odniesienia łączący różne naturalne tereny i współrzędne śledzenia."
+  },
+  "discovery": {
+    "index_heading": "Aktywny wektor indeksu odkryć",
+    "scope_label": "Zakres",
+    "all_records": "Wszystkie rekordy",
+    "meta_topographic": "Mapowanie topograficzne",
+    "meta_backcountry": "Dzienniki z głębi lądu Sri Lanki",
+    "meta_geospatial": "Weryfikacja terenowa geoprzestrzenna",
+    "meta_route_index": "Indeks planowania trasy"
+  },
+  "restriction": {
+    "public": "Dostęp publiczny",
+    "permit": "Wymagane zezwolenie (DWC/Wydział Leśny)",
+    "guide": "Wymagany lokalny przewodnik",
+    "restricted": "Wysokie bezpieczeństwo / Ograniczone"
+  },
+  "gallery": {
+    "title": "Galeria lokalizacji",
+    "total_images": "Łącznie {{count}} zdjęć"
+  },
+  "ai_articles": {
+    "loading": "Generowanie briefu wywiadowczego...",
+    "fallback_notice": "Tłumaczenie analizy AI jest niedostępne. Wyświetlanie domyślnego dziennika w języku angielskim."
+  },
+  "article": {
+    "close": "Zamknij",
+    "share": "Udostępnij",
+    "view_maps": "Wyświetl na mapach",
+    "classification": "Klasyfikacja",
+    "region": "Lokalizacja regionu",
+    "coordinates": "Mapowanie współrzędnych",
+    "access_status": "Status dostępu",
+    "elevation": "Wysokość n.p.m.",
+    "difficulty": "Trudność",
+    "expedition_highlights": "Najważniejsze atrakcje wyprawy",
+    "terrain": "Teren",
+    "trailhead_access": "Dostęp do początku szlaku",
+    "history_heritage": "Historia i dziedzictwo lokalne",
+    "governing_body": "Organ zarządzający",
+    "access_restriction": "Poziom ograniczenia dostępu",
+    "technical_specs": "Specyfikacje techniczne i parametry eksploracji",
+    "compliance_title": "Notatki terenowe, zgodność i przepisy regionalne",
+    "compliance_prose_1": "Podczas eksploracji {{place}} podróżnicy muszą ściśle przestrzegać lokalnych ram regulacyjnych. Ten sektor podlega bezpośredniej jurysdykcji i nadzorowi administracyjnemu {{org}}.",
+    "current_status_label": "Obecny status dostępu terenowego jest sklasyfikowany jako:",
+    "faq_title": "Szybkie odpowiedzi i indeks odkryć silnika AI",
+    "question_prefix": "P:",
+    "archived_by": "Dziennik zarchiwizowany przez",
+    "record_ref": "Zweryfikowane odniesienie do rekordu:",
+    "fallback_desc": "Szczegóły routingu wyprawy geoprzestrzennej i telemetria terenu środowiskowego są indeksowane poniżej dla programowych klastrów układu odniesienia.",
+    "load_journal_btn": "Załaduj pełny wektor dziennika technicznego",
+    "discussion_count": "Dyskusja",
+    "discussion_count_plural": "Dyskusja ({{count}})",
+    "author_response": "Odpowiedź autora",
+    "comment_placeholder": "Dodaj swoją notatkę ze szlaku...",
+    "send_comment": "Wyślij komentarz",
+    "close_journal_btn": "Zamknij dziennik",
+    "gallery_btn": "Galeria"
+  },
+  "directives": {
+    "waterfall": "Dyrektywa bezpieczeństwa hydrologicznego: Zachowaj szczególną ostrożność w pobliżu korytarzy nagłych powodzi. Unikaj modyfikowania naturalnych blokad basenów skalnych, zachowaj przejrzystość rzeki w dół biegu i spakuj wszelkie syntetyczne odpadki, aby ocalić delikatne strefy ekologiczne brzegów rzek.",
+    "wilderness": "Dyrektywa dotycząca dzikiej przyrody w głębi lądu: Przestrzegaj surowych zasad 'Leave No Trace'. Całkowicie gasić żar ogniska, unikać oczyszczania rodzimego podszytu pod konfiguracje namiotów i unikać tworzenia nieoficjalnych rozgałęzień szlaków.",
+    "heritage": "Dyrektywa ochrony dziedzictwa: Zachowaj głęboki szacunek kulturowy, szanuj znaczniki granic fotografowania i nie dotykaj ani nie zmieniaj starożytnego muru, rzeźb w kamieniu ani strukturalnych warstw cegieł.",
+    "transit": "Dyrektywa dotycząca transportu zdalnego: Prowadź ostrożnie po luźnych, nieutwardzonych drogach szutrowych i stromych przełęczach górskich. Szanuj punkty przejścia dla zwierząt, zminimalizuj hałas silnika w korytarzach dzikiej przyrody i oczyść wszystkie pojazdy śledzące przed zachodem słońca.",
+    "standard": "Standardowa dyrektywa terenowa: Upewnij się, że uzyskasz niezbędne zezwolenia, jeśli dotyczy, szanuj naturalne siedliska dzikich zwierząt i przestrzegaj wytycznych ochrony środowiska ustalonych przez organ zarządzający przed próbowaniem wejścia na szlak."
+  },
+  "safety_overlay": {
+    "title": "Brief bezpieczeństwa lokalizacji",
+    "notice_title": "Zawiadomienie o zezwoleniach i bezpieczeństwie",
+    "jurisdiction": "znajduje się pod jurysdykcją",
+    "controlled": "Wejście jest ściśle kontrolowane. Przed wizytą należy uzyskać ważne zezwolenie w lokalnym biurze.",
+    "guidelines": "Upewnij się, że przestrzegasz lokalnych wytycznych ustalonych przez władze dla tego obszaru.",
+    "footer_disclaimer": "Przechodząc do przeglądania mapy, potwierdzasz, że warunki trekkingu podlegają szybkim zmianom. Ponosisz pełną odpowiedzialność za swoje bezpieczeństwo.",
+    "button": "Rozumiem, zobacz mapę",
+    "no_restriction": "Brak ograniczeń",
+    "tickets_required": "Wymagane bilety",
+    "permit_required": "Wymagane zezwolenie",
+    "no_entry": "Wstęp wzbroniony",
+    "default_authority": "Władze lokalne"
+  },
+  "about": {
+    "about_title": "O platformie i odkrywcy",
+    "subtitle": "My Journal Sri Lanka",
+    "myself_title": "O mnie",
+    "myself_body": "Cześć, jestem Hasitha Gunasekera. Jestem odkrywcą, podróżnikiem i fotografem plenerowym, poświęconym odnajdywaniu nieznanych miejsc na Sri Lance. Moją prawdziwą pasją jest trekking w głębi lądu, zdalne biwakowanie w dzikiej przyrody na dużych wysokościach oraz odkrywanie niezbadanych kaskad wodospadów ukrytych głęboko w pasmach górskich.",
+    "site_title": "O stronie",
+    "site_body": "My Journal służy jako wyspecjalizowany, techniczny dziennik terenowy szczegółowo opisujący odległe współrzędne, zapisy przestrzenne i notatki ze szlaków na Sri Lance. Zaprojektowany w celu integracji wskaźników mapowania głębi lądu, monitorów pogodowych i telemetrii tras, ma na celu bezpieczne łączenie podróżników przygodowych z ukrytymi miejscami przy jednoczesnym ustaleniu surowych standardów bezpieczeństwa środowiskowego.",
+    "spots_title": "Atrakcje przyrodnicze Sri Lanki",
+    "spots_body": "Sri Lanka kryje w sobie fenomenalną różnorodność biologiczną geograficzną, rozciągającą się od gęstych grzbietów górskich rezerwatu leśnego Knuckles po nietknięte klastry kaskad, takie jak wodospady Bambarakanda i Diyaluma. Ten otwarty rejestr indeksuje wysokogórskie płaskowyże, głębokie naturalne baseny i historyczne pustelnie leśne, aby zaprezentować surowy teren wyspy, opowiadając się za surowymi wskaźnikami ochrony rezerwatów przyrody.",
+    "media_title": "Media i prawa autorskie",
+    "media_body": "Wszystkie treści fotograficzne prezentowane na tej platformie zostały zarejestrowane osobiście przeze mnie za pomocą mojego iPhone'a i drona. Obrazy poddawane są jedynie lekkiej edycji na urządzeniach mobilnych, aby zachować ich surową, autentyczną istotę. Wszelkie prawa do każdego zdjęcia są ściśle zastrzeżone pod moim imieniem i nazwiskiem, Hasitha Gunasekera. Nieautoryzowane powielanie lub komercyjne wykorzystanie jest zabronione."
+  },
+  "legal": {
+    "privacy_title": "Polityka prywatności",
+    "privacy_body": "Twoja prywatność jest ściśle monitorowana. Osobiste parametry przestrzenne i telemetria śledzenia są zarządzane czysto po stronie klienta.",
+    "privacy_s1_title": "01. Gromadzenie informacji",
+    "privacy_s1_desc": "Aby zapewnić obliczenia odległości i wyznaczanie tras, możemy uzyskać dostęp do przybliżonych danych o lokalizacji. Zbieramy również dane o użytkowaniu w celu optymalizacji wydajności.",
+    "privacy_s2_title": "02. Google AdSense i pliki cookie",
+    "privacy_s2_desc": "Ta witryna korzysta z usługi Google AdSense do wyświetlania reklam. Google używa plików cookie do wyświetlania reklam na podstawie Twoich wizyt. Możesz zrezygnować za pomocą Ustawień reklam Google.",
+    "terms_title": "Regulamin serwisu",
+    "terms_body": "Korzystaj z tras danych w sposób odpowiedzialny. Wyprawy w głębi lądu wiążą się z ryzykiem; metryki terenowe służą wyłącznie jako znaczniki geograficzne.",
+    "terms_s1_title": "01. Akceptacja warunków",
+    "terms_s1_desc": "Korzystając z My Journal, wyrażasz zgodę na te warunki oraz wszystkie obowiązujące prawa i przepisy na Sri Lance.",
+    "terms_s2_title": "02. Wyłączenie odpowiedzialności",
+    "terms_s2_desc": "Trekking i używanie dronów wiążą się z ryzykiem. Dostarczone informacje mają charakter wyłącznie informacyjny; użytkownicy ponoszą odpowiedzialność za własne bezpieczeństwo i zgodność z prawem.",
+    "btn_privacy": "Prywatność",
+    "btn_terms": "Regulamin",
+    "btn_about": "O dzienniku"
+  },
+  "general_disclaimer": {
+    "title": "Zastrzeżenie prawne i ostrzeżenie dotyczące bezpieczeństwa",
+    "risk_title": "1. Założenie ryzyka",
+    "risk_desc": "Szlaki turystyczne, wodospady i stanowiska archeologiczne prezentowane w My Journal wiążą się z nieodłącznym ryzykiem fizycznym. Użytkownicy ponoszą pełną odpowiedzialność za bezpieczeństwo.",
+    "accuracy_title": "2. Dokładność informacji",
+    "accuracy_desc": "Chociaż dążymy do dokładności, warunki na szlaku, wzorce pogodowe i uprawnienia dostępu mogą ulec zmianie bez powiadomienia. Zawsze sprawdzaj warunki na miejscu.",
+    "drone_title": "3. Operacje dronów",
+    "drone_desc": "Piloterzy dronów muszą przestrzegać wszystkich przepisów Urzędu Lotnictwa Cywilnego Sri Lanki (CAASL). Latanie w parkach narodowych lub strefach wysokiego bezpieczeństwa bez wyraźnego zezwolenia jest surowo zabronione.",
+    "liability_title": "4. Brak odpowiedzialności",
+    "liability_desc": "Hasitha Gunasekera i My Journal nie ponoszą odpowiedzialności za jakiekolwiek obrażenia, kary prawne lub szkody wynikające z korzystania z informacji podanych na tej platformie."
+  },
+  "policies": {
+    "drone_title": "Polityka dotycząca dronów i treści",
+    "drone_subtitle": "Zgodność z prawem Urzędu Lotnictwa Cywilnego",
+    "drone_body": "Operatorzy dronów korzystający z parametrów danych routingu są ściśle zobowiązani do zapewnienia pełnej zgodności z przepisami Urzędu Lotnictwa Cywilnego Sri Lanki (CAASL). Latanie konfiguracjami dronów w obrębie aktywnych parków narodowych, sieci wojskowych wysokiego bezpieczeństwa lub parametrów sanktuariów wymaga formalnej dokumentacji Departamentu Ochrony Dzikiej Przyrody (DWC).",
+    "liability_title": "Zastrzeżenie dotyczące bezpieczeństwa i odpowiedzialności",
+    "liability_subtitle": "Klauzula odniesienia informacyjnego",
+    "liability_body": "Wszystkie szlaki turystyczne, odległe wodospady i wektory danych tras wyświetlane w My Journal są generowane do otwartego geograficznego odniesienia. Użytkownicy przyjmują na siebie absolutne ryzyko dotyczące trudności szlaku, zagrożeń krajobrazowych i korekt pogodowych."
+  },
+  "footer": {
+    "safety_title": "Zastrzeżenie dotyczące bezpieczeństwa i odpowiedzialności",
+    "safety_body": "Trekking, wędrówki i eksploracja odległych obszarów na Sri Lance wiążą się z nieodłącznym ryzykiem. Informacje w My Journal służą wyłącznie do celów informacyjnych; warunki na szlaku, pogoda i uprawnienia dostępu mogą ulec zmianie bez powiadomienia. Użytkownicy ponoszą odpowiedzialność za własne bezpieczeństwo, sprzęt i ubezpieczenie.",
+    "drone_title": "Polityka dotycząca dronów i treści",
+    "drone_body": "Wszystkie nagrania z dronów są rejestrowane zgodnie z przepisami CAASL. Latanie w parkach narodowych lub strefach wysokiego bezpieczeństwa bez zezwoleń Ministerstwa Obrony i DWC jest surowo zabronione.",
+    "contact_support": "Kontakt i wsparcie",
+    "location": "Prowincja Zachodnia, Sri Lanka",
+    "privacy": "Polityka prywatności",
+    "terms": "Regulamin",
+    "about": "O platformie"
+  },
+  "newsletter": {
+    "title": "Dołącz do wyprawy",
+    "subtitle": "Otrzymuj współrzędne, notatki terenowe i śledzenie odległego terenu bezpośrednio do swojej skrzynki odbiorczej."
+  }
+}

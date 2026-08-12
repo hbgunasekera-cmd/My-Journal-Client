@@ -1,0 +1,213 @@
+{
+  "common": {
+    "title": "My Journal",
+    "subtitle": "Exploring nature, one destination at a time.",
+    "filters": "Filter",
+    "close": "Stäng",
+    "accept": "Acceptera och fortsätt",
+    "dismiss": "Avvisa"
+  },
+  "headers": {
+    "directory_title": "Detaljerad utforskningskatalog och fältguider"
+  },
+  "hub": {
+    "engine": "Motor",
+    "engine_hint": "Tryck på \"Motor\" för att bygga din rutt",
+    "add": "Lägg till",
+    "plan": "Planera"
+  },
+  "filters": {
+    "search_placeholder": "Sök destinationer...",
+    "sort_newest": "Nyast först",
+    "sort_nearest": "Närmast först",
+    "sort_nearest": "Närmast först",
+    "apply_close": "Tillämpa och stäng filter"
+  },
+  "places": {
+    "status": {
+      "visited": "✨ Besökt",
+      "bucket_list": "⏳ Önskelista"
+    },
+    "labels": {
+      "explore": "Utforska",
+      "km_away": "KM BORT",
+      "location_required": "Platsåtkomst krävs",
+      "maps": "Kartor",
+      "gallery": "Galleri",
+      "read": "Läs"
+    }
+  },
+  "categories": {
+    "all": "Alla",
+    "waterfall": "Vattenfall",
+    "mountain": "Berg",
+    "trail": "Led",
+    "viewpoint": "Utsiktsplats",
+    "beach": "Strand",
+    "park": "Park",
+    "plateaus": "Platåer",
+    "reserved_forest": "Skyddad skog",
+    "monastery": "Kloster",
+    "archaeology": "Arkeologi",
+    "reservoir": "Reservoar",
+    "pool": "Bassäng",
+    "stream": "Bäck",
+    "location": "Plats",
+    "desc_all": "En omfattande expeditionskatalog som detaljerar avlägsna geografiska platser över hela Sri Lanka. Utforska karterade koordinater, terrängförhållanden och fotografiska fältanteckningar som spänner över vattenfall, bergsleder i höglandet, historiska kloster och dolda naturliga bäckar.",
+    "desc_waterfall": "Dokumenterar Sri Lankas spektakulära hydrologiska system och dolda kaskadkluster. Detta index detaljerar ruttleder, basvattenvolymer, säsongsmönster och säkra tillvägagångssätt för att fotografera avlägsna vattenfall inbäddade i öns centrala tedalsbassänger och bergskedjor.",
+    "desc_mountain": "Höghöjdsalpina formationer, bergstoppar och utmanande åsar över Sri Lankas centrala högland. Få tillgång till fälttelemetri angående höjdstatistik, molnskogsgränser, geografiska exponeringsprofiler och layouthändelser för vildmarkscamping.",
+    "desc_trail": "Vandringsleder i vildmarken, vandringsslingor och primitiva stigar. Spårar tekniska navigeringsindikatorer, terrängsvårighetsgrader, siktparametrar för stigar och väsentliga utrustningsriktmärken för fotexpeditioner.",
+    "desc_viewpoint": "Panorama-geografiska utsiktsplatser, branta klippstup och observationshorisonter på hög höjd över bergspass. Innehåller solspårningstider för sikt och optimala omgivningsförhållanden för vidvinkellandskapsfotografering.",
+    "desc_beach": "Avlägsna kustformationer, orörda sandstränder och marina gränser över Sri Lankas marina bälten. Dokumenterar revlayouter, lokaliserade tidvattenstendenser och folktomma kusthorisonter som lämpar sig för äventyrsspårning.",
+    "desc_park": "Nationalparker, strikt hanterade vildmarksreservat och ekologiska reservat. Information fokuserar på skyddade livsmiljögränser, migrationskorridorer, DWC-åtkomstregler (Department of Wildlife Conservation) och fältsäkerhetsprotokoll.",
+    "desc_plateaus": "Höghöjdsplatåer och unika höglandsslätters ekosystem som kännetecknas av distinkt dvärgskogsflora och öppna gräsmarker i bergen. Fältmått kartlägger skiftande molntäcke, hög vindexponering och nattliga spårförhållanden.",
+    "desc_reserved_forest": "Högst skyddade tropiska regnskogar, orörda endemiska biomer och skyddade buffertskogsområden. Dessa tekniska loggar betonar strikt vildmarkskonserveringsetik, navigering i djungelstigar och biologisk mångfald.",
+    "desc_monastery": "Forntida stenhuggna skogseremitage och meditativa helgedomskomplex undangömda inuti isolerade trädkronor. Dessa fältrapporter beskriver historiska arkitektoniska strukturer, trappvägar, grotteffekter och respektfulla utforskningsregler.",
+    "desc_archaeology": "Bevarade historiska ruiner, uråldriga strukturella komponenter, stupor och kungliga trädgårdar i Sri Lankas historiska huvudstäder. Kartläggning av spatiala nätverk mellan historiskt stenmurverk, uråldriga inskriptionskoordinater och skyddsstenar.",
+    "desc_reservoir": "Massiva historiska konstgjorda sjösystem och avrinningsområden konstruerade över öns flodbassänger. Spårar omgivande skogsbuffér, skyddande vallstigar och visuella utsiktslinjer för fotografering.",
+    "desc_pool": "Orörda naturliga stengropar, avskilda strömbassänger och vilda badvattenförekomster som finns längs bergsvattendrag. Betonar djuputvärderingar, vattenflödessäkerhetsvektorer och uppdateringar av säsongsvattenvolym.",
+    "desc_stream": "Klart naturliga vattenvägar, kallvattenkanaler och mindre flodbiflår som rinner genom täta reservat. Idealiska referenspunkter för att identifiera rena samlingspunkter för fjällvatten, mikroklimatvariationer och akvatiska biodiversitetskluster.",
+    "desc_location": "Geografiska landmärken, viktiga landsbygds-waypoints och specialiserade utforskningspunkter av intresse i Sri Lanka. Tjänar som ett lokaliserat spatialt referensramverk som förbinder olika naturterränger och spårningskoordinater."
+  },
+  "discovery": {
+    "index_heading": "Aktivt upptäcktsindexvektor",
+    "scope_label": "Omfattning",
+    "all_records": "Alla poster",
+    "meta_topographic": "Topografisk kartering",
+    "meta_backcountry": "Sri Lanka vildmarksloggar",
+    "meta_geospatial": "Geospatial fältverifiering",
+    "meta_route_index": "Ruttplaneringsindex"
+  },
+  "restriction": {
+    "public": "Allmän åtkomst",
+    "permit": "Tillstånd krävs (DWC / Skogsstyrelsen)",
+    "guide": "Lokal guide krävs",
+    "restricted": "Hög säkerhet / Begränsad"
+  },
+  "gallery": {
+    "title": "Platsgalleri",
+    "total_images": "{{count}} totalt antal bilder"
+  },
+  "ai_articles": {
+    "loading": "Genererar intelligensbrief...",
+    "fallback_notice": "Översättning av AI-analys otillgänglig. Visar standardlogg på engelska."
+  },
+  "article": {
+    "close": "Stäng",
+    "share": "Dela",
+    "view_maps": "Visa på kartor",
+    "classification": "Klassificering",
+    "region": "Regionsplats",
+    "coordinates": "Koordinatkartering",
+    "access_status": "Åtkomststatus",
+    "elevation": "Höjd över havet",
+    "difficulty": "Svårighetsgrad",
+    "expedition_highlights": "Expeditionshöjdpunkter",
+    "terrain": "Terräng",
+    "trailhead_access": "Tillgång till ledstart",
+    "history_heritage": "Historia och lokalt arv",
+    "governing_body": "Styrande organ",
+    "access_restriction": "Åtkomstbegränsningsnivå",
+    "technical_specs": "Tekniska specifikationer och utforskningsparametrar",
+    "compliance_title": "Fältanteckningar, efterlevnad och regionala bestämmelser",
+    "compliance_prose_1": "Vid utforskning av {{place}} måste vildmarksresenärer upprätthålla strikt efterlevnad av lokala regelverk. Denna sektor faller under direkt jurisdiktion och administrativ tillsyn av {{org}}.",
+    "current_status_label": "Aktuell fältåtkomststatus är kategoriserad som:",
+    "faq_title": "Snabba svar och AI-motorupptäcktsindex",
+    "question_prefix": "F:",
+    "archived_by": "Journal arkiverad av",
+    "record_ref": "Verifierad postreferens:",
+    "fallback_desc": "Geospatiala expeditionsdragningsdetaljer och miljöterrängtelemetri är indexerade nedan för programmerniska referenslayoutkluster.",
+    "load_journal_btn": "Ladda komplett teknisk journalloggvektor",
+    "discussion_count": "Diskussion",
+    "discussion_count_plural": "Diskussion ({{count}})",
+    "author_response": "Författarsvar",
+    "comment_placeholder": "Lägg till din spåranteckning...",
+    "send_comment": "Skicka kommentar",
+    "close_journal_btn": "Stäng journal",
+    "gallery_btn": "Galleri"
+  },
+  "directives": {
+    "waterfall": "Hydrologisk säkerhetsdirektiv: Var extremt försiktig nära översvämningskorridorer. Undvik att ändra naturliga blockader i stengropar, bevara flodens klarhet nedströms och packa ut allt syntetiskt avfall för att rädda ömtåliga strandzoner.",
+    "wilderness": "Vildmarksdirektiv: Följ strikt 'Leave No Trace'-principerna. Släck alla lägereldglöder helt, undvik att röja inhemsk undervegetation för tältkonfigurationer och undvik att skapa inofficiella spårgafflar.",
+    "heritage": "Arvsbevaringsdirektiv: Upprätthåll djup kulturell vördnad, respektera fotograferingsmarkörer och rör eller ändra inte gamla murverk, stenhuggningar eller strukturella tegelager.",
+    "transit": "Fjärrtrafikdirektiv: Kör försiktigt längs lösa oasfalterade grusvägar och branta bergspass. Respektera vildmarkens övergångsställen, minimera motorljudet i vildmarkskorridorer och rensa alla spårningsfordon före solnedgången.",
+    "standard": "Standard fältdirektiv: Se till att du skaffar nödvändiga tillstånd där så är tillämpligt, respektera naturliga djurlivsmiljöer och följ miljöskyddsriktlinjer som fastställts av det styrande organet innan du försöker gå in på leden."
+  },
+  "safety_overlay": {
+    "title": "Platssäkerhetsbriefing",
+    "notice_title": "Tillstånds- och säkerhetsmeddelande",
+    "jurisdiction": "står under jurisdiktion av",
+    "controlled": "Inträdet är strikt kontrollerat. Du måste skaffa ett giltigt tillstånd från det lokala kontoret innan ditt besök.",
+    "guidelines": "Se till att du följer de lokala riktlinjer som fastställts av myndigheterna för detta område.",
+    "footer_disclaimer": "Genom att fortsätta att titta på kartan erkänner du att vandringsförhållandena kan ändras snabbt. Du tar fullt ansvar för din säkerhet.",
+    "button": "Jag förstår, visa kartan",
+    "no_restriction": "Ingen begränsning",
+    "tickets_required": "Biljetter krävs",
+    "permit_required": "Tillstånd krävs",
+    "no_entry": "Ingen inresa",
+    "default_authority": "Lokala myndigheter"
+  },
+  "about": {
+    "about_title": "Om plattformen och utforskaren",
+    "subtitle": "My Journal Sri Lanka",
+    "myself_title": "Om mig själv",
+    "myself_body": "Hej, jag är Hasitha Gunasekera. Jag är utforskare, bilturist och utomhusfotograf dedikerad till att spåra upp okända platser över hela Sri Lanka. Min sanna passion ligger i vildmarksvandring, avlägsen höghöjdscamping i vildmarken och att utforska okända vattenfallskaskader som är undangömda djupt inne i bergskedjorna.",
+    "site_title": "Om webbplatsen",
+    "site_body": "My Journal fungerar som en specialiserad, teknisk fältlogg som beskriver avlägsna koordinater, rumsliga register och spåranteckningar över hela Sri Lanka. Den är konstruerad för att integrera vildmarkskarteringsindikatorer, väderövervakare och rutttelemetri och syftar till att säkra äventyrsresenärer till dolda destinationer samtidigt som den fastställer strikta miljöskyddsstandarder.",
+    "spots_title": "Sri Lankas naturattraktioner",
+    "spots_body": "Sri Lanka hyser fenomenal geografisk biologisk mångfald, som sträcker sig från de täta bergsryggarna i Knuckles Forest Reserve till orörda kaskadkluster som Bambarakanda och Diyaluma Falls. Denna öppna liggare indexerar bergsplatåer, djupa naturliga pooler och historiska skogseremitage för att visa upp rå terräng på ön samtidigt som den förespråkar strikta naturvårdsmått.",
+    "media_title": "Media och upphovsrätt",
+    "media_body": "Allt fotografiskt innehåll som visas på denna plattform fångas personligen av mig med min iPhone och drönare. Bilder genomgår endast lätt redigering på mobila enheter för att bevara sin råa, autentiska kärnan. Alla rättigheter till varje foto är strikt reserverade under mitt namn, Hasitha Gunasekera. Otillåten reproduktion eller kommersiell användning är förbjuden."
+  },
+  "legal": {
+    "privacy_title": "Integritetspolicy",
+    "privacy_body": "Din integritet övervakas strikt. Personliga spatiala parametrar och spårningstelemetri hanteras enbart på klientsidan.",
+    "privacy_s1_title": "01. Insamling av information",
+    "privacy_s1_desc": "För att tillhandahålla distansberäkningar och ruttplanering kan vi komma åt ungefärlig platsinformation. Vi samlar även in användningsdata för att optimera prestanda.",
+    "privacy_s2_title": "02. Google AdSense och cookies",
+    "privacy_s2_desc": "Denna webbplats använder Google AdSense för att visa annonser. Google använder cookies för att visa annonser baserat på dina besök. Du kan välja bort detta via Googles annonsinställningar.",
+    "terms_title": "Användarvillkor",
+    "terms_body": "Använd dataruter ansvarsfullt. Vildmarksexpeditioner medför risker; fältmått fungerar endast som geografiska markörer.",
+    "terms_s1_title": "01. Godkännande av villkor",
+    "terms_s1_desc": "Genom att använda My Journal godkänner du dessa villkor, alla tillämpliga lagar och förordningar i Sri Lanka.",
+    "terms_s2_title": "02. Ansvarsfriskrivning",
+    "terms_s2_desc": "Vandring och drönaranvändning innebär risker. Tillhandahållen information är endast för referens; användare är själva ansvariga för sin egen säkerhet och efterlevnad av lagar.",
+    "btn_privacy": "Integritet",
+    "btn_terms": "Villkor",
+    "btn_about": "Om journalen"
+  },
+  "general_disclaimer": {
+    "title": "Juridisk friskrivning och säkerhetsvarning",
+    "risk_title": "1. Antagande av risk",
+    "risk_desc": "Vandringslederna, vattenfallen och de arkeologiska platserna som visas på My Journal innebär inneboende fysiska risker. Användare tar fullt ansvar för säkerheten.",
+    "accuracy_title": "2. Informationsnoggrannhet",
+    "accuracy_desc": "Även om vi strävar efter noggrannhet kan spårförhållanden, vädermönster och åtkomstbehörigheter ändras utan föregående meddelande. Verifiera alltid förhållandena lokalt.",
+    "drone_title": "3. Drönaroperationer",
+    "drone_desc": "Drönarpiloter måste följa alla regler från Civil Aviation Authority of Sri Lanka (CAASL). Det är strängt förbjudet att flyga i nationalparker eller högsäkerhetszoner utan uttryckligt tillstånd.",
+    "liability_title": "4. Ingen ansvarsskyldighet",
+    "liability_desc": "Hasitha Gunasekera och My Journal ansvarar inte för några skador, juridiska påföljder eller skador till följd av användningen av information som tillhandahålls på denna plattform."
+  },
+  "policies": {
+    "drone_title": "Drönar- och innehållspolicy",
+    "drone_subtitle": "Juridisk efterlevnad av civila luftfartsmyndigheten",
+    "drone_body": "Drönarpiloter som använder ruttdataparametrar är strikt skyldiga att säkerställa full efterlevnad av Civil Aviation Authority of Sri Lanka (CAASL) regler. Att flyga drönarkonfigurationer inom aktiva nationalparker, högsäkerhetsmilitära nätverk eller helgedomsparametrar kräver formell dokumentation från Department of Wildlife Conservation (DWC).",
+    "liability_title": "Säkerhets- och ansvarsfriskrivning",
+    "liability_subtitle": "Informativ referensklausul",
+    "liability_body": "Alla vandringsleder, avlägsna vattenfall och ruttdatavektorer som visas i My Journal genereras för öppen källkodsgeografisk referens. Användare tar absolut risk när det gäller ledens svårighetsgrad, landskapsrisker och väderjusteringar."
+  },
+  "footer": {
+    "safety_title": "Säkerhets- och ansvarsfriskrivning",
+    "safety_body": "Vandring, stavgång och utforskning av avlägsna områden i Sri Lanka innebär inneboende risker. Information om My Journal är endast för referens; ledens förhållanden, väder och åtkomstbehörigheter kan ändras utan föregående meddelande. Användare är ansvariga för sin egen säkerhet, utrustning och försäkring.",
+    "drone_title": "Drönar- och innehållspolicy",
+    "drone_body": "Allt drönarmaterial fångas i enlighet med CAASL-reglerna. Att flyga i nationalparker eller högsäkerhetszoner utan tillstånd från försvarsministeriet och DWC är strängt förbjudet.",
+    "contact_support": "Kontakt och support",
+    "location": "Western Province, Sri Lanka",
+    "privacy": "Integritetspolicy",
+    "terms": "Villkor",
+    "about": "Om plattformen"
+  },
+  "newsletter": {
+    "title": "Gå med i expeditionen",
+    "subtitle": "Få koordinater, fältanteckningar och spårning av avlägsna terränger direkt till din inkorg."
+  }
+}

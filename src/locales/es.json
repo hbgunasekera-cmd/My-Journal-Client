@@ -1,0 +1,212 @@
+{
+  "common": {
+    "title": "My Journal",
+    "subtitle": "Exploring nature, one destination at a time.",
+    "filters": "Filtros",
+    "close": "Cerrar",
+    "accept": "Aceptar y continuar",
+    "dismiss": "Descartar"
+  },
+  "headers": {
+    "directory_title": "Directorio de exploración detallada y guías de campo"
+  },
+  "hub": {
+    "engine": "Motor",
+    "engine_hint": "Toca \"Motor\" para construir tu ruta",
+    "add": "Añadir",
+    "plan": "Planificar"
+  },
+  "filters": {
+    "search_placeholder": "Buscar destinos...",
+    "sort_newest": "Más recientes primero",
+    "sort_nearest": "Más cercanos primero",
+    "apply_close": "Aplicar y cerrar filtros"
+  },
+  "places": {
+    "status": {
+      "visited": "✨ Visitado",
+      "bucket_list": "⏳ Lista de deseos"
+    },
+    "labels": {
+      "explore": "Explorar",
+      "km_away": "KM DE DISTANCIA",
+      "location_required": "Acceso a la ubicación requerido",
+      "maps": "Mapas",
+      "gallery": "Galería",
+      "read": "Leer"
+    }
+  },
+  "categories": {
+    "all": "Todos",
+    "waterfall": "Cascada",
+    "mountain": "Montaña",
+    "trail": "Sendero",
+    "viewpoint": "Mirador",
+    "beach": "Playa",
+    "park": "Parque",
+    "plateaus": "Mesetas",
+    "reserved_forest": "Bosque reservado",
+    "monastery": "Monasterio",
+    "archaeology": "Arqueología",
+    "reservoir": "Embalse",
+    "pool": "Poza",
+    "stream": "Arroyo",
+    "location": "Ubicación",
+    "desc_all": "Un directorio de expediciones completo que detalla ubicaciones geográficas remotas en todo Sri Lanka. Explore coordenadas mapeadas, condiciones del terreno y notas de campo fotográficas que abarcan cascadas, senderos de montaña en las tierras altas, monasterios históricos y arroyos naturales ocultos.",
+    "desc_waterfall": "Documentación de los espectaculares sistemas hidrológicos de Sri Lanka y grupos de cascadas ocultas. Este índice detalla rutas de senderismo, volúmenes de agua base, patrones estacionales y enfoques seguros para fotografiar cascadas remotas integradas en las cuencas de los valles de té centrales y las cadenas montañosas de la isla.",
+    "desc_mountain": "Formaciones alpinas de gran altitud, picos montañosos y crestas desafiantes en las tierras altas centrales de Sri Lanka. Acceso a telemetría de campo sobre estadísticas de elevación, bordes de bosques nubosos, perfiles de exposición geográfica y vectores de diseño para acampada libre.",
+    "desc_trail": "Senderos de trekking en áreas remotas, circuitos de senderismo en plena naturaleza y caminos primitivos. Rastreos de indicadores de navegación técnica, escalas de dificultad del terreno, parámetros de visibilidad del camino y puntos de referencia esenciales para la preparación del equipo en expediciones a pie.",
+    "desc_viewpoint": "Miradores geográficos panorámicos, desniveles de acantilados pronunciados y horizontes de observación a gran altitud a través de pasos de montaña. Incluye cronogramas de visibilidad de seguimiento solar y condiciones ambientales óptimas para la fotografía de paisajes de gran angular.",
+    "desc_beach": "Formaciones costeras remotas, costas de arena prístina y límites marítimos a través de los cinturones marinos de Sri Lanka. Documentación de diseños de arrecifes, tendencias de mareas localizadas y horizontes costeros poco concurridos adecuados para el seguimiento de aventuras.",
+    "desc_park": "Parques nacionales, santuarios de fauna silvestre estrictamente gestionados y reservas ecológicas. La información se centra en los límites de hábitats protegidos, corredores de migración, reglas de acceso del Departamento de Conservación de la Vida Silvestre (DWC) y protocolos de seguridad en el campo.",
+    "desc_plateaus": "Mesetas de gran altitud y ecosistemas de llanuras de tierras altas únicos caracterizados por una flora de bosque enano distintiva y praderas montanas abiertas. Las métricas de campo mapean la cobertura nubosa cambiante, las exposiciones a vientos fuertes y las condiciones de los senderos nocturnos.",
+    "desc_reserved_forest": "Selvas tropicales altamente protegidas, biomas endémicos prístinos y zonas de bosques de amortiguamiento protegidas. Estos registros técnicos enfatizan la ética estricta de conservación de la naturaleza, la navegación por senderos de selva profunda y los índices de diversidad biológica.",
+    "desc_monastery": "Antiguas ermitas forestales excavadas en la roca y complejos de santuarios meditativos escondidos dentro de doseles aislados. Estos informes de campo describen estructuras arquitectónicas históricas, rutas de escalones, inscripciones en cuevas y reglas de exploración basadas en el respeto.",
+    "desc_archaeology": "Ruinas históricas conservadas, componentes estructurales antiguos, estupas y jardines reales en todas las capitales históricas de Sri Lanka. Mapeo de redes espaciales entre mampostería de piedra histórica, coordenadas de inscripciones antiguas y piedras de guardia.",
+    "desc_reservoir": "Masivos sistemas de lagos artificiales históricos y cuencas hidrográficas diseñadas en todas las cuencas fluviales de la isla. Rastreos de amortiguadores forestales circundantes, vías de terraplén protectoras y horizontes de puntos de vista visuales para la fotografía.",
+    "desc_pool": "Piscinas de roca naturales prístinas, cuencas de arroyos aisladas y cuerpos de agua para natación silvestre que se encuentran a lo largo de los lechos de los ríos de montaña. Enfatiza las evaluaciones de profundidad, los vectores de seguridad del flujo de agua y las actualizaciones del volumen de agua estacional.",
+    "desc_stream": "Vías fluviales naturales claras, canales de agua fría y afluentes de ríos menores que fluyen a través de reservas densas. Puntos de referencia ideales para identificar nodos de recolección de agua de montaña limpia, variaciones microclimáticas y grupos de biodiversidad acuática.",
+    "desc_location": "Hitos geográficos, puntos de parada rurales notables y puntos de interés exploratorios especializados en todo Sri Lanka. Sirve como marco de referencia espacial localizado que conecta diferentes terrenos naturales y coordenadas de seguimiento."
+  },
+  "discovery": {
+    "index_heading": "Vector de índice de descubrimiento activo",
+    "scope_label": "Alcance",
+    "all_records": "Todos los registros",
+    "meta_topographic": "Cartografía topográfica",
+    "meta_backcountry": "Registros de áreas remotas de Sri Lanka",
+    "meta_geospatial": "Verificación de campo geoespacial",
+    "meta_route_index": "Índice de planificación de rutas"
+  },
+  "restriction": {
+    "public": "Acceso público",
+    "permit": "Permiso necesario (DWC / Dept. de Bosques)",
+    "guide": "Guía local requerido",
+    "restricted": "Alta seguridad / Restringido"
+  },
+  "gallery": {
+    "title": "Galería de ubicación",
+    "total_images": "{{count}} Imágenes totales"
+  },
+  "ai_articles": {
+    "loading": "Generando informe de inteligencia...",
+    "fallback_notice": "Traducción de desglose de IA no disponible. Mostrando registro predeterminado en inglés."
+  },
+  "article": {
+    "close": "Cerrar",
+    "share": "Compartir",
+    "view_maps": "Ver en mapas",
+    "classification": "Clasificación",
+    "region": "Ubicación de la región",
+    "coordinates": "Mapeo de coordenadas",
+    "access_status": "Estado de acceso",
+    "elevation": "Elevación",
+    "difficulty": "Dificultad",
+    "expedition_highlights": "Lo más destacado de la expedición",
+    "terrain": "Terreno",
+    "trailhead_access": "Acceso al inicio del sendero",
+    "history_heritage": "Historia y patrimonio local",
+    "governing_body": "Organismo rector",
+    "access_restriction": "Nivel de restricción de acceso",
+    "technical_specs": "Especificaciones técnicas y parámetros de exploración",
+    "compliance_title": "Notas de campo, cumplimiento y regulaciones regionales",
+    "compliance_prose_1": "Al explorar {{place}}, los viajeros de áreas remotas deben mantener un estricto apego a los marcos regulatorios locales. Este sector se encuentra bajo la jurisdicción directa y supervisión administrativa de {{org}}.",
+    "current_status_label": "El estado actual de acceso al campo se categoriza como:",
+    "faq_title": "Respuestas rápidas e índice de descubrimiento del motor de IA",
+    "question_prefix": "P:",
+    "archived_by": "Diario archivado por",
+    "record_ref": "Referencia de registro verificada:",
+    "fallback_desc": "Los detalles de enrutamiento de expedición geoespacial y la telemetría del terreno ambiental se indexan a continuación para grupos de diseño de referencia programática.",
+    "load_journal_btn": "Cargar vector de diario técnico completo",
+    "discussion_count": "Discusión",
+    "discussion_count_plural": "Discusión ({{count}})",
+    "author_response": "Respuesta del autor",
+    "comment_placeholder": "Añade tu nota de sendero...",
+    "send_comment": "Enviar comentario",
+    "close_journal_btn": "Cerrar diario",
+    "gallery_btn": "Galería"
+  },
+  "directives": {
+    "waterfall": "Directiva de seguridad hidrológica: Extreme las precauciones cerca de los corredores de inundaciones repentinas. Evite alterar los bloqueos de pozas de roca naturales, preserve la claridad del río río abajo y recoja todos los desechos sintéticos para salvar los delicados ekozona ribereños.",
+    "wilderness": "Directiva de naturaleza salvaje en áreas remotas: Adhiérase estrictamente a las doctrinas de 'No dejar rastro'. Apague por completo todas las brasas de fogatas, evite despejar el sotobosque nativo para configuraciones de tiendas de campaña y evite establecer bifurcaciones de senderos no oficiales.",
+    "heritage": "Directiva de preservación del patrimonio: Mantenga una profunda reverencia cultural, respete los marcadores de límite de fotografía y no toque ni altere la mampostería antigua, las tallas de piedra o las capas de ladrillo estructural.",
+    "transit": "Directiva de tránsito remoto: Conduzca con precaución a lo largo de senderos de grava sin pavimentar sueltos y pasos de montaña empinados. Respete los puntos de cruce de vida silvestre, minimice el ruido del motor en los corredores de vida silvestre y despeje todos los vehículos de seguimiento antes del atardecer.",
+    "standard": "Directiva de campo estándar: Asegúrese de obtener las autorizaciones necesarias cuando corresponda, respete los hábitats naturales de la vida silvestre y siga las pautas de preservación ambiental establecidas por el organismo rector antes de intentar ingresar al sendero."
+  },
+  "safety_overlay": {
+    "title": "Informe de seguridad de ubicación",
+    "notice_title": "Aviso de permiso y seguridad",
+    "jurisdiction": "está bajo la jurisdicción de",
+    "controlled": "El acceso está estrictamente controlado. Debe obtener un permiso válido de la oficina local antes de su visita.",
+    "guidelines": "Asegúrese de seguir las pautas locales establecidas por las autoridades para esta área.",
+    "footer_disclaimer": "Al continuar para ver el mapa, reconoce que las condiciones de trekking están sujetas a cambios rápidos. Usted asume toda la responsabilidad de su seguridad.",
+    "button": "Entendido, ver mapa",
+    "no_restriction": "Sin restricción",
+    "tickets_required": "Entradas requeridas",
+    "permit_required": "Permiso requerido",
+    "no_entry": "No hay entrada",
+    "default_authority": "Autoridades locales"
+  },
+  "about": {
+    "about_title": "Acerca de la plataforma y el explorador",
+    "subtitle": "My Journal Sri Lanka",
+    "myself_title": "Acerca de mí",
+    "myself_body": "Hola, soy Hasitha Gunasekera. Soy explorador, viajero por carretera y fotógrafo de naturaleza dedicado a rastrear espacios desconocidos en Sri Lanka. Mi verdadera pasión radica en el trekking en áreas remotas, el campamento en la naturaleza de gran altitud y la exploración de cascadas inexploradas escondidas en lo profundo de las cadenas montañosas.",
+    "site_title": "Acerca del sitio",
+    "site_body": "My Journal sirve como un registro de campo técnico especializado que detalla coordenadas remotas, registros espaciales y notas de senderos en Sri Lanka. Diseñado para integrar indicadores de mapeo de áreas remotas, monitores meteorológicos y telemetría de rutas, su objetivo es conectar a los viajeros de aventuras de manera segura con destinos ocultos al tiempo que establece estrictos estándares de seguridad ambiental.",
+    "spots_title": "Atracciones naturales de Sri Lanka",
+    "spots_body": "Sri Lanka alberga una biodiversidad geográfica fenomenal, que se extiende desde las densas crestas montañosas de la Reserva Forestal de Knuckles hasta grupos de cascadas prístinas como Bambarakanda y las cataratas Diyaluma. Este libro mayor abierto indexa mesetas de llanuras de montaña, piscinas naturales profundas y ermitas forestales históricas para mostrar el terreno bruto de la isla al tiempo que aboga por estrictas métricas de conservación de reservas naturales.",
+    "media_title": "Medios y derechos de autor",
+    "media_body": "Todo el contenido fotográfico presentado en esta plataforma es capturado personalmente por mí usando mi iPhone y dron. Las imágenes se someten solo a una edición ligera en dispositivos móviles para preservar su esencia cruda y auténtica. Todos los derechos de cada foto están estrictamente reservados bajo mi nombre, Hasitha Gunasekera. Se prohíbe la reproducción no autorizada o el uso comercial."
+  },
+  "legal": {
+    "privacy_title": "Política de privacidad",
+    "privacy_body": "Su privacidad se supervisa estrictamente. Los parámetros espaciales personales y la telemetría de seguimiento se gestionan puramente del lado del cliente.",
+    "privacy_s1_title": "01. Recopilación de información",
+    "privacy_s1_desc": "Para proporcionar cálculos de distancia y enrutamiento, podemos acceder a datos de ubicación aproximados. También recopilamos datos de uso para optimizar el rendimiento.",
+    "privacy_s2_title": "02. Google AdSense y cookies",
+    "privacy_s2_desc": "Este sitio utiliza Google AdSense para publicar anuncios. Google utiliza cookies para publicar anuncios basados en sus visitas. Puede optar por no participar a través de la Configuración de anuncios de Google.",
+    "terms_title": "Términos de servicio",
+    "terms_body": "Utilice las rutas de datos de manera responsable. Las expediciones a áreas remotas conllevan riesgos; las métricas de campo sirven solo como marcadores geográficos.",
+    "terms_s1_title": "01. Aceptación de los términos",
+    "terms_s1_desc": "Al utilizar My Journal, usted acepta estos términos, todas las leyes y regulaciones aplicables en Sri Lanka.",
+    "terms_s2_title": "02. Descargo de responsabilidad de responsabilidad",
+    "terms_s2_desc": "El trekking y el uso de drones implican riesgos. La información proporcionada es para referencia; los usuarios son responsables de su propia seguridad y cumplimiento legal.",
+    "btn_privacy": "Privacidad",
+    "btn_terms": "Términos",
+    "btn_about": "Acerca del diario"
+  },
+  "general_disclaimer": {
+    "title": "Descargo de responsabilidad legal y advertencia de seguridad",
+    "risk_title": "1. Asunción de riesgos",
+    "risk_desc": "Las rutas de senderismo, cascadas y sitios arqueológicos presentados en My Journal implican riesgos físicos inherentes. Los usuarios asumen toda la responsabilidad de la seguridad.",
+    "accuracy_title": "2. Precisión de la información",
+    "accuracy_desc": "Si bien nos esforzamos por lograr la precisión, las condiciones de los senderos, los patrones climáticos y los permisos de acceso pueden cambiar sin previo aviso. Verifique siempre las condiciones localmente.",
+    "drone_title": "3. Operaciones de drones",
+    "drone_desc": "Los pilotos de drones deben cumplir con todas las regulaciones de la Autoridad de Aviación Civil de Sri Lanka (CAASL). Volar en parques nacionales o zonas de alta seguridad sin autorización explícita está estrictamente prohibido.",
+    "liability_title": "4. Sin responsabilidad",
+    "liability_desc": "Hasitha Gunasekera y My Journal no son responsables de ninguna lesión, sanción legal o daño resultante del uso de la información proporcionada en esta plataforma."
+  },
+  "policies": {
+    "drone_title": "Política de drones y contenido",
+    "drone_subtitle": "Cumplimiento legal de la Autoridad de Aviación Civil",
+    "drone_body": "Los pilotos de drones que utilicen parámetros de datos de enrutamiento deben garantizar estrictamente el pleno cumplimiento de las regulaciones de la Autoridad de Aviación Civil de Sri Lanka (CAASL). Volar configuraciones de drones dentro de parques nacionales activos, redes militares de alta seguridad o parámetros de santuarios requiere documentación formal del Departamento de Conservación de la Vida Silvestre (DWC).",
+    "liability_title": "Descargo de responsabilidad de seguridad y responsabilidad",
+    "liability_subtitle": "Cláusula de referencia informativa",
+    "liability_body": "Todas las rutas de senderismo, cascadas remotas y vectores de datos de rutas que se muestran en My Journal se generan para referencia geográfica de código abierto. Los usuarios asumen el riesgo absoluto con respecto a la dificultad del sendero, los peligros del paisaje y los ajustes meteorológicos."
+  },
+  "footer": {
+    "safety_title": "Descargo de responsabilidad de seguridad y responsabilidad",
+    "safety_body": "El trekking, el senderismo y la exploración de áreas remotas en Sri Lanka implican riesgos inherentes. La información en My Journal es solo de referencia; las condiciones de los senderos, el clima y los permisos de acceso pueden cambiar sin previo aviso. Los usuarios son responsables de su propia seguridad, equipo y seguro.",
+    "drone_title": "Política de drones y contenido",
+    "drone_body": "Todas las imágenes de drones se capturan de conformidad con las regulaciones de la CAASL. Volar en parques nacionales o zonas de alta seguridad sin los permisos del Ministerio de Defensa y DWC está estrictamente prohibido.",
+    "contact_support": "Contacto y soporte",
+    "location": "Provincia Occidental, Sri Lanka",
+    "privacy": "Política de privacidad",
+    "terms": "Términos y condiciones",
+    "about": "Acerca de la plataforma"
+  },
+  "newsletter": {
+    "title": "Únete a la expedición",
+    "subtitle": "Obtén coordenadas, notas de campo y seguimiento de terreno remoto directamente en tu bandeja de entrada."
+  }
+}
