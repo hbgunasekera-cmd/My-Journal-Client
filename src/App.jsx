@@ -653,11 +653,13 @@ export const getInteractionMetadata = async () => {
 
 /**
  * Logs visitor interactions to Supabase backend tracking function
- */
+*/
+
+
 export const logVisit = async (path = null) => {
   // 1. Skip logging on local development hosts
   const host = window.location.hostname;
-  if (host === 'localhost' || host === '192.168.8.176') return;
+  if (host === 'localhost' || host === '127.0.0.1' || host === '192.168.8.176') return;
 
   // 2. Check for owner mode query param or stored token
   const urlParams = new URLSearchParams(window.location.search);
@@ -666,7 +668,7 @@ export const logVisit = async (path = null) => {
   }
   if (localStorage.getItem('owner_auth_token') === 'owner' || !supabaseClient) return;
 
-  // Safe URI decoder to prevent crashes on malformed URIs
+  // Safe URI decoder
   const safeDecode = (str) => {
     try {
       return decodeURIComponent(str);
@@ -675,49 +677,47 @@ export const logVisit = async (path = null) => {
     }
   };
 
-  // 3. Resolve and normalize logging path
-  let loggingPath = path;
+  // 3. Extract QR Code / UTM parameters reliably
+  const utmSource = (urlParams.get('utm_source') || '').toLowerCase();
+  const rawPath = path || window.location.pathname;
 
-  if (!loggingPath) {
-    const rawPath = window.location.pathname;
+  // 4. Resolve and normalize logging path
+  let loggingPath = rawPath;
 
-    if (rawPath === '/' || rawPath === '') {
-      loggingPath = 'Main Page';
-    } else if (rawPath.startsWith('/place/')) {
-      const slug = rawPath.replace('/place/', '').replace(/\/$/, '');
-      const cleanSlug = safeDecode(slug).toLowerCase().trim().replace(/-/g, ' ');
-      loggingPath = `Place/${cleanSlug}`;
-    } else if (rawPath.startsWith('/gallery/')) {
-      const slug = rawPath.replace('/gallery/', '').replace(/\/$/, '');
-      const cleanSlug = safeDecode(slug).toLowerCase().trim().replace(/-/g, ' ');
-      loggingPath = `Gallery/${cleanSlug}`;
-    } else {
-      loggingPath = safeDecode(rawPath).toLowerCase().replace(/^\/+|\/+$/g, '');
-    }
+  if (rawPath === '/' || rawPath === '') {
+    loggingPath = 'Main Page';
+  } else if (rawPath.startsWith('/place/')) {
+    const slug = rawPath.replace('/place/', '').split('?')[0].replace(/\/$/, '');
+    const cleanSlug = safeDecode(slug).toLowerCase().trim().replace(/-/g, ' ');
+    loggingPath = `Place/${cleanSlug}`;
+  } else if (rawPath.startsWith('/gallery/')) {
+    const slug = rawPath.replace('/gallery/', '').split('?')[0].replace(/\/$/, '');
+    const cleanSlug = safeDecode(slug).toLowerCase().trim().replace(/-/g, ' ');
+    loggingPath = `Gallery/${cleanSlug}`;
+  } else {
+    loggingPath = safeDecode(rawPath.split('?')[0]).toLowerCase().replace(/^\/+|\/+$/g, '');
   }
 
-  // 4. Rate-limiting cache check (10 seconds per unique path)
+  // 5. Rate-limiting check (10 seconds per unique path)
   const now = Date.now();
   const lastLoggedTime = recentLogsCache.get(loggingPath);
   if (lastLoggedTime && now - lastLoggedTime < 10000) return;
 
-  // Update cache & prune entries older than 60s
   recentLogsCache.set(loggingPath, now);
   recentLogsCache.forEach((timestamp, key) => {
     if (now - timestamp > 60000) recentLogsCache.delete(key);
   });
 
-  // 5. Deduplicate per-session visits
+  // 6. Deduplicate per-session visits
   const sessionKey = `logged_visit_${loggingPath}`;
   if (sessionStorage.getItem(sessionKey)) return;
   sessionStorage.setItem(sessionKey, 'true');
 
-  // 6. Gather visitor analytics data safely
+  // 7. Gather visitor analytics data
   const ua = navigator.userAgent || "";
-  const utmSource = urlParams.get('utm_source')?.toLowerCase() || "";
   const referrer = document.referrer ? document.referrer.toLowerCase() : "";
 
-  // 7. Invoke backend tracking function
+  // 8. Invoke backend tracking function
   try {
     const { error } = await supabaseClient.functions.invoke('track-visit', {
       body: {
@@ -725,12 +725,11 @@ export const logVisit = async (path = null) => {
         user_agent: ua,
         referrer: referrer,
         utm_source: utmSource,
-        is_webdriver: navigator.webdriver || false
+        is_webdriver: Boolean(navigator.webdriver)
       }
     });
     if (error) throw error;
   } catch (err) {
-    // Revert session & cache state on failure so retry works later
     sessionStorage.removeItem(sessionKey);
     recentLogsCache.delete(loggingPath);
     console.error('Logging failed:', err);
