@@ -657,48 +657,39 @@ export const getInteractionMetadata = async () => {
 
 
 export const logVisit = async (path = null) => {
-  // 1. Skip logging on local development hosts
+  // 1. Localhost exclusion
   const host = window.location.hostname;
   if (host === 'localhost' || host === '127.0.0.1' || host === '192.168.8.176') return;
 
-  // 2. Check for owner mode query param or stored token
+  // 2. Owner mode bypass
   const urlParams = new URLSearchParams(window.location.search);
   if (urlParams.get('mode') === 'owner') {
     localStorage.setItem('owner_auth_token', 'owner');
   }
   if (localStorage.getItem('owner_auth_token') === 'owner' || !supabaseClient) return;
 
-  // Safe URI decoder
   const safeDecode = (str) => {
-    try {
-      return decodeURIComponent(str);
-    } catch {
-      return str;
-    }
+    try { return decodeURIComponent(str); } catch { return str; }
   };
 
-  // 3. Extract QR Code / UTM parameters reliably
+  // 3. Extract QR scan parameters and normalize path
   const utmSource = (urlParams.get('utm_source') || '').toLowerCase();
   const rawPath = path || window.location.pathname;
 
-  // 4. Resolve and normalize logging path
   let loggingPath = rawPath;
-
   if (rawPath === '/' || rawPath === '') {
     loggingPath = 'Main Page';
   } else if (rawPath.startsWith('/place/')) {
     const slug = rawPath.replace('/place/', '').split('?')[0].replace(/\/$/, '');
-    const cleanSlug = safeDecode(slug).toLowerCase().trim().replace(/-/g, ' ');
-    loggingPath = `Place/${cleanSlug}`;
+    loggingPath = `Place/${safeDecode(slug).toLowerCase().trim().replace(/-/g, ' ')}`;
   } else if (rawPath.startsWith('/gallery/')) {
     const slug = rawPath.replace('/gallery/', '').split('?')[0].replace(/\/$/, '');
-    const cleanSlug = safeDecode(slug).toLowerCase().trim().replace(/-/g, ' ');
-    loggingPath = `Gallery/${cleanSlug}`;
+    loggingPath = `Gallery/${safeDecode(slug).toLowerCase().trim().replace(/-/g, ' ')}`;
   } else {
     loggingPath = safeDecode(rawPath.split('?')[0]).toLowerCase().replace(/^\/+|\/+$/g, '');
   }
 
-  // 5. Rate-limiting check (10 seconds per unique path)
+  // 4. Rate-limit cache check (10 seconds per path)
   const now = Date.now();
   const lastLoggedTime = recentLogsCache.get(loggingPath);
   if (lastLoggedTime && now - lastLoggedTime < 10000) return;
@@ -708,22 +699,18 @@ export const logVisit = async (path = null) => {
     if (now - timestamp > 60000) recentLogsCache.delete(key);
   });
 
-  // 6. Deduplicate per-session visits
+  // 5. Session deduplication
   const sessionKey = `logged_visit_${loggingPath}`;
   if (sessionStorage.getItem(sessionKey)) return;
   sessionStorage.setItem(sessionKey, 'true');
 
-  // 7. Gather visitor analytics data
-  const ua = navigator.userAgent || "";
-  const referrer = document.referrer ? document.referrer.toLowerCase() : "";
-
-  // 8. Invoke backend tracking function
+  // 6. Invoke Edge Function
   try {
     const { error } = await supabaseClient.functions.invoke('track-visit', {
       body: {
         page_path: loggingPath,
-        user_agent: ua,
-        referrer: referrer,
+        user_agent: navigator.userAgent || "",
+        referrer: document.referrer ? document.referrer.toLowerCase() : "",
         utm_source: utmSource,
         is_webdriver: Boolean(navigator.webdriver)
       }
