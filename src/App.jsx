@@ -833,15 +833,15 @@ export const calculateMealAndStayMilestones = (routeData) => {
 const genAI = new GoogleGenerativeAI(import.meta.env.VITE_ARTICLE_KEY);
 
 const MODEL_PRIORITY_LIST = [
-  "models/gemini-3.5-flash",
-  "gemini-1.5-flash",
-  "gemini-1.5-pro"
+  "gemini-2.5-flash",
+  "gemini-2.5-pro",
+  "gemini-1.5-flash" // Fallback
 ];
 
 const generationConfig = {
-  maxOutputTokens: 8192,
-  temperature: 0.2, // Lower temperature to reduce hallucinations and enforce strictness
-  responseMimeType: "application/json", // Force strict JSON mode
+  maxOutputTokens: 65536, // Gemini 2.5 Flash max limit
+  temperature: 0.2,
+  responseMimeType: "application/json",
 };
 
 const SUPPORTED_LANGUAGES = {
@@ -5068,458 +5068,498 @@ function App() {
         HUMAN VISUAL INTERFACE (DYNAMIC MODAL OVERLAY)
         ======================================================================= */}
       {isArticleOpen && viewingArticle && (() => {
-        // Extract and normalize schema attributes with fallbacks for legacy plain text entries
-        const article = typeof viewingArticle.ai_article === 'object' && viewingArticle.ai_article !== null
-          ? viewingArticle.ai_article
-          : {};
-        const metrics = article.metrics || {};
-        const about = article.about || {};
-        const storyText = getActiveContent('story') || article.story || (typeof viewingArticle.ai_article === 'string' ? viewingArticle.ai_article : '');
-        const historyText = getActiveContent('history') || article.history || '';
-        const highlights = article.highlights || [];
+  // 1. Safely parse ai_article (handles both Objects and JSON Strings)
+  let article = {};
+  if (typeof viewingArticle.ai_article === 'object' && viewingArticle.ai_article !== null) {
+    article = viewingArticle.ai_article;
+  } else if (typeof viewingArticle.ai_article === 'string') {
+    try {
+      article = JSON.parse(viewingArticle.ai_article);
+    } catch (e) {
+      console.error("Failed to parse ai_article JSON:", e);
+      article = {};
+    }
+  }
 
-        // Regulatory Metadata & Fallbacks
-        const governingOrg = viewingArticle.governing_org || 'Department of Wildlife Conservation / Local Authority';
+  const metrics = article.metrics || {};
+  const about = article.about || {};
+  const seoIntro = article.seo_intro || '';
+  const storyText = getActiveContent('story') || article.story || (typeof viewingArticle.ai_article === 'string' ? viewingArticle.ai_article : '');
+  const historyText = getActiveContent('history') || article.history || '';
+  const highlights = article.highlights || [];
 
-        // Restriction Level Categorization Logic
-        const restrictionLevel = viewingArticle.restriction_level?.trim() || 'None';
-        let statusLabel = "No Restriction";
-        let badgeColor = "bg-emerald-100 text-emerald-800 border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-400 dark:border-emerald-900/30";
+  // 2. Safe FAQ extraction with key fallbacks (faqs, faq, faq_list)
+  const rawFaqs = article.faqs || article.faq || article.faq_list || [];
+  const faqs = Array.isArray(rawFaqs) ? rawFaqs : [];
 
-        if (restrictionLevel === 'Low') {
-          statusLabel = "Tickets Required";
-          badgeColor = "bg-blue-100 text-blue-800 border-blue-200 dark:bg-blue-950/40 dark:text-blue-400 dark:border-blue-900/30";
-        } else if (restrictionLevel === 'High') {
-          statusLabel = "Permit Required";
-          badgeColor = "bg-amber-100 text-amber-800 border-amber-200 dark:bg-amber-950/40 dark:text-amber-400 dark:border-amber-900/30";
-        } else if (restrictionLevel === 'Restricted') {
-          statusLabel = "No Entry";
-          badgeColor = "bg-rose-100 text-rose-800 border-rose-200 dark:bg-rose-950/40 dark:text-rose-400 dark:border-rose-900/30";
-        }
+  // Regulatory Metadata & Fallbacks
+  const governingOrg = viewingArticle.governing_org || 'Department of Wildlife Conservation / Local Authority';
 
-        return (
-          <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
-            {/* Backdrop */}
-            <div
-              className="absolute inset-0 bg-slate-900/90 backdrop-blur-md"
-              onClick={() => {
-                setIsArticleOpen(false);
-                setviewingArticle(null);
-                window.history.replaceState(null, '', '/');
-              }}
-            ></div>
+  // Restriction Level Categorization Logic
+  const restrictionLevel = viewingArticle.restriction_level?.trim() || 'None';
+  let statusLabel = "No Restriction";
+  let badgeColor = "bg-emerald-100 text-emerald-800 border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-400 dark:border-emerald-900/30";
 
-            <div className="relative bg-white dark:bg-slate-900 w-full max-w-2xl rounded-[2.5rem] overflow-hidden shadow-2xl flex flex-col max-h-[90vh]">
-              {/* Header Image */}
-              <div className="relative h-48 w-full shrink-0">
-                <img
-                  src={viewingArticle.cover_photo_url}
-                  className="h-full w-full object-cover"
-                  alt={getLocalizedValue(viewingArticle, 'place_name', i18n.language)}
-                  fetchPriority="high"
-                  loading="eager"
-                  decoding="async"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
+  if (restrictionLevel === 'Low') {
+    statusLabel = "Tickets Required";
+    badgeColor = "bg-blue-100 text-blue-800 border-blue-200 dark:bg-blue-950/40 dark:text-blue-400 dark:border-blue-900/30";
+  } else if (restrictionLevel === 'High') {
+    statusLabel = "Permit Required";
+    badgeColor = "bg-amber-100 text-amber-800 border-amber-200 dark:bg-amber-950/40 dark:text-amber-400 dark:border-amber-900/30";
+  } else if (restrictionLevel === 'Restricted') {
+    statusLabel = "No Entry";
+    badgeColor = "bg-rose-100 text-rose-800 border-rose-200 dark:bg-rose-950/40 dark:text-rose-400 dark:border-rose-900/30";
+  }
+
+  return (
+    <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
+      {/* Backdrop */}
+      <div
+        className="absolute inset-0 bg-slate-900/90 backdrop-blur-md"
+        onClick={() => {
+          setIsArticleOpen(false);
+          setviewingArticle(null);
+          window.history.replaceState(null, '', '/');
+        }}
+      ></div>
+
+      <div className="relative bg-white dark:bg-slate-900 w-full max-w-2xl rounded-[2.5rem] overflow-hidden shadow-2xl flex flex-col max-h-[90vh]">
+        {/* Header Image */}
+        <div className="relative h-48 w-full shrink-0">
+          <img
+            src={viewingArticle.cover_photo_url}
+            className="h-full w-full object-cover"
+            alt={getLocalizedValue(viewingArticle, 'place_name', i18n.language)}
+            fetchPriority="high"
+            loading="eager"
+            decoding="async"
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
+          <button
+            type="button"
+            onClick={() => {
+              setIsArticleOpen(false);
+              setviewingArticle(null);
+              window.history.replaceState(null, '', '/');
+            }}
+            className="absolute top-6 right-6 w-12 h-12 flex items-center justify-center bg-gray-500/80 hover:bg-rose-600 text-white rounded-full transition-all shadow-sm backdrop-blur-sm"
+            aria-label={t('article.close', { defaultValue: 'Close' })}
+          >
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+
+        <div className="p-8 overflow-y-auto scrollable-list no-scrollbar bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100">
+          {/* Meta Bar */}
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2">
+              <span
+                className={`px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest transition-colors ${getCategoryColorClass(
+                  viewingArticle.category
+                )}`}
+              >
+                {t(`categories.${viewingArticle.category?.toLowerCase()}`, {
+                  defaultValue: viewingArticle.category
+                })}
+              </span>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setIsArticleOpen(false);
+                  setActiveId(viewingArticle.id);
+                  window.history.replaceState(null, '', '/');
+                }}
+                className="flex items-center gap-1.5 px-2 py-1 bg-orange-50 dark:bg-orange-950/30 text-orange-700 dark:text-orange-400 rounded-lg text-[9px] font-black uppercase tracking-widest border border-orange-100 dark:border-orange-900/40 hover:bg-orange-100 dark:hover:bg-orange-900/60 transition-colors animate-pulse"
+              >
+                <Camera className="w-3 h-3" />
+                {t('article.gallery_btn', { defaultValue: 'Gallery' })}
+              </button>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => handleShare(null, viewingArticle)}
+                className="p-2 bg-slate-50 dark:bg-slate-800 hover:bg-indigo-50 dark:hover:bg-indigo-950/40 hover:border-indigo-100 dark:hover:border-indigo-900/50 rounded-xl transition-colors border border-slate-100 dark:border-slate-700/60 group"
+                title={t('article.share', { defaultValue: 'Share' })}
+              >
+                <Share2 className="w-3.5 h-3.5 text-slate-500 dark:text-slate-400 group-hover:text-indigo-600 dark:group-hover:text-indigo-400" />
+              </button>
+              <button
+                type="button"
+                onClick={() =>
+                  window.open(
+                    viewingArticle.google_maps_url ||
+                    `https://www.google.com/maps/search/?api=1&query=${viewingArticle.latitude},${viewingArticle.longitude}`,
+                    '_blank'
+                  )
+                }
+                className="p-2 bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-xl transition-colors border border-slate-100 dark:border-slate-700/60"
+                title={t('article.view_maps', { defaultValue: 'View on Maps' })}
+              >
+                <MapPin className="w-3.5 h-3.5 text-slate-500 dark:text-slate-400" />
+              </button>
+              {viewingArticle.status !== 'pending' && (
                 <button
                   type="button"
-                  onClick={() => {
-                    setIsArticleOpen(false);
-                    setviewingArticle(null);
-                    window.history.replaceState(null, '', '/');
-                  }}
-                  className="absolute top-6 right-6 w-12 h-12 flex items-center justify-center bg-gray-500/80 hover:bg-rose-600 text-white rounded-full transition-all shadow-sm backdrop-blur-sm"
-                  aria-label={t('article.close', { defaultValue: 'Close' })}
+                  onClick={() => handleLike(viewingArticle.id)}
+                  className="flex items-center gap-2 bg-slate-50 dark:bg-slate-800 hover:bg-rose-50 dark:hover:bg-rose-950/30 px-4 py-2 rounded-2xl border border-slate-100 dark:border-slate-700/60 transition-all"
                 >
-                  <X className="w-5 h-5" />
+                  <Heart
+                    className={`w-4 h-4 ${likes[viewingArticle.id] ? 'fill-rose-500 text-rose-500' : 'text-slate-400'}`}
+                  />
+                  <span
+                    className={`text-[10px] font-black transition-colors ${likes[viewingArticle.id]?.isUserLiked
+                      ? 'text-rose-600 dark:text-rose-400'
+                      : 'text-slate-900 dark:text-slate-200'
+                      }`}
+                  >
+                    {likes[viewingArticle.id]?.count || 0}
+                  </span>
                 </button>
-              </div>
-
-              <div className="p-8 overflow-y-auto scrollable-list no-scrollbar bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100">
-                {/* Meta Bar */}
-                <div className="flex items-center justify-between mb-4">
-                  <div className="flex items-center gap-2">
-                    <span
-                      className={`px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest transition-colors ${getCategoryColorClass(
-                        viewingArticle.category
-                      )}`}
-                    >
-                      {t(`categories.${viewingArticle.category?.toLowerCase()}`, {
-                        defaultValue: viewingArticle.category
-                      })}
-                    </span>
-
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setIsArticleOpen(false);
-                        setActiveId(viewingArticle.id);
-                        window.history.replaceState(null, '', '/');
-                      }}
-                      className="flex items-center gap-1.5 px-2 py-1 bg-orange-50 dark:bg-orange-950/30 text-orange-700 dark:text-orange-400 rounded-lg text-[9px] font-black uppercase tracking-widest border border-orange-100 dark:border-orange-900/40 hover:bg-orange-100 dark:hover:bg-orange-900/60 transition-colors animate-pulse"
-                    >
-                      <Camera className="w-3 h-3" />
-                      {t('article.gallery_btn', { defaultValue: 'Gallery' })}
-                    </button>
-                  </div>
-
-                  <div className="flex items-center gap-2">
-                    <button
-                      type="button"
-                      onClick={() => handleShare(null, viewingArticle)}
-                      className="p-2 bg-slate-50 dark:bg-slate-800 hover:bg-indigo-50 dark:hover:bg-indigo-950/40 hover:border-indigo-100 dark:hover:border-indigo-900/50 rounded-xl transition-colors border border-slate-100 dark:border-slate-700/60 group"
-                      title={t('article.share', { defaultValue: 'Share' })}
-                    >
-                      <Share2 className="w-3.5 h-3.5 text-slate-500 dark:text-slate-400 group-hover:text-indigo-600 dark:group-hover:text-indigo-400" />
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() =>
-                        window.open(
-                          viewingArticle.google_maps_url ||
-                          `https://www.google.com/maps/search/?api=1&query=${viewingArticle.latitude},${viewingArticle.longitude}`,
-                          '_blank'
-                        )
-                      }
-                      className="p-2 bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-xl transition-colors border border-slate-100 dark:border-slate-700/60"
-                      title={t('article.view_maps', { defaultValue: 'View on Maps' })}
-                    >
-                      <MapPin className="w-3.5 h-3.5 text-slate-500 dark:text-slate-400" />
-                    </button>
-                    {viewingArticle.status !== 'pending' && (
-                      <button
-                        type="button"
-                        onClick={() => handleLike(viewingArticle.id)}
-                        className="flex items-center gap-2 bg-slate-50 dark:bg-slate-800 hover:bg-rose-50 dark:hover:bg-rose-950/30 px-4 py-2 rounded-2xl border border-slate-100 dark:border-slate-700/60 transition-all"
-                      >
-                        <Heart
-                          className={`w-4 h-4 ${likes[viewingArticle.id] ? 'fill-rose-500 text-rose-500' : 'text-slate-400'}`}
-                        />
-                        <span
-                          className={`text-[10px] font-black transition-colors ${likes[viewingArticle.id]?.isUserLiked
-                            ? 'text-rose-600 dark:text-rose-400'
-                            : 'text-slate-900 dark:text-slate-200'
-                            }`}
-                        >
-                          {likes[viewingArticle.id]?.count || 0}
-                        </span>
-                      </button>
-                    )}
-                  </div>
-                </div>
-
-                {/* AI Journal Main Body */}
-                <div className="mb-10">
-                  <h2 className="text-2xl font-black text-slate-900 dark:text-white mb-6 leading-tight tracking-tight">
-                    {getActiveContent('title') || getLocalizedValue(viewingArticle, 'place_name', i18n.language)}
-                  </h2>
-
-                  {storyText ? (
-                    <div className="space-y-8">
-                      {/* 2. Quick Facts - Scannable summary box */}
-                      {article.quick_facts && (
-                        <section className="bg-slate-50 dark:bg-slate-800/40 rounded-3xl p-6 border border-slate-100 dark:border-slate-800">
-                          <h3 className="text-sm font-black uppercase tracking-widest text-slate-900 dark:text-white mb-4 flex items-center gap-2">
-                            <Zap className="w-4 h-4 text-amber-500" /> Quick Facts
-                          </h3>
-                          <div className="grid grid-cols-2 sm:grid-cols-3 gap-y-4 gap-x-6 text-xs">
-                            <div><span className="block text-slate-400 font-bold mb-1">Elevation</span><span className="font-semibold">{article.quick_facts.elevation_m}m</span></div>
-                            <div><span className="block text-slate-400 font-bold mb-1">Difficulty</span><span className="font-semibold">{article.quick_facts.difficulty}</span></div>
-                            <div><span className="block text-slate-400 font-bold mb-1">Time Req</span><span className="font-semibold">{article.quick_facts.time_required}</span></div>
-                            <div><span className="block text-slate-400 font-bold mb-1">Vehicle Access</span><span className="font-semibold">{article.quick_facts.vehicle_access}</span></div>
-                            <div><span className="block text-slate-400 font-bold mb-1">Moto Friendly</span><span className="font-semibold">{article.quick_facts.motorcycle_friendly}</span></div>
-                            <div><span className="block text-slate-400 font-bold mb-1">Mobile Signal</span><span className="font-semibold">{article.quick_facts.mobile_coverage}</span></div>
-                          </div>
-                        </section>
-                      )}
-
-                      {/* 3. Why Visit? */}
-                      {article.why_visit && (
-                        <section>
-                          <h3 className="text-sm font-black uppercase tracking-widest text-slate-900 dark:text-white mb-3">Why Visit?</h3>
-                          <p className="text-slate-600 dark:text-slate-300 text-sm leading-relaxed mb-4">{article.why_visit.summary}</p>
-                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                            <div className="bg-emerald-50 dark:bg-emerald-950/20 p-4 rounded-2xl border border-emerald-100 dark:border-emerald-900/30">
-                              <span className="block text-[10px] font-black uppercase text-emerald-600 dark:text-emerald-400 mb-2">Highly Rewarding For</span>
-                              <ul className="space-y-1 text-xs font-medium text-emerald-800 dark:text-emerald-300">
-                                {article.why_visit.best_for?.map((item, i) => <li key={i}>✓ {item}</li>)}
-                              </ul>
-                            </div>
-                            <div className="bg-rose-50 dark:bg-rose-950/20 p-4 rounded-2xl border border-rose-100 dark:border-rose-900/30">
-                              <span className="block text-[10px] font-black uppercase text-rose-600 dark:text-rose-400 mb-2">Less Suitable For</span>
-                              <ul className="space-y-1 text-xs font-medium text-rose-800 dark:text-rose-300">
-                                {article.why_visit.less_suitable_for?.map((item, i) => <li key={i}>✗ {item}</li>)}
-                              </ul>
-                            </div>
-                          </div>
-                        </section>
-                      )}
-
-                      {/* 4. Personal Expedition Journal */}
-                      <section className="prose dark:prose-invert max-w-none">
-                        <h3 className="text-sm font-black uppercase tracking-widest text-slate-900 dark:text-white mb-3">Expedition Journal</h3>
-                        <p className="text-slate-600 dark:text-slate-300 leading-relaxed text-sm whitespace-pre-line border-l-2 border-indigo-500 pl-4 italic">
-                          {storyText}
-                        </p>
-                      </section>
-
-                      {/* 6. Explorer Rating - Custom 10-point scoring system */}
-                      {article.explorer_rating && (
-                        <section className="bg-indigo-900 text-white rounded-3xl p-6 shadow-lg">
-                          <h3 className="text-sm font-black uppercase tracking-widest text-indigo-200 mb-4">Explorer Rating</h3>
-                          <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 text-xs">
-                            <div className="bg-white/10 p-3 rounded-xl backdrop-blur-sm"><span className="block text-indigo-300 mb-1">📸 Photography</span><span className="font-black text-lg">{article.explorer_rating.photography}/10</span></div>
-                            <div className="bg-white/10 p-3 rounded-xl backdrop-blur-sm"><span className="block text-indigo-300 mb-1">🏍 Adventure</span><span className="font-black text-lg">{article.explorer_rating.adventure}/10</span></div>
-                            <div className="bg-white/10 p-3 rounded-xl backdrop-blur-sm"><span className="block text-indigo-300 mb-1">👨‍👩‍👧 Family</span><span className="font-black text-lg">{article.explorer_rating.family_friendly}/10</span></div>
-                            <div className="bg-white/10 p-3 rounded-xl backdrop-blur-sm"><span className="block text-indigo-300 mb-1">🚁 Drone</span><span className="font-black text-lg">{article.explorer_rating.drone}/10</span></div>
-                            <div className="bg-white/10 p-3 rounded-xl backdrop-blur-sm"><span className="block text-indigo-300 mb-1">😌 Crowds</span><span className="font-black text-lg">{article.explorer_rating.crowd_level}/10</span></div>
-                            <div className="bg-indigo-500 p-3 rounded-xl shadow-inner"><span className="block text-indigo-100 mb-1">⭐ Overall</span><span className="font-black text-lg">{article.explorer_rating.overall}/10</span></div>
-                          </div>
-                        </section>
-                      )}
-
-                      {/* 7 & 8. Photography & Drone Notes */}
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        {article.photography_notes && (
-                          <section className="bg-slate-50 dark:bg-slate-800/40 p-5 rounded-3xl border border-slate-100 dark:border-slate-800">
-                            <h3 className="text-[11px] font-black uppercase tracking-widest text-slate-900 dark:text-white mb-3">📸 Photography Notes</h3>
-                            <ul className="text-xs text-slate-600 dark:text-slate-300 space-y-2 font-medium">
-                              <li><strong className="text-slate-900 dark:text-slate-100">Best Time:</strong> {article.photography_notes.best_time}</li>
-                              <li><strong className="text-slate-900 dark:text-slate-100">Lighting:</strong> {article.photography_notes.lighting}</li>
-                              <li><strong className="text-slate-900 dark:text-slate-100">Composition:</strong> {article.photography_notes.best_composition}</li>
-                              <li><strong className="text-slate-900 dark:text-slate-100">Lenses:</strong> {article.photography_notes.lens_recommendation}</li>
-                              <li className="mt-2 pt-2 border-t border-slate-200 dark:border-slate-700 italic text-[10px]">{article.photography_notes.mobile_notes}</li>
-                            </ul>
-                          </section>
-                        )}
-                        {article.drone_notes && (
-                          <section className="bg-slate-50 dark:bg-slate-800/40 p-5 rounded-3xl border border-slate-100 dark:border-slate-800">
-                            <h3 className="text-[11px] font-black uppercase tracking-widest text-slate-900 dark:text-white mb-3">🚁 Drone Flying Notes</h3>
-                            <ul className="text-xs text-slate-600 dark:text-slate-300 space-y-2 font-medium">
-                              <li><strong className="text-slate-900 dark:text-slate-100">Conditions:</strong> {article.drone_notes.flight_conditions}</li>
-                              <li><strong className="text-slate-900 dark:text-slate-100">Wind:</strong> {article.drone_notes.wind}</li>
-                              <li><strong className="text-slate-900 dark:text-slate-100">Launch Area:</strong> {article.drone_notes.launch_area}</li>
-                              <li><strong className="text-slate-900 dark:text-slate-100">Obstacles:</strong> {article.drone_notes.obstacles}</li>
-                              <li className="mt-2 pt-2 border-t border-slate-200 dark:border-slate-700 text-rose-500 font-bold text-[10px]">Restrictions: {article.drone_notes.restrictions}</li>
-                            </ul>
-                          </section>
-                        )}
-                      </div>
-
-                      {/* 9. Route & Access Report */}
-                      {article.route_report && (
-                        <section className="p-5 rounded-3xl border-2 border-slate-100 dark:border-slate-800">
-                          <h3 className="text-[11px] font-black uppercase tracking-widest text-slate-900 dark:text-white mb-4">🏍 Route & Access Report</h3>
-                          <div className="grid grid-cols-2 gap-4 text-xs">
-                            <div><span className="block text-slate-400 font-bold mb-1">Starting Point</span><span className="font-semibold dark:text-slate-200">{article.route_report.starting_point}</span></div>
-                            <div><span className="block text-slate-400 font-bold mb-1">Distance & Time</span><span className="font-semibold dark:text-slate-200">{article.route_report.distance_km}km ({article.route_report.travel_time})</span></div>
-                            <div className="col-span-2"><span className="block text-slate-400 font-bold mb-1">Road Conditions</span><span className="font-semibold dark:text-slate-200">{article.route_report.road_condition}</span></div>
-                            <div className="col-span-2"><span className="block text-slate-400 font-bold mb-1">Hazards & Fuel</span><span className="font-semibold text-amber-600 dark:text-amber-400">{article.route_report.hazards} | {article.route_report.fuel_parking}</span></div>
-                          </div>
-                        </section>
-                      )}
-
-                      {/* 10. What I Wish I Knew Before Visiting */}
-                      {article.wish_i_knew && article.wish_i_knew.length > 0 && (
-                        <section className="bg-amber-50 dark:bg-amber-950/20 p-5 rounded-3xl border border-amber-100 dark:border-amber-900/30">
-                          <h3 className="text-[11px] font-black uppercase tracking-widest text-amber-800 dark:text-amber-400 mb-3">💡 What I Wish I Knew</h3>
-                          <ul className="list-disc list-inside space-y-2 text-xs text-amber-900 dark:text-amber-200 font-medium">
-                            {article.wish_i_knew.map((tip, i) => <li key={i}>{tip}</li>)}
-                          </ul>
-                        </section>
-                      )}
-
-                      {/* 14. Behind The Shot */}
-                      {article.behind_the_shot && (
-                        <section className="bg-slate-900 dark:bg-black text-white p-6 rounded-3xl shadow-xl">
-                          <h3 className="text-[11px] font-black uppercase tracking-widest text-slate-400 mb-4">Behind The Shot</h3>
-                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 text-xs">
-                            <div>
-                              <p className="text-slate-300 italic mb-3">"{article.behind_the_shot.why_i_took_it}"</p>
-                              <div className="space-y-1 text-slate-400">
-                                <p><strong>Device:</strong> {article.behind_the_shot.device}</p>
-                                <p><strong>Time:</strong> {article.behind_the_shot.captured_time}</p>
-                                <p><strong>Conditions:</strong> {article.behind_the_shot.conditions}</p>
-                              </div>
-                            </div>
-                            <div className="bg-slate-800/50 p-4 rounded-xl border border-slate-700/50 flex flex-col justify-center">
-                              <span className="block text-[10px] font-black uppercase tracking-widest text-indigo-400 mb-2">Post-Processing</span>
-                              <p className="text-slate-300">{article.behind_the_shot.editing}</p>
-                            </div>
-                          </div>
-                        </section>
-                      )}
-
-                      {/* History & Heritage */}
-                      {historyText && (
-                        <section className="mt-8 border-t border-slate-100 dark:border-slate-800 pt-6">
-                          <h4 className="text-[9px] font-black uppercase tracking-[0.2em] text-slate-400 dark:text-slate-500 mb-2">History & Heritage</h4>
-                          <p className="text-xs text-slate-600 dark:text-slate-300 font-medium leading-relaxed">{historyText}</p>
-                        </section>
-                      )}
-                    </div>
-                  ) : (
-                    /* Fallback Summary Layer */
-                    <div className="space-y-4">
-                      <p className="text-slate-600 dark:text-slate-300 leading-relaxed text-sm">
-                        {getLocalizedValue(viewingArticle, 'description', i18n.language) || t('article.fallback_desc')}
-                      </p>
-                      <button type="button" onClick={() => handleOpenArticle(viewingArticle)} className="inline-flex items-center justify-center px-5 py-3 bg-indigo-50 dark:bg-indigo-950/40 hover:bg-indigo-100 dark:hover:bg-indigo-900/50 text-indigo-600 dark:text-indigo-400 rounded-xl font-black text-[10px] uppercase tracking-widest transition-all">
-                        {t('article.load_journal_btn')}
-                      </button>
-                    </div>
-                  )}
-
-                  {/* Field Notes, Conservation & Regional Regulations */}
-                  <section className="mt-6 p-5 bg-slate-50 dark:bg-slate-800/40 rounded-[1.5rem] border border-slate-100 dark:border-slate-800 space-y-4">
-                    <div className="flex items-center justify-between border-b border-slate-200/60 dark:border-slate-700/60 pb-3">
-                      <div className="flex items-center gap-2">
-                        <ShieldCheck className="w-4 h-4 text-indigo-600 dark:text-indigo-400 shrink-0" />
-                        <h4 className="text-[9px] font-black uppercase tracking-[0.2em] text-slate-800 dark:text-slate-200">
-                          {t('article.compliance_title')}
-                        </h4>
-                      </div>
-                    </div>
-
-                    {/* Governing Body & Restriction Level */}
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
-                      <div className="bg-white dark:bg-slate-900/60 p-3.5 rounded-xl border border-slate-200/80 dark:border-slate-700/80 shadow-sm flex flex-col justify-between items-center text-center">
-                        <span className="block text-[8px] font-black uppercase tracking-widest text-slate-400 dark:text-slate-500 mb-1">
-                          {t('article.governing_body')}
-                        </span>
-                        <p className="font-bold text-slate-800 dark:text-slate-200 flex items-center justify-center gap-1.5 truncate w-full">
-                          <Globe className="w-3.5 h-3.5 text-indigo-500 shrink-0" />
-                          <span className="truncate">{governingOrg}</span>
-                        </p>
-                      </div>
-
-                      <div className="bg-white dark:bg-slate-900/60 p-3.5 rounded-xl border border-slate-200/80 dark:border-slate-700/80 shadow-sm flex flex-col justify-between items-center text-center">
-                        <span className="block text-[8px] font-black uppercase tracking-widest text-slate-400 dark:text-slate-500 mb-1">
-                          {t('article.access_restriction')}
-                        </span>
-                        <div className="mt-0.5 flex justify-center w-full">
-                          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold border ${badgeColor}`}>
-                            {t(`restriction.${restrictionLevel.toLowerCase()}`, { defaultValue: statusLabel })}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="text-slate-600 dark:text-slate-300 text-xs leading-relaxed font-medium pt-1">
-                      <p>
-                        {about.conservation_rules ||
-                          t('article.compliance_prose_1', {
-                            place: getLocalizedValue(viewingArticle, 'place_name', i18n.language) || 'this destination',
-                            org: governingOrg
-                          })}
-                      </p>
-                    </div>
-                  </section>
-
-                  {/* Editorial Footer */}
-                  <footer className="mt-8 pt-4 border-t border-slate-100 dark:border-slate-800 flex flex-wrap justify-between items-center gap-4 text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
-                    <div className="flex items-center gap-2">
-                      <div className="w-6 h-6 rounded-full bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900 flex items-center justify-center font-black text-[9px]">
-                        HG
-                      </div>
-                      <span>
-                        {t('article.archived_by')}{' '}
-                        <strong className="text-slate-800 dark:text-slate-200">Hasitha Gunasekera</strong>
-                      </span>
-                    </div>
-                    <div>
-                      <span>
-                        {t('article.record_ref')} #{viewingArticle.id || '000'}
-                      </span>
-                    </div>
-                  </footer>
-                </div>
-
-                {/* Discussion / Comments Block */}
-                <div
-                  id="comments-discussion-section"
-                  className="border-t border-slate-100 dark:border-slate-800 pt-8"
-                >
-                  <h4 className="text-[10px] font-black uppercase tracking-widest text-slate-400 dark:text-slate-500 mb-6 flex items-center gap-2">
-                    <MessageCircle className="w-3 h-3" />
-                    {t('article.discussion_count', {
-                      defaultValue: 'Discussion',
-                      count: comments[viewingArticle.id]?.length || 0
-                    })}{' '}
-                    ({comments[viewingArticle.id]?.length || 0})
-                  </h4>
-
-                  <div className="space-y-4 mb-8">
-                    {comments[viewingArticle.id]?.map((c, i) => (
-                      <div
-                        key={i}
-                        className="bg-slate-50 dark:bg-slate-800/40 p-4 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-sm"
-                      >
-                        <p className="text-xs text-slate-700 dark:text-slate-200 font-semibold mb-2">
-                          {c.comment_text}
-                        </p>
-                        <div className="flex justify-between items-center opacity-60">
-                          <span className="text-[8px] font-bold text-slate-400 uppercase">
-                            {new Date(c.created_at).toLocaleDateString()}
-                          </span>
-                          {(c.city || c.country) && (
-                            <span className="text-[7px] font-black text-slate-400 uppercase tracking-widest">
-                              {[c.city, c.country].filter(Boolean).join(', ')}
-                            </span>
-                          )}
-                        </div>
-
-                        {c.reply_text && (
-                          <div className="mt-4 pt-4 border-t border-slate-200/60 dark:border-slate-700/60">
-                            <div className="flex items-center gap-1.5 mb-2">
-                              <div className="w-1 h-3 bg-indigo-500 rounded-full"></div>
-                              <span className="text-[8px] font-black text-indigo-600 dark:text-indigo-400 uppercase tracking-tighter">
-                                {t('article.author_response', { defaultValue: 'Author Response' })}
-                              </span>
-                            </div>
-                            <div className="bg-white dark:bg-slate-800 p-3 rounded-xl border border-slate-100 dark:border-slate-700/60">
-                              <p className="text-[10px] text-slate-600 dark:text-slate-300 leading-relaxed italic">
-                                "{c.reply_text}"
-                              </p>
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-
-                  <div className="relative sticky bottom-0 bg-white dark:bg-slate-900 pt-2">
-                    <input
-                      type="text"
-                      value={newCommentText}
-                      onChange={(e) => setnewCommentText(e.target.value)}
-                      placeholder={t('article.comment_placeholder', { defaultValue: 'Add your trail note...' })}
-                      className="w-full bg-slate-100 dark:bg-slate-800 border-2 border-transparent focus:border-slate-900 dark:focus:border-slate-100 focus:bg-white dark:focus:bg-slate-900 rounded-2xl px-5 py-4 text-xs font-bold text-slate-900 dark:text-slate-100 placeholder-slate-400 transition-all outline-none pr-12"
-                      onKeyDown={async (e) => {
-                        if (e.key === 'Enter' && newCommentText.trim()) {
-                          const text = newCommentText;
-                          setnewCommentText('');
-                          await submitComment(viewingArticle.id, text);
-                        }
-                      }}
-                    />
-                    <button
-                      type="button"
-                      onClick={() => {
-                        if (newCommentText.trim()) submitComment(viewingArticle.id, newCommentText);
-                        setnewCommentText('');
-                      }}
-                      className="absolute right-4 top-1/2 -translate-y-1/2 p-2 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-xl transition-colors"
-                    >
-                      <Send className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
-                    </button>
-                  </div>
-                </div>
-              </div>
+              )}
             </div>
           </div>
-        );
-      })()}
+
+          {/* AI Journal Main Body */}
+          <div className="mb-10">
+            <h2 className="text-2xl font-black text-slate-900 dark:text-white mb-4 leading-tight tracking-tight">
+              {getActiveContent('title') || getLocalizedValue(viewingArticle, 'place_name', i18n.language)}
+            </h2>
+
+            {/* SEO Intro Paragraph */}
+            {seoIntro && (
+              <p className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-8 leading-relaxed">
+                {seoIntro}
+              </p>
+            )}
+
+            {storyText ? (
+              <div className="space-y-8">
+                {/* Quick Facts */}
+                {article.quick_facts && (
+                  <section className="bg-slate-50 dark:bg-slate-800/40 rounded-3xl p-6 border border-slate-100 dark:border-slate-800">
+                    <h3 className="text-sm font-black uppercase tracking-widest text-slate-900 dark:text-white mb-4 flex items-center gap-2">
+                      <Zap className="w-4 h-4 text-amber-500" /> Quick Facts
+                    </h3>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-y-4 gap-x-6 text-xs">
+                      <div><span className="block text-slate-400 font-bold mb-1">Elevation</span><span className="font-semibold">{article.quick_facts.elevation_m}m</span></div>
+                      <div><span className="block text-slate-400 font-bold mb-1">Difficulty</span><span className="font-semibold">{article.quick_facts.difficulty}</span></div>
+                      <div><span className="block text-slate-400 font-bold mb-1">Time Req</span><span className="font-semibold">{article.quick_facts.time_required}</span></div>
+                      <div><span className="block text-slate-400 font-bold mb-1">Vehicle Access</span><span className="font-semibold">{article.quick_facts.vehicle_access}</span></div>
+                      <div><span className="block text-slate-400 font-bold mb-1">Moto Friendly</span><span className="font-semibold">{article.quick_facts.motorcycle_friendly}</span></div>
+                      <div><span className="block text-slate-400 font-bold mb-1">Mobile Signal</span><span className="font-semibold">{article.quick_facts.mobile_coverage}</span></div>
+                    </div>
+                  </section>
+                )}
+
+                {/* Why Visit? */}
+                {article.why_visit && (
+                  <section>
+                    <h3 className="text-sm font-black uppercase tracking-widest text-slate-900 dark:text-white mb-3">Why Visit?</h3>
+                    <p className="text-slate-600 dark:text-slate-300 text-sm leading-relaxed mb-4">{article.why_visit.summary}</p>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div className="bg-emerald-50 dark:bg-emerald-950/20 p-4 rounded-2xl border border-emerald-100 dark:border-emerald-900/30">
+                        <span className="block text-[10px] font-black uppercase text-emerald-600 dark:text-emerald-400 mb-2">Highly Rewarding For</span>
+                        <ul className="space-y-1 text-xs font-medium text-emerald-800 dark:text-emerald-300">
+                          {article.why_visit.best_for?.map((item, i) => <li key={i}>✓ {item}</li>)}
+                        </ul>
+                      </div>
+                      <div className="bg-rose-50 dark:bg-rose-950/20 p-4 rounded-2xl border border-rose-100 dark:border-rose-900/30">
+                        <span className="block text-[10px] font-black uppercase text-rose-600 dark:text-rose-400 mb-2">Less Suitable For</span>
+                        <ul className="space-y-1 text-xs font-medium text-rose-800 dark:text-rose-300">
+                          {article.why_visit.less_suitable_for?.map((item, i) => <li key={i}>✗ {item}</li>)}
+                        </ul>
+                      </div>
+                    </div>
+                  </section>
+                )}
+
+                {/* Expedition Journal */}
+                <section className="prose dark:prose-invert max-w-none">
+                  <h3 className="text-sm font-black uppercase tracking-widest text-slate-900 dark:text-white mb-3">Expedition Journal</h3>
+                  <p className="text-slate-600 dark:text-slate-300 leading-relaxed text-sm whitespace-pre-line border-l-2 border-indigo-500 pl-4 italic">
+                    {storyText}
+                  </p>
+                </section>
+
+                {/* Explorer Rating */}
+                {article.explorer_rating && (
+                  <section className="bg-indigo-900 text-white rounded-3xl p-6 shadow-lg">
+                    <h3 className="text-sm font-black uppercase tracking-widest text-indigo-200 mb-4">Explorer Rating</h3>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 text-xs">
+                      <div className="bg-white/10 p-3 rounded-xl backdrop-blur-sm"><span className="block text-indigo-300 mb-1">📸 Photography</span><span className="font-black text-lg">{article.explorer_rating.photography}/10</span></div>
+                      <div className="bg-white/10 p-3 rounded-xl backdrop-blur-sm"><span className="block text-indigo-300 mb-1">🏍 Adventure</span><span className="font-black text-lg">{article.explorer_rating.adventure}/10</span></div>
+                      <div className="bg-white/10 p-3 rounded-xl backdrop-blur-sm"><span className="block text-indigo-300 mb-1">👨‍👩‍👧 Family</span><span className="font-black text-lg">{article.explorer_rating.family_friendly}/10</span></div>
+                      <div className="bg-white/10 p-3 rounded-xl backdrop-blur-sm"><span className="block text-indigo-300 mb-1">🚁 Drone</span><span className="font-black text-lg">{article.explorer_rating.drone}/10</span></div>
+                      <div className="bg-white/10 p-3 rounded-xl backdrop-blur-sm"><span className="block text-indigo-300 mb-1">😌 Crowds</span><span className="font-black text-lg">{article.explorer_rating.crowd_level}/10</span></div>
+                      <div className="bg-indigo-500 p-3 rounded-xl shadow-inner"><span className="block text-indigo-100 mb-1">⭐ Overall</span><span className="font-black text-lg">{article.explorer_rating.overall}/10</span></div>
+                    </div>
+                  </section>
+                )}
+
+                {/* Photography & Drone Notes */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  {article.photography_notes && (
+                    <section className="bg-slate-50 dark:bg-slate-800/40 p-5 rounded-3xl border border-slate-100 dark:border-slate-800">
+                      <h3 className="text-[11px] font-black uppercase tracking-widest text-slate-900 dark:text-white mb-3">📸 Photography Notes</h3>
+                      <ul className="text-xs text-slate-600 dark:text-slate-300 space-y-2 font-medium">
+                        <li><strong className="text-slate-900 dark:text-slate-100">Best Time:</strong> {article.photography_notes.best_time}</li>
+                        <li><strong className="text-slate-900 dark:text-slate-100">Lighting:</strong> {article.photography_notes.lighting}</li>
+                        <li><strong className="text-slate-900 dark:text-slate-100">Composition:</strong> {article.photography_notes.best_composition}</li>
+                        <li><strong className="text-slate-900 dark:text-slate-100">Lenses:</strong> {article.photography_notes.lens_recommendation}</li>
+                        <li className="mt-2 pt-2 border-t border-slate-200 dark:border-slate-700 italic text-[10px]">{article.photography_notes.mobile_notes}</li>
+                      </ul>
+                    </section>
+                  )}
+                  {article.drone_notes && (
+                    <section className="bg-slate-50 dark:bg-slate-800/40 p-5 rounded-3xl border border-slate-100 dark:border-slate-800">
+                      <h3 className="text-[11px] font-black uppercase tracking-widest text-slate-900 dark:text-white mb-3">🚁 Drone Flying Notes</h3>
+                      <ul className="text-xs text-slate-600 dark:text-slate-300 space-y-2 font-medium">
+                        <li><strong className="text-slate-900 dark:text-slate-100">Conditions:</strong> {article.drone_notes.flight_conditions}</li>
+                        <li><strong className="text-slate-900 dark:text-slate-100">Wind:</strong> {article.drone_notes.wind}</li>
+                        <li><strong className="text-slate-900 dark:text-slate-100">Launch Area:</strong> {article.drone_notes.launch_area}</li>
+                        <li><strong className="text-slate-900 dark:text-slate-100">Obstacles:</strong> {article.drone_notes.obstacles}</li>
+                        <li className="mt-2 pt-2 border-t border-slate-200 dark:border-slate-700 text-rose-500 font-bold text-[10px]">Restrictions: {article.drone_notes.restrictions}</li>
+                      </ul>
+                    </section>
+                  )}
+                </div>
+
+                {/* Route & Access Report */}
+                {article.route_report && (
+                  <section className="p-5 rounded-3xl border-2 border-slate-100 dark:border-slate-800">
+                    <h3 className="text-[11px] font-black uppercase tracking-widest text-slate-900 dark:text-white mb-4">🏍 Route & Access Report</h3>
+                    <div className="grid grid-cols-2 gap-4 text-xs">
+                      <div><span className="block text-slate-400 font-bold mb-1">Starting Point</span><span className="font-semibold dark:text-slate-200">{article.route_report.starting_point}</span></div>
+                      <div><span className="block text-slate-400 font-bold mb-1">Distance & Time</span><span className="font-semibold dark:text-slate-200">{article.route_report.distance_km}km ({article.route_report.travel_time})</span></div>
+                      <div className="col-span-2"><span className="block text-slate-400 font-bold mb-1">Road Conditions</span><span className="font-semibold dark:text-slate-200">{article.route_report.road_condition}</span></div>
+                      <div className="col-span-2"><span className="block text-slate-400 font-bold mb-1">Hazards & Fuel</span><span className="font-semibold text-amber-600 dark:text-amber-400">{article.route_report.hazards} | {article.route_report.fuel_parking}</span></div>
+                    </div>
+                  </section>
+                )}
+
+                {/* What I Wish I Knew Before Visiting */}
+                {article.wish_i_knew && article.wish_i_knew.length > 0 && (
+                  <section className="bg-amber-50 dark:bg-amber-950/20 p-5 rounded-3xl border border-amber-100 dark:border-amber-900/30">
+                    <h3 className="text-[11px] font-black uppercase tracking-widest text-amber-800 dark:text-amber-400 mb-3">💡 What I Wish I Knew</h3>
+                    <ul className="list-disc list-inside space-y-2 text-xs text-amber-900 dark:text-amber-200 font-medium">
+                      {article.wish_i_knew.map((tip, i) => <li key={i}>{tip}</li>)}
+                    </ul>
+                  </section>
+                )}
+
+                {/* Behind The Shot */}
+                {article.behind_the_shot && (
+                  <section className="bg-slate-900 dark:bg-black text-white p-6 rounded-3xl shadow-xl">
+                    <h3 className="text-[11px] font-black uppercase tracking-widest text-slate-400 mb-4">Behind The Shot</h3>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 text-xs">
+                      <div>
+                        <p className="text-slate-300 italic mb-3">"{article.behind_the_shot.why_i_took_it}"</p>
+                        <div className="space-y-1 text-slate-400">
+                          <p><strong>Device:</strong> {article.behind_the_shot.device}</p>
+                          <p><strong>Time:</strong> {article.behind_the_shot.captured_time}</p>
+                          <p><strong>Conditions:</strong> {article.behind_the_shot.conditions}</p>
+                        </div>
+                      </div>
+                      <div className="bg-slate-800/50 p-4 rounded-xl border border-slate-700/50 flex flex-col justify-center">
+                        <span className="block text-[10px] font-black uppercase tracking-widest text-indigo-400 mb-2">Post-Processing</span>
+                        <p className="text-slate-300">{article.behind_the_shot.editing}</p>
+                      </div>
+                    </div>
+                  </section>
+                )}
+
+                {/* FAQ Section */}
+                {faqs.length > 0 && (
+                  <section className="mt-8 border-t border-slate-100 dark:border-slate-800 pt-6">
+                    <h3 className="text-lg font-black text-slate-900 dark:text-white mb-4">Frequently Asked Questions</h3>
+                    <div className="space-y-4">
+                      {faqs.map((faq, index) => (
+                        <div key={index} className="bg-slate-50 dark:bg-slate-800/30 p-4 rounded-2xl border border-slate-100 dark:border-slate-800/60">
+                          <h4 className="text-sm font-bold text-slate-900 dark:text-slate-100 mb-2">
+                            {faq.question || faq.q}
+                          </h4>
+                          <p className="text-sm text-slate-600 dark:text-slate-300 leading-relaxed">
+                            {faq.answer || faq.a}
+                          </p>
+                        </div>
+                      ))}
+                    </div>
+                  </section>
+                )}
+
+                {/* History & Heritage */}
+                {historyText && (
+                  <section className="mt-8 border-t border-slate-100 dark:border-slate-800 pt-6">
+                    <h4 className="text-[9px] font-black uppercase tracking-[0.2em] text-slate-400 dark:text-slate-500 mb-2">History & Heritage</h4>
+                    <p className="text-xs text-slate-600 dark:text-slate-300 font-medium leading-relaxed">{historyText}</p>
+                  </section>
+                )}
+              </div>
+            ) : (
+              /* Fallback Summary Layer */
+              <div className="space-y-4">
+                <p className="text-slate-600 dark:text-slate-300 leading-relaxed text-sm">
+                  {getLocalizedValue(viewingArticle, 'description', i18n.language) || t('article.fallback_desc')}
+                </p>
+                <button type="button" onClick={() => handleOpenArticle(viewingArticle)} className="inline-flex items-center justify-center px-5 py-3 bg-indigo-50 dark:bg-indigo-950/40 hover:bg-indigo-100 dark:hover:bg-indigo-900/50 text-indigo-600 dark:text-indigo-400 rounded-xl font-black text-[10px] uppercase tracking-widest transition-all">
+                  {t('article.load_journal_btn')}
+                </button>
+              </div>
+            )}
+
+            {/* Field Notes, Conservation & Regional Regulations */}
+            <section className="mt-6 p-5 bg-slate-50 dark:bg-slate-800/40 rounded-[1.5rem] border border-slate-100 dark:border-slate-800 space-y-4">
+              <div className="flex items-center justify-between border-b border-slate-200/60 dark:border-slate-700/60 pb-3">
+                <div className="flex items-center gap-2">
+                  <ShieldCheck className="w-4 h-4 text-indigo-600 dark:text-indigo-400 shrink-0" />
+                  <h4 className="text-[9px] font-black uppercase tracking-[0.2em] text-slate-800 dark:text-slate-200">
+                    {t('article.compliance_title')}
+                  </h4>
+                </div>
+              </div>
+
+              {/* Governing Body & Restriction Level */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                <div className="bg-white dark:bg-slate-900/60 p-3.5 rounded-xl border border-slate-200/80 dark:border-slate-700/80 shadow-sm flex flex-col justify-between items-center text-center">
+                  <span className="block text-[8px] font-black uppercase tracking-widest text-slate-400 dark:text-slate-500 mb-1">
+                    {t('article.governing_body')}
+                  </span>
+                  <p className="font-bold text-slate-800 dark:text-slate-200 flex items-center justify-center gap-1.5 truncate w-full">
+                    <Globe className="w-3.5 h-3.5 text-indigo-500 shrink-0" />
+                    <span className="truncate">{governingOrg}</span>
+                  </p>
+                </div>
+
+                <div className="bg-white dark:bg-slate-900/60 p-3.5 rounded-xl border border-slate-200/80 dark:border-slate-700/80 shadow-sm flex flex-col justify-between items-center text-center">
+                  <span className="block text-[8px] font-black uppercase tracking-widest text-slate-400 dark:text-slate-500 mb-1">
+                    {t('article.access_restriction')}
+                  </span>
+                  <div className="mt-0.5 flex justify-center w-full">
+                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold border ${badgeColor}`}>
+                      {t(`restriction.${restrictionLevel.toLowerCase()}`, { defaultValue: statusLabel })}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="text-slate-600 dark:text-slate-300 text-xs leading-relaxed font-medium pt-1">
+                <p>
+                  {about.conservation_rules ||
+                    t('article.compliance_prose_1', {
+                      place: getLocalizedValue(viewingArticle, 'place_name', i18n.language) || 'this destination',
+                      org: governingOrg
+                    })}
+                </p>
+              </div>
+            </section>
+
+            {/* Editorial Footer */}
+            <footer className="mt-8 pt-4 border-t border-slate-100 dark:border-slate-800 flex flex-wrap justify-between items-center gap-4 text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+              <div className="flex items-center gap-2">
+                <div className="w-6 h-6 rounded-full bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900 flex items-center justify-center font-black text-[9px]">
+                  HG
+                </div>
+                <span>
+                  {t('article.archived_by')}{' '}
+                  <strong className="text-slate-800 dark:text-slate-200">Hasitha Gunasekera</strong>
+                </span>
+              </div>
+              <div>
+                <span>
+                  {t('article.record_ref')} #{viewingArticle.id || '000'}
+                </span>
+              </div>
+            </footer>
+          </div>
+
+          {/* Discussion / Comments Block */}
+          <div
+            id="comments-discussion-section"
+            className="border-t border-slate-100 dark:border-slate-800 pt-8"
+          >
+            <h4 className="text-[10px] font-black uppercase tracking-widest text-slate-400 dark:text-slate-500 mb-6 flex items-center gap-2">
+              <MessageCircle className="w-3 h-3" />
+              {t('article.discussion_count', {
+                defaultValue: 'Discussion',
+                count: comments[viewingArticle.id]?.length || 0
+              })}{' '}
+              ({comments[viewingArticle.id]?.length || 0})
+            </h4>
+
+            <div className="space-y-4 mb-8">
+              {comments[viewingArticle.id]?.map((c, i) => (
+                <div
+                  key={i}
+                  className="bg-slate-50 dark:bg-slate-800/40 p-4 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-sm"
+                >
+                  <p className="text-xs text-slate-700 dark:text-slate-200 font-semibold mb-2">
+                    {c.comment_text}
+                  </p>
+                  <div className="flex justify-between items-center opacity-60">
+                    <span className="text-[8px] font-bold text-slate-400 uppercase">
+                      {new Date(c.created_at).toLocaleDateString()}
+                    </span>
+                    {(c.city || c.country) && (
+                      <span className="text-[7px] font-black text-slate-400 uppercase tracking-widest">
+                        {[c.city, c.country].filter(Boolean).join(', ')}
+                      </span>
+                    )}
+                  </div>
+
+                  {c.reply_text && (
+                    <div className="mt-4 pt-4 border-t border-slate-200/60 dark:border-slate-700/60">
+                      <div className="flex items-center gap-1.5 mb-2">
+                        <div className="w-1 h-3 bg-indigo-500 rounded-full"></div>
+                        <span className="text-[8px] font-black text-indigo-600 dark:text-indigo-400 uppercase tracking-tighter">
+                          {t('article.author_response', { defaultValue: 'Author Response' })}
+                        </span>
+                      </div>
+                      <div className="bg-white dark:bg-slate-800 p-3 rounded-xl border border-slate-100 dark:border-slate-700/60">
+                        <p className="text-[10px] text-slate-600 dark:text-slate-300 leading-relaxed italic">
+                          "{c.reply_text}"
+                        </p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+
+            <div className="relative sticky bottom-0 bg-white dark:bg-slate-900 pt-2">
+              <input
+                type="text"
+                value={newCommentText}
+                onChange={(e) => setnewCommentText(e.target.value)}
+                placeholder={t('article.comment_placeholder', { defaultValue: 'Add your trail note...' })}
+                className="w-full bg-slate-100 dark:bg-slate-800 border-2 border-transparent focus:border-slate-900 dark:focus:border-slate-100 focus:bg-white dark:focus:bg-slate-900 rounded-2xl px-5 py-4 text-xs font-bold text-slate-900 dark:text-slate-100 placeholder-slate-400 transition-all outline-none pr-12"
+                onKeyDown={async (e) => {
+                  if (e.key === 'Enter' && newCommentText.trim()) {
+                    const text = newCommentText;
+                    setnewCommentText('');
+                    await submitComment(viewingArticle.id, text);
+                  }
+                }}
+              />
+              <button
+                type="button"
+                onClick={() => {
+                  if (newCommentText.trim()) submitComment(viewingArticle.id, newCommentText);
+                  setnewCommentText('');
+                }}
+                className="absolute right-4 top-1/2 -translate-y-1/2 p-2 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-xl transition-colors"
+              >
+                <Send className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+})()}
 
 
       {/* --- ROUTE PLANNER MODAL --- */}
