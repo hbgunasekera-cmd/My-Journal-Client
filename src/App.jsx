@@ -883,17 +883,34 @@ export const translateContentService = async (ai_article, targetLangCode, articl
     const lookupKey = targetLangCode?.toLowerCase();
     const targetLanguageName = SUPPORTED_LANGUAGES[lookupKey] || SUPPORTED_LANGUAGES[baseLang] || baseLang;
 
-    // UPDATED PROMPT: Explicitly instructs deep traversal and strict structural consistency
+    // TRANSLATION PROMPT — TARGET ONLY THE FOUR ARTICLE PROSE FIELDS
     const prompt = `
-You are an expert localization engine. Translate ALL human-readable prose strings within the following JSON object into "${targetLanguageName}".
+You are an expert localization engine.
+
+Translate ONLY these four human-readable prose fields into "${targetLanguageName}":
+
+1. seo_intro
+2. why_visit.summary
+3. story
+4. history
 
 CRITICAL CONSTRAINTS:
-1. DO NOT translate JSON keys, numeric values, booleans, or technical abbreviations/units (e.g., "elevation_m", 1100, "km", "4G").
-2. TRANSLATE ALL prose content, descriptions, and summaries recursively. This includes deeply nested strings, arrays of strings, and values inside objects (e.g., "question" and "answer" inside "faq", or items inside "highlights").
-3. Maintain the exact original JSON structure, keys, and array formatting. Do not add or remove any nodes.
-4. Output strictly valid JSON without any markdown formatting or conversational text.
+1. Keep ALL JSON keys exactly unchanged.
+2. Keep ALL numeric values, booleans, arrays, and technical values unchanged.
+3. DO NOT translate any other fields.
+4. The following exact JSON paths MUST be translated:
+   - ["seo_intro"]
+   - ["why_visit"]["summary"]
+   - ["story"]
+   - ["history"]
+5. Preserve the exact JSON structure and all existing nodes.
+6. Do not add, remove, rename, or reorder fields.
+7. Return a complete valid JSON object only.
+8. Never return markdown fences or explanatory text.
+9. If one of the four fields is missing or empty in the source, leave it unchanged.
+10. The translated result MUST contain all four original fields when they exist.
 
-Source JSON:
+SOURCE JSON:
 ${JSON.stringify(ai_article)}
 `.trim();
 
@@ -5068,9 +5085,15 @@ function App() {
         HUMAN VISUAL INTERFACE (DYNAMIC MODAL OVERLAY)
         ======================================================================= */}
       {isArticleOpen && viewingArticle && (() => {
-        // 1. Safely parse ai_article (handles both Objects and JSON Strings)
+        // ================================================================
+        // 1. SAFELY PARSE AI_ARTICLE (Handles Objects & JSON Strings)
+        // ================================================================
         let article = {};
-        if (typeof viewingArticle.ai_article === 'object' && viewingArticle.ai_article !== null) {
+
+        if (
+          typeof viewingArticle.ai_article === 'object' &&
+          viewingArticle.ai_article !== null
+        ) {
           article = viewingArticle.ai_article;
         } else if (typeof viewingArticle.ai_article === 'string') {
           try {
@@ -5081,38 +5104,86 @@ function App() {
           }
         }
 
+        // ================================================================
+        // 2. ARTICLE CONTENT + TRANSLATION-AWARE PROSE FIELDS
+        // ================================================================
         const metrics = article.metrics || {};
         const about = article.about || {};
-        const seoIntro = article.seo_intro || '';
-        const storyText = getActiveContent('story') || article.story || (typeof viewingArticle.ai_article === 'string' ? viewingArticle.ai_article : '');
-        const historyText = getActiveContent('history') || article.history || '';
         const highlights = article.highlights || [];
 
-        // 2. Safe FAQ extraction with key fallbacks (faqs, faq, faq_list)
-        const rawFaqs = article.faqs || article.faq || article.faq_list || [];
+        /*
+         * IMPORTANT:
+         * These fields must read from translatedContent/getActiveContent first.
+         * This prevents the Article Window from falling back to the
+         * original English article when a translated version exists.
+         */
+        const seoIntro =
+          getActiveContent('seo_intro') ||
+          article.seo_intro ||
+          '';
+
+        const whyVisitSummary =
+          translatedContent?.why_visit?.summary ||
+          article.why_visit?.summary ||
+          '';
+
+        const storyText =
+          getActiveContent('story') ||
+          article.story ||
+          (
+            typeof viewingArticle.ai_article === 'string'
+              ? viewingArticle.ai_article
+              : ''
+          );
+
+        const historyText =
+          getActiveContent('history') ||
+          article.history ||
+          '';
+
+        // ================================================================
+        // 3. SAFE FAQ EXTRACTION
+        // ================================================================
+        const rawFaqs =
+          article.faqs ||
+          article.faq ||
+          article.faq_list ||
+          [];
+
         const faqs = Array.isArray(rawFaqs) ? rawFaqs : [];
 
-        // Regulatory Metadata & Fallbacks
-        const governingOrg = viewingArticle.governing_org || 'Department of Wildlife Conservation / Local Authority';
+        // ================================================================
+        // 4. REGULATORY METADATA & FALLBACKS
+        // ================================================================
+        const governingOrg =
+          viewingArticle.governing_org ||
+          'Department of Wildlife Conservation / Local Authority';
 
-        // Restriction Level Categorization Logic
-        const restrictionLevel = viewingArticle.restriction_level?.trim() || 'None';
+        const restrictionLevel =
+          viewingArticle.restriction_level?.trim() ||
+          'None';
+
         let statusLabel = "No Restriction";
-        let badgeColor = "bg-emerald-100 text-emerald-800 border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-400 dark:border-emerald-900/30";
+        let badgeColor =
+          "bg-emerald-100 text-emerald-800 border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-400 dark:border-emerald-900/30";
 
         if (restrictionLevel === 'Low') {
           statusLabel = "Tickets Required";
-          badgeColor = "bg-blue-100 text-blue-800 border-blue-200 dark:bg-blue-950/40 dark:text-blue-400 dark:border-blue-900/30";
+          badgeColor =
+            "bg-blue-100 text-blue-800 border-blue-200 dark:bg-blue-950/40 dark:text-blue-400 dark:border-blue-900/30";
         } else if (restrictionLevel === 'High') {
           statusLabel = "Permit Required";
-          badgeColor = "bg-amber-100 text-amber-800 border-amber-200 dark:bg-amber-950/40 dark:text-amber-400 dark:border-amber-900/30";
+          badgeColor =
+            "bg-amber-100 text-amber-800 border-amber-200 dark:bg-amber-950/40 dark:text-amber-400 dark:border-amber-900/30";
         } else if (restrictionLevel === 'Restricted') {
           statusLabel = "No Entry";
-          badgeColor = "bg-rose-100 text-rose-800 border-rose-200 dark:bg-rose-950/40 dark:text-rose-400 dark:border-rose-900/30";
+          badgeColor =
+            "bg-rose-100 text-rose-800 border-rose-200 dark:bg-rose-950/40 dark:text-rose-400 dark:border-rose-900/30";
         }
 
         return (
           <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
+
             {/* Backdrop */}
             <div
               className="absolute inset-0 bg-slate-900/90 backdrop-blur-md"
@@ -5124,17 +5195,24 @@ function App() {
             ></div>
 
             <div className="relative bg-white dark:bg-slate-900 w-full max-w-2xl rounded-[2.5rem] overflow-hidden shadow-2xl flex flex-col max-h-[90vh]">
+
               {/* Header Image */}
               <div className="relative h-48 w-full shrink-0">
                 <img
                   src={viewingArticle.cover_photo_url}
                   className="h-full w-full object-cover"
-                  alt={getLocalizedValue(viewingArticle, 'place_name', i18n.language)}
+                  alt={getLocalizedValue(
+                    viewingArticle,
+                    'place_name',
+                    i18n.language
+                  )}
                   fetchPriority="high"
                   loading="eager"
                   decoding="async"
                 />
+
                 <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
+
                 <button
                   type="button"
                   onClick={() => {
@@ -5150,17 +5228,24 @@ function App() {
               </div>
 
               <div className="p-8 overflow-y-auto scrollable-list no-scrollbar bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100">
-                {/* Meta Bar */}
+
+                {/* ============================================================
+              META BAR
+          ============================================================ */}
                 <div className="flex items-center justify-between mb-4">
+
                   <div className="flex items-center gap-2">
                     <span
                       className={`px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest transition-colors ${getCategoryColorClass(
                         viewingArticle.category
                       )}`}
                     >
-                      {t(`categories.${viewingArticle.category?.toLowerCase()}`, {
-                        defaultValue: viewingArticle.category
-                      })}
+                      {t(
+                        `categories.${viewingArticle.category?.toLowerCase()}`,
+                        {
+                          defaultValue: viewingArticle.category
+                        }
+                      )}
                     </span>
 
                     <button
@@ -5186,6 +5271,7 @@ function App() {
                     >
                       <Share2 className="w-3.5 h-3.5 text-slate-500 dark:text-slate-400 group-hover:text-indigo-600 dark:group-hover:text-indigo-400" />
                     </button>
+
                     <button
                       type="button"
                       onClick={() =>
@@ -5200,6 +5286,7 @@ function App() {
                     >
                       <MapPin className="w-3.5 h-3.5 text-slate-500 dark:text-slate-400" />
                     </button>
+
                     {viewingArticle.status !== 'pending' && (
                       <button
                         type="button"
@@ -5207,7 +5294,10 @@ function App() {
                         className="flex items-center gap-2 bg-slate-50 dark:bg-slate-800 hover:bg-rose-50 dark:hover:bg-rose-950/30 px-4 py-2 rounded-2xl border border-slate-100 dark:border-slate-700/60 transition-all"
                       >
                         <Heart
-                          className={`w-4 h-4 ${likes[viewingArticle.id] ? 'fill-rose-500 text-rose-500' : 'text-slate-400'}`}
+                          className={`w-4 h-4 ${likes[viewingArticle.id]
+                            ? 'fill-rose-500 text-rose-500'
+                            : 'text-slate-400'
+                            }`}
                         />
                         <span
                           className={`text-[10px] font-black transition-colors ${likes[viewingArticle.id]?.isUserLiked
@@ -5222,13 +5312,21 @@ function App() {
                   </div>
                 </div>
 
-                {/* AI Journal Main Body */}
+                {/* ============================================================
+              AI JOURNAL MAIN BODY
+          ============================================================ */}
                 <div className="mb-10">
+
                   <h2 className="text-2xl font-black text-slate-900 dark:text-white mb-4 leading-tight tracking-tight">
-                    {getActiveContent('title') || getLocalizedValue(viewingArticle, 'place_name', i18n.language)}
+                    {getActiveContent('title') ||
+                      getLocalizedValue(
+                        viewingArticle,
+                        'place_name',
+                        i18n.language
+                      )}
                   </h2>
 
-                  {/* SEO Intro Paragraph */}
+                  {/* SEO INTRO */}
                   {seoIntro && (
                     <p className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-8 leading-relaxed">
                       {seoIntro}
@@ -5237,11 +5335,13 @@ function App() {
 
                   {storyText ? (
                     <div className="space-y-8">
-                      {/* Quick Facts */}
+
+                      {/* QUICK FACTS */}
                       {article.quick_facts && (
                         <section className="bg-slate-50 dark:bg-slate-800/40 rounded-3xl p-6 border border-slate-100 dark:border-slate-800">
                           <h3 className="text-sm font-black uppercase tracking-widest text-slate-900 dark:text-white mb-4 flex items-center gap-2">
-                            <Zap className="w-4 h-4 text-amber-500" /> Quick Facts
+                            <Zap className="w-4 h-4 text-amber-500" />
+                            Quick Facts
                           </h3>
                           <div className="grid grid-cols-2 sm:grid-cols-3 gap-y-4 gap-x-6 text-xs">
                             <div><span className="block text-slate-400 font-bold mb-1">Elevation</span><span className="font-semibold">{article.quick_facts.elevation_m}m</span></div>
@@ -5254,37 +5354,47 @@ function App() {
                         </section>
                       )}
 
-                      {/* Why Visit? */}
-                      {article.why_visit && (
+                      {/* WHY VISIT? */}
+                      {(article.why_visit || translatedContent?.why_visit) && (
                         <section>
-                          <h3 className="text-sm font-black uppercase tracking-widest text-slate-900 dark:text-white mb-3">Why Visit?</h3>
-                          <p className="text-slate-600 dark:text-slate-300 text-sm leading-relaxed mb-4">{article.why_visit.summary}</p>
+                          <h3 className="text-sm font-black uppercase tracking-widest text-slate-900 dark:text-white mb-3">
+                            Why Visit?
+                          </h3>
+                          <p className="text-slate-600 dark:text-slate-300 text-sm leading-relaxed mb-4">
+                            {whyVisitSummary}
+                          </p>
                           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <div className="bg-emerald-50 dark:bg-emerald-950/20 p-4 rounded-2xl border border-emerald-100 dark:border-emerald-900/30">
-                              <span className="block text-[10px] font-black uppercase text-emerald-600 dark:text-emerald-400 mb-2">Highly Rewarding For</span>
+                              <span className="block text-[10px] font-black uppercase text-emerald-600 dark:text-emerald-400 mb-2">
+                                Highly Rewarding For
+                              </span>
                               <ul className="space-y-1 text-xs font-medium text-emerald-800 dark:text-emerald-300">
-                                {article.why_visit.best_for?.map((item, i) => <li key={i}>✓ {item}</li>)}
+                                {article.why_visit?.best_for?.map((item, i) => <li key={i}>✓ {item}</li>)}
                               </ul>
                             </div>
                             <div className="bg-rose-50 dark:bg-rose-950/20 p-4 rounded-2xl border border-rose-100 dark:border-rose-900/30">
-                              <span className="block text-[10px] font-black uppercase text-rose-600 dark:text-rose-400 mb-2">Less Suitable For</span>
+                              <span className="block text-[10px] font-black uppercase text-rose-600 dark:text-rose-400 mb-2">
+                                Less Suitable For
+                              </span>
                               <ul className="space-y-1 text-xs font-medium text-rose-800 dark:text-rose-300">
-                                {article.why_visit.less_suitable_for?.map((item, i) => <li key={i}>✗ {item}</li>)}
+                                {article.why_visit?.less_suitable_for?.map((item, i) => <li key={i}>✗ {item}</li>)}
                               </ul>
                             </div>
                           </div>
                         </section>
                       )}
 
-                      {/* Expedition Journal */}
+                      {/* EXPEDITION JOURNAL */}
                       <section className="prose dark:prose-invert max-w-none">
-                        <h3 className="text-sm font-black uppercase tracking-widest text-slate-900 dark:text-white mb-3">Expedition Journal</h3>
+                        <h3 className="text-sm font-black uppercase tracking-widest text-slate-900 dark:text-white mb-3">
+                          Expedition Journal
+                        </h3>
                         <p className="text-slate-600 dark:text-slate-300 leading-relaxed text-sm whitespace-pre-line border-l-2 border-indigo-500 pl-4 italic">
                           {storyText}
                         </p>
                       </section>
 
-                      {/* Explorer Rating */}
+                      {/* EXPLORER RATING */}
                       {article.explorer_rating && (
                         <section className="bg-indigo-900 text-white rounded-3xl p-6 shadow-lg">
                           <h3 className="text-sm font-black uppercase tracking-widest text-indigo-200 mb-4">Explorer Rating</h3>
@@ -5299,7 +5409,7 @@ function App() {
                         </section>
                       )}
 
-                      {/* Photography & Drone Notes */}
+                      {/* PHOTOGRAPHY & DRONE NOTES */}
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         {article.photography_notes && (
                           <section className="bg-slate-50 dark:bg-slate-800/40 p-5 rounded-3xl border border-slate-100 dark:border-slate-800">
@@ -5327,7 +5437,7 @@ function App() {
                         )}
                       </div>
 
-                      {/* Route & Access Report */}
+                      {/* ROUTE & ACCESS REPORT */}
                       {article.route_report && (
                         <section className="p-5 rounded-3xl border-2 border-slate-100 dark:border-slate-800">
                           <h3 className="text-[11px] font-black uppercase tracking-widest text-slate-900 dark:text-white mb-4">🏍 Route & Access Report</h3>
@@ -5340,7 +5450,7 @@ function App() {
                         </section>
                       )}
 
-                      {/* What I Wish I Knew Before Visiting */}
+                      {/* WHAT I WISH I KNEW */}
                       {article.wish_i_knew && article.wish_i_knew.length > 0 && (
                         <section className="bg-amber-50 dark:bg-amber-950/20 p-5 rounded-3xl border border-amber-100 dark:border-amber-900/30">
                           <h3 className="text-[11px] font-black uppercase tracking-widest text-amber-800 dark:text-amber-400 mb-3">💡 What I Wish I Knew</h3>
@@ -5350,7 +5460,7 @@ function App() {
                         </section>
                       )}
 
-                      {/* Behind The Shot */}
+                      {/* BEHIND THE SHOT */}
                       {article.behind_the_shot && (
                         <section className="bg-slate-900 dark:bg-black text-white p-6 rounded-3xl shadow-xl">
                           <h3 className="text-[11px] font-black uppercase tracking-widest text-slate-400 mb-4">Behind The Shot</h3>
@@ -5371,7 +5481,7 @@ function App() {
                         </section>
                       )}
 
-                      {/* FAQ Section */}
+                      {/* FAQ SECTION */}
                       {faqs.length > 0 && (
                         <section className="mt-8 border-t border-slate-100 dark:border-slate-800 pt-6">
                           <h3 className="text-lg font-black text-slate-900 dark:text-white mb-4">Frequently Asked Questions</h3>
@@ -5390,27 +5500,40 @@ function App() {
                         </section>
                       )}
 
-                      {/* History & Heritage */}
+                      {/* HISTORY & HERITAGE */}
                       {historyText && (
                         <section className="mt-8 border-t border-slate-100 dark:border-slate-800 pt-6">
                           <h4 className="text-[9px] font-black uppercase tracking-[0.2em] text-slate-400 dark:text-slate-500 mb-2">History & Heritage</h4>
                           <p className="text-xs text-slate-600 dark:text-slate-300 font-medium leading-relaxed">{historyText}</p>
                         </section>
                       )}
+
                     </div>
                   ) : (
-                    /* Fallback Summary Layer */
+                    /* FALLBACK SUMMARY LAYER */
                     <div className="space-y-4">
                       <p className="text-slate-600 dark:text-slate-300 leading-relaxed text-sm">
-                        {getLocalizedValue(viewingArticle, 'description', i18n.language) || t('article.fallback_desc')}
+                        {getLocalizedValue(
+                          viewingArticle,
+                          'description',
+                          i18n.language
+                        ) ||
+                          t('article.fallback_desc')}
                       </p>
-                      <button type="button" onClick={() => handleOpenArticle(viewingArticle)} className="inline-flex items-center justify-center px-5 py-3 bg-indigo-50 dark:bg-indigo-950/40 hover:bg-indigo-100 dark:hover:bg-indigo-900/50 text-indigo-600 dark:text-indigo-400 rounded-xl font-black text-[10px] uppercase tracking-widest transition-all">
+
+                      <button
+                        type="button"
+                        onClick={() => handleOpenArticle(viewingArticle)}
+                        className="inline-flex items-center justify-center px-5 py-3 bg-indigo-50 dark:bg-indigo-950/40 hover:bg-indigo-100 dark:hover:bg-indigo-900/50 text-indigo-600 dark:text-indigo-400 rounded-xl font-black text-[10px] uppercase tracking-widest transition-all"
+                      >
                         {t('article.load_journal_btn')}
                       </button>
                     </div>
                   )}
 
-                  {/* Field Notes, Conservation & Regional Regulations */}
+                  {/* ============================================================
+                CONSERVATION, REGULATIONS & EDITORIAL FOOTER
+            ============================================================ */}
                   <section className="mt-6 p-5 bg-slate-50 dark:bg-slate-800/40 rounded-[1.5rem] border border-slate-100 dark:border-slate-800 space-y-4">
                     <div className="flex items-center justify-between border-b border-slate-200/60 dark:border-slate-700/60 pb-3">
                       <div className="flex items-center gap-2">
@@ -5421,7 +5544,6 @@ function App() {
                       </div>
                     </div>
 
-                    {/* Governing Body & Restriction Level */}
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
                       <div className="bg-white dark:bg-slate-900/60 p-3.5 rounded-xl border border-slate-200/80 dark:border-slate-700/80 shadow-sm flex flex-col justify-between items-center text-center">
                         <span className="block text-[8px] font-black uppercase tracking-widest text-slate-400 dark:text-slate-500 mb-1">
@@ -5456,7 +5578,6 @@ function App() {
                     </div>
                   </section>
 
-                  {/* Editorial Footer */}
                   <footer className="mt-8 pt-4 border-t border-slate-100 dark:border-slate-800 flex flex-wrap justify-between items-center gap-4 text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
                     <div className="flex items-center gap-2">
                       <div className="w-6 h-6 rounded-full bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900 flex items-center justify-center font-black text-[9px]">
@@ -5475,7 +5596,9 @@ function App() {
                   </footer>
                 </div>
 
-                {/* Discussion / Comments Block */}
+                {/* ============================================================
+              DISCUSSION / COMMENTS BLOCK
+          ============================================================ */}
                 <div
                   id="comments-discussion-section"
                   className="border-t border-slate-100 dark:border-slate-800 pt-8"
