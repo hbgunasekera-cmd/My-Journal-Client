@@ -727,14 +727,14 @@ export const logVisit = async (path = null) => {
 /**
  * Real-time Geolocation tracker watcher
  */
-export const getUserLocation = (setUserCoords, toast) => {
+export const getUserLocation = (setUserCoords) => {
   if (!navigator.geolocation) {
-    toast.error("Geolocation is not supported by your browser.");
+    console.warn("Geolocation is not supported by this browser.");
     setUserCoords(DEFAULT_LOCATION);
-    return;
+    return null;
   }
 
-  const watchId = navigator.geolocation.watchPosition(
+  return navigator.geolocation.watchPosition(
     (pos) => {
       setUserCoords({
         lat: pos.coords.latitude,
@@ -743,19 +743,10 @@ export const getUserLocation = (setUserCoords, toast) => {
     },
     (err) => {
       console.warn("Geolocation tracking error:", err);
-      if (err.code === 1) {
-        toast.error("Location access denied. Showing default area.");
-      } else if (err.code === 2) {
-        toast.error("GPS signal lost. Showing default area.");
-      } else if (err.code === 3) {
-        toast("Location request timed out. Retrying...", { icon: "ℹ️" });
-      }
       setUserCoords((prevCoords) => prevCoords || DEFAULT_LOCATION);
     },
     { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
   );
-
-  return watchId;
 };
 
 // =======================================================================
