@@ -5609,24 +5609,7 @@ function App() {
                         </section>
                       )}
 
-                      {/* FAQ SECTION */}
-                      {faqs.length > 0 && (
-                        <section className="mt-8 border-t border-slate-100 dark:border-slate-800 pt-6">
-                          <h3 className="text-lg font-black text-slate-900 dark:text-white mb-4">Frequently Asked Questions</h3>
-                          <div className="space-y-4">
-                            {faqs.map((faq, index) => (
-                              <div key={index} className="bg-slate-50 dark:bg-slate-800/30 p-4 rounded-2xl border border-slate-100 dark:border-slate-800/60">
-                                <h4 className="text-sm font-bold text-slate-900 dark:text-slate-100 mb-2">
-                                  {faq.question || faq.q}
-                                </h4>
-                                <p className="text-sm text-slate-600 dark:text-slate-300 leading-relaxed">
-                                  {faq.answer || faq.a}
-                                </p>
-                              </div>
-                            ))}
-                          </div>
-                        </section>
-                      )}
+
 
                       {/* HISTORY & HERITAGE */}
                       {historyText && (
@@ -5705,6 +5688,25 @@ function App() {
                       </p>
                     </div>
                   </section>
+
+                  {/* FAQ SECTION */}
+                  {faqs.length > 0 && (
+                    <section className="mt-8 border-t border-slate-100 dark:border-slate-800 pt-6">
+                      <h3 className="text-lg font-black text-slate-900 dark:text-white mb-4">Frequently Asked Questions</h3>
+                      <div className="space-y-4">
+                        {faqs.map((faq, index) => (
+                          <div key={index} className="bg-slate-50 dark:bg-slate-800/30 p-4 rounded-2xl border border-slate-100 dark:border-slate-800/60">
+                            <h4 className="text-sm font-bold text-slate-900 dark:text-slate-100 mb-2">
+                              {faq.question || faq.q}
+                            </h4>
+                            <p className="text-sm text-slate-600 dark:text-slate-300 leading-relaxed">
+                              {faq.answer || faq.a}
+                            </p>
+                          </div>
+                        ))}
+                      </div>
+                    </section>
+                  )}
 
                   <footer className="mt-8 pt-4 border-t border-slate-100 dark:border-slate-800 flex flex-wrap justify-between items-center gap-4 text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
                     <div className="flex items-center gap-2">
