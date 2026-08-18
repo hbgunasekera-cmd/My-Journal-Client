@@ -11,7 +11,7 @@ import React, {
   lazy
 } from 'react';
 import { createRoot } from 'react-dom/client';
-import { useDragScroll } from './hooks/useDragScroll';
+
 
 // =======================================================================
 // 2. THIRD-PARTY LIBRARIES & UTILITIES
@@ -2361,7 +2361,6 @@ function App() {
   const [isFabExpanded, setIsFabExpanded] = useState(false);
   const [isSocialExpanded, setIsSocialExpanded] = useState(false);
   const [isAddExpanded, setIsAddExpanded] = useState(false);
-  const scrollRef = useDragScroll();
 
   // ============================================================================
   // 26. EXTERNAL METRIC UTILITIES (WEATHER, MAP POIs)
@@ -4562,10 +4561,8 @@ function App() {
         </div>
       </div>
 
-      <div
-        ref={scrollRef}
-        className="scroll-container drag-scroll flex-1 px-4 md:px-10 pb-20 no-scrollbar"
-      >
+      <div className="flex-1 overflow-y-auto overscroll-y-contain touch-pan-y px-4 md:px-10 pb-20 no-scrollbar">
+
         {/* 1. Main Grid: Location Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6 pt-2">
           {/* SKELETON STATE: Prevents CLS by reserving space while 'places' is empty/loading */}

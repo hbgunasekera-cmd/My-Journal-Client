@@ -2,42 +2,22 @@
 @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap');
 
 /* ==========================================================================
-   Base Styles & Native Scroll Restoration
+   Base Styles & Layout Locking
    ========================================================================== */
 html,
 body,
 #root {
-  min-height: 100%;
+  height: 100%;
   margin: 0;
   font-family: 'Plus Jakarta Sans', sans-serif;
   background-color: #ffffff; /* Forces white background regardless of mobile dark mode settings */
   color: #0f172a;
 
-  /* Restores native scrolling for mouse wheels and touchpad two-finger gestures,
-     while preventing horizontal overflow and containing vertical rubber-banding. */
-  overflow-x: hidden;
-  overflow-y: auto;
-  overscroll-behavior-y: contain;
-  touch-action: pan-y;
-}
-
-/* ==========================================================================
-   Scroll & Click-and-Drag (Grab-to-Scroll) Utilities
-   ========================================================================== */
-.scroll-container {
-  overflow-y: auto;
-  overscroll-behavior-y: contain;
-  touch-action: pan-y;
-}
-
-.drag-scroll {
-  cursor: grab;
-  user-select: none;
-  -webkit-user-select: none;
-}
-
-.drag-scroll:active {
-  cursor: grabbing;
+  /* Touchpad & Inner Scroll Fix: 
+     Locks the global window viewport to prevent trackpad gestures / rubber-banding 
+     from hijacking touch/wheel events away from inner scrollable containers. */
+  overflow: hidden;
+  overscroll-behavior: none;
 }
 
 /* ==========================================================================
@@ -57,7 +37,7 @@ body,
 
   .touch-none {
     -webkit-tap-highlight-color: transparent;
-    touch-action: pan-y;
+    touch-action: none;
   }
 }
 
