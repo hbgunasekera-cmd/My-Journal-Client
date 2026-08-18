@@ -4,6 +4,7 @@
 /* ==========================================================================
    Base Styles & Layout Locking
    ========================================================================== */
+
 html,
 body,
 #root {
@@ -11,68 +12,234 @@ body,
   margin: 0;
   font-family: 'Plus Jakarta Sans', sans-serif;
   background-color: #ffffff;
-  /* Forces white background regardless of mobile dark mode settings */
   color: #0f172a;
 
-  /* Touchpad & Inner Scroll Fix: 
-     Locks the global window viewport to prevent trackpad gestures / rubber-banding 
-     from hijacking touch/wheel events away from inner scrollable containers. */
+  /*
+   * Keep the application viewport locked.
+   *
+   * The three application scroll regions:
+   *   1. Main Grid / Location Cards
+   *   2. Article Window
+   *   3. Photo Gallery
+   *
+   * handle their own scrolling.
+   *
+   * Native wheel, mouse-wheel, precision-touchpad and touchscreen
+   * scrolling remain enabled on those individual scroll containers.
+   */
   overflow: hidden;
   overscroll-behavior: none;
 }
 
 /* ==========================================================================
-   Layered Protection & Interaction Utilities
+   Base Interaction & Media Protection
    ========================================================================== */
+
 @layer base {
   .no-copy {
     user-select: none;
+    -webkit-user-select: none;
     -webkit-touch-callout: none;
   }
 
+  /*
+   * Images should not participate in native browser image dragging.
+   * Pointer interaction is controlled by their parent components.
+   */
   img {
     -webkit-user-drag: none;
     user-select: none;
-    pointer-events: none;
   }
 
+  /*
+   * Generic "touch-none" utility.
+   *
+   * IMPORTANT:
+   * Do not apply this to the three scrollable content regions because
+   * it disables native touch/pointer scrolling.
+   *
+   * It remains appropriate for things such as drag handles and map
+   * interaction surfaces where the component needs complete pointer control.
+   */
   .touch-none {
     -webkit-tap-highlight-color: transparent;
     touch-action: none;
   }
-}
 
-/* ==========================================================================
-   Tailwind v4 Scrollbar Hiding Utilities
-   ========================================================================== */
+  /*
+   * Explicit native vertical scrolling.
+   *
+   * Use on:
+   *   - Main Grid
+   *   - Article Window
+   *   - vertically scrollable gallery content
+   */
+  .native-scroll-y {
+    overflow-y: auto;
+    overflow-x: hidden;
 
-/* Utility 1: Primary scrollbar removal */
-@utility no-scrollbar {
-  scrollbar-width: none !important;
-  /* Firefox */
-  -ms-overflow-style: none !important;
-  /* IE / Edge */
+    /*
+     * Preserve browser-native wheel, precision-touchpad and
+     * touchscreen scrolling.
+     */
+    touch-action: pan-y;
 
-  &::-webkit-scrollbar {
-    display: none !important;
-    /* Chrome, Safari, and Opera */
-    width: 0 !important;
-    height: 0 !important;
+    /*
+     * Prevent scroll chaining / rubber-banding from escaping
+     * the intended application scroll region.
+     */
+    overscroll-behavior-y: contain;
+  }
+
+  /*
+   * Explicit native horizontal scrolling where required.
+   */
+  .native-scroll-x {
+    overflow-x: auto;
+    overflow-y: hidden;
+    touch-action: pan-x;
+    overscroll-behavior-x: contain;
+  }
+
+  /*
+   * Two-axis native scrolling.
+   */
+  .native-scroll {
+    overflow: auto;
+    touch-action: pan-x pan-y;
+    overscroll-behavior: contain;
+  }
+
+  /*
+   * Class applied by the React drag-scroll implementation while the
+   * user is actively holding the LEFT mouse button and dragging.
+   *
+   * The JS implementation should add/remove this class during
+   * pointer interaction.
+   */
+  .drag-scroll-active {
+    cursor: grabbing !important;
+    user-select: none !important;
+    -webkit-user-select: none !important;
   }
 }
 
-/* Utility 2: Legacy fallback to ensure elements using 'custom-scrollbar' remain hidden */
-@utility custom-scrollbar {
+/* ==========================================================================
+   Invisible Scrollbars
+   ========================================================================== */
+
+/*
+ * Primary scrollbar utility.
+ *
+ * Native scrolling remains fully functional; only the visual scrollbar
+ * is removed.
+ */
+@utility no-scrollbar {
   scrollbar-width: none !important;
-  /* Firefox */
   -ms-overflow-style: none !important;
-  /* IE / Edge */
 
   &::-webkit-scrollbar {
     display: none !important;
-    /* Chrome, Safari, and Opera */
     width: 0 !important;
     height: 0 !important;
+  }
+
+  &::-webkit-scrollbar-track {
+    display: none !important;
+    width: 0 !important;
+    height: 0 !important;
+    background: transparent !important;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    display: none !important;
+    width: 0 !important;
+    height: 0 !important;
+    background: transparent !important;
+  }
+}
+
+/*
+ * Backwards-compatible alias.
+ *
+ * Existing JSX currently uses both `no-scrollbar` and
+ * `custom-scrollbar`. Keep the latter completely invisible so existing
+ * components do not suddenly display a scrollbar.
+ */
+@utility custom-scrollbar {
+  scrollbar-width: none !important;
+  -ms-overflow-style: none !important;
+
+  &::-webkit-scrollbar {
+    display: none !important;
+    width: 0 !important;
+    height: 0 !important;
+  }
+
+  &::-webkit-scrollbar-track {
+    display: none !important;
+    width: 0 !important;
+    height: 0 !important;
+    background: transparent !important;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    display: none !important;
+    width: 0 !important;
+    height: 0 !important;
+    background: transparent !important;
+  }
+}
+
+/*
+ * Any scrollable element explicitly marked with one of these classes
+ * keeps native scrolling while hiding the scrollbar.
+ *
+ * This is particularly useful for the three required surfaces:
+ *
+ *   .location-grid-scroll
+ *   .article-window-scroll
+ *   .photo-gallery-scroll
+ */
+.location-grid-scroll,
+.article-window-scroll,
+.photo-gallery-scroll {
+  scrollbar-width: none !important;
+  -ms-overflow-style: none !important;
+}
+
+.location-grid-scroll::-webkit-scrollbar,
+.article-window-scroll::-webkit-scrollbar,
+.photo-gallery-scroll::-webkit-scrollbar {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+}
+
+/* ==========================================================================
+   Left-Click Drag Scroll State
+   ========================================================================== */
+
+/*
+ * These classes are state hooks for the React drag-scroll implementation.
+ *
+ * Native scrolling is NOT disabled here.
+ * Mouse wheel / touchpad / touchscreen scrolling continues to use the
+ * browser's native scrolling system.
+ */
+.location-grid-scroll,
+.article-window-scroll,
+.photo-gallery-scroll {
+
+  /*
+   * Prevent accidental browser text selection while performing a
+   * drag-scroll gesture. The React handler should only activate this
+   * state after the pointer has moved beyond its drag threshold.
+   */
+  &.drag-scroll-active {
+    user-select: none !important;
+    -webkit-user-select: none !important;
+    cursor: grabbing !important;
   }
 }
 
@@ -81,6 +248,7 @@ body,
    ========================================================================== */
 
 /* Google Places AutoComplete Dropdown Styling */
+
 .pac-container {
   z-index: 9999 !important;
   border-radius: 16px;

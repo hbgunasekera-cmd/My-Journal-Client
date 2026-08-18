@@ -1,5 +1,5 @@
 // =======================================================================
-// 1. REACT CORE & HOOKS
+// 1. REACT CORE & DOM HOOKS
 // =======================================================================
 import React, {
   useState,
@@ -11,7 +11,6 @@ import React, {
   lazy
 } from 'react';
 import { createRoot } from 'react-dom/client';
-
 
 // =======================================================================
 // 2. THIRD-PARTY LIBRARIES & UTILITIES
@@ -86,7 +85,6 @@ import {
 // =======================================================================
 // 6. LOCAL UTILITIES, COMPONENTS & LOCALIZATION CONFIG
 // =======================================================================
-
 import './i18n.js';
 
 // =======================================================================
@@ -288,6 +286,120 @@ export function useDebounce(value, delay = 300) {
   }, [value, delay]);
 
   return debouncedValue;
+}
+
+
+/**
+ * Left-click drag scrolling for application scroll containers.
+ *
+ * Native wheel / touchpad / touchscreen scrolling is intentionally
+ * NOT intercepted. This hook only adds the optional left-mouse-drag
+ * scrolling behavior.
+ *
+ * Interactive descendants such as buttons, links, inputs, textareas,
+ * selects, and drag handles are excluded so normal interaction remains
+ * intact.
+ */
+
+export function useDragScroll() {
+  // Use state instead of useRef so we trigger a re-render/effect when the element mounts
+  const [element, setElement] = useState(null);
+  const dragState = useRef({
+    active: false,
+    dragging: false,
+    startX: 0,
+    startY: 0,
+    startScrollLeft: 0,
+    startScrollTop: 0,
+  });
+
+  useEffect(() => {
+    // If the element isn't in the DOM yet, do nothing. 
+    // It will run again automatically once the element mounts.
+    if (!element) return;
+
+    const isInteractiveTarget = (target) => {
+      if (!(target instanceof Element)) return false;
+      return Boolean(
+        target.closest(
+          'button, a, input, textarea, select, option, [role="button"], [role="link"], [data-no-drag-scroll], [draggable="true"]'
+        )
+      );
+    };
+
+    const handlePointerDown = (e) => {
+      /* Only physical left mouse button. */
+      if (e.pointerType !== 'mouse' || e.button !== 0) return;
+      if (isInteractiveTarget(e.target)) return;
+
+      dragState.current = {
+        active: true,
+        dragging: false,
+        startX: e.clientX,
+        startY: e.clientY,
+        startScrollLeft: element.scrollLeft,
+        startScrollTop: element.scrollTop,
+      };
+    };
+
+    const handlePointerMove = (e) => {
+      const state = dragState.current;
+      if (!state.active) return;
+
+      const dx = e.clientX - state.startX;
+      const dy = e.clientY - state.startY;
+
+      if (!state.dragging) {
+        if (Math.abs(dx) < 5 && Math.abs(dy) < 5) return;
+
+        state.dragging = true;
+        element.classList.add('drag-scroll-active');
+        element.setPointerCapture?.(e.pointerId);
+      }
+
+      element.scrollLeft = state.startScrollLeft - dx;
+      element.scrollTop = state.startScrollTop - dy;
+
+      e.preventDefault();
+    };
+
+    const endDrag = (e) => {
+      const state = dragState.current;
+      if (element?.hasPointerCapture?.(e.pointerId)) {
+        element.releasePointerCapture(e.pointerId);
+      }
+
+      element?.classList.remove('drag-scroll-active');
+
+      dragState.current = {
+        active: false,
+        dragging: false,
+        startX: 0,
+        startY: 0,
+        startScrollLeft: 0,
+        startScrollTop: 0,
+      };
+    };
+
+    // Attach listeners dynamically when the element becomes available
+    element.addEventListener('pointerdown', handlePointerDown);
+    element.addEventListener('pointermove', handlePointerMove);
+    element.addEventListener('pointerup', endDrag);
+    element.addEventListener('pointercancel', endDrag);
+    element.addEventListener('lostpointercapture', endDrag);
+
+    // Clean up event listeners when the element unmounts
+    return () => {
+      element.removeEventListener('pointerdown', handlePointerDown);
+      element.removeEventListener('pointermove', handlePointerMove);
+      element.removeEventListener('pointerup', endDrag);
+      element.removeEventListener('pointercancel', endDrag);
+      element.removeEventListener('lostpointercapture', endDrag);
+    };
+  }, [element]); // Dependency array tracks the DOM element
+
+  // Return the state setter to act as our callback ref
+  return setElement;
 }
 
 // =======================================================================
@@ -1212,28 +1324,29 @@ const MapSelectionComponent = React.memo(({ onLocationSelect, initialCoords, onM
   return <div ref={mapRef} style={{ height: '100%', width: '100%' }} />;
 });
 
+
 export const PhotoGallery = React.memo(({ photos, onClose, placeName, selectedLocation, onShare }) => {
   const [activeIndex, setActiveIndex] = useState(null);
   const [isSlideshowActive, setIsSlideshowActive] = useState(false);
+
+  // 1. Two separate refs for the two different scrollable areas in the modal
+  const gridScrollRef = useDragScroll();
+  const lightboxScrollRef = useDragScroll();
 
   const preventCopy = (e) => {
     e.preventDefault();
     return false;
   };
 
-  // 1. Sync Gallery-Specific SEO & Open Graph Tags on Component Mount (ONLY for published places)
   useEffect(() => {
     if (selectedLocation || placeName) {
       const locationObj = selectedLocation || { place_name: placeName };
-
-      // FIX: Only sync SEO tags if the location is published
       if (locationObj.status === 'done') {
         updateSEO(locationObj, { isGallery: true });
       }
     }
   }, [selectedLocation, placeName]);
 
-  // 2. Lock Body Scroll on Mount & Clean Up on Unmount
   useEffect(() => {
     const scrollY = window.scrollY;
     document.body.classList.add('modal-open');
@@ -1243,7 +1356,6 @@ export const PhotoGallery = React.memo(({ photos, onClose, placeName, selectedLo
     };
   }, []);
 
-  // 3. Pinterest Save Integration
   const handlePinterestSave = (e, imageUrl, locationData) => {
     e.stopPropagation();
 
@@ -1251,7 +1363,6 @@ export const PhotoGallery = React.memo(({ photos, onClose, placeName, selectedLo
     const rawCategory = locationData?.category || "Location";
     const baseUrl = "https://www.myjournalview.com";
 
-    // Uses generateSlug for clean, consistent URLs
     const formattedLocation = typeof generateSlug === 'function'
       ? generateSlug(locationName)
       : encodeURIComponent(locationName.toLowerCase());
@@ -1296,7 +1407,6 @@ export const PhotoGallery = React.memo(({ photos, onClose, placeName, selectedLo
     window.open(pinterestUrl, '_blank', 'width=600,height=700,scrollbars=yes,resizable=yes');
   };
 
-  // 4. Automatic Slideshow Timer
   useEffect(() => {
     let timer;
     if (isSlideshowActive && activeIndex !== null) {
@@ -1305,7 +1415,6 @@ export const PhotoGallery = React.memo(({ photos, onClose, placeName, selectedLo
     return () => clearTimeout(timer);
   }, [isSlideshowActive, activeIndex]);
 
-  // 5. Keyboard Navigation Handling
   useEffect(() => {
     const handleKeyDown = (e) => {
       if (activeIndex === null) return;
@@ -1364,8 +1473,6 @@ export const PhotoGallery = React.memo(({ photos, onClose, placeName, selectedLo
             type="button"
             onClick={(e) => {
               e.stopPropagation();
-
-              // FIX: Only perform History & SEO Cleanup if the location was actually published
               const isPublished = selectedLocation?.status === 'done';
 
               if (isPublished) {
@@ -1373,7 +1480,6 @@ export const PhotoGallery = React.memo(({ photos, onClose, placeName, selectedLo
                 updateSEO(null);
               }
 
-              // 3. Invoke close callback safely
               if (typeof onClose === 'function') {
                 onClose();
               }
@@ -1386,7 +1492,11 @@ export const PhotoGallery = React.memo(({ photos, onClose, placeName, selectedLo
         </div>
       </header>
 
-      <main className="flex-1 overflow-y-auto overscroll-y-contain touch-pan-y p-4 md:p-10 custom-scrollbar">
+      {/* 2. Attached gridScrollRef to the main scrollable grid */}
+      <main
+        ref={gridScrollRef}
+        className="flex-1 overflow-y-auto overscroll-y-contain touch-pan-y p-4 md:p-10 custom-scrollbar"
+      >
         <div className="max-w-5xl mx-auto grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
           {photos.map((url, i) => (
             <article
@@ -1399,6 +1509,7 @@ export const PhotoGallery = React.memo(({ photos, onClose, placeName, selectedLo
                 className="w-full h-full object-cover select-none pointer-events-none"
                 loading={i === 0 ? "eager" : "lazy"}
                 fetchPriority={i === 0 ? "high" : "auto"}
+                draggable={false} // 3. Prevents native browser ghost-dragging
                 alt={`${placeName || 'Adventure'} - Image ${i + 1}`}
               />
             </article>
@@ -1455,22 +1566,38 @@ export const PhotoGallery = React.memo(({ photos, onClose, placeName, selectedLo
             <ChevronRight className="w-8 h-8" />
           </button>
 
-          <div className="flex-1 w-full flex items-center justify-center p-4" onClick={() => setActiveIndex(null)}>
-            <div className="relative w-fit h-fit" onClick={(e) => e.stopPropagation()}>
-              <img
-                key={photos[activeIndex]}
-                src={typeof getOptimizedUrl === 'function' ? getOptimizedUrl(photos[activeIndex], 1200, 85) : photos[activeIndex]}
-                className="max-w-full max-h-[85vh] object-contain rounded-lg shadow-2xl animate-in fade-in zoom-in-95 duration-500"
-                alt={`${placeName || 'Gallery'} featured view`}
-                fetchPriority="high"
-                loading="eager"
-              />
-              <div className="absolute bottom-6 right-6 pointer-events-none select-none">
-                <div className="flex flex-col items-end drop-shadow-[0_2px_4px_rgba(0,0,0,0.5)]">
-                  <span className="text-[10px] md:text-xs font-light tracking-[0.4em] text-white/70 uppercase border-b border-white/30 pb-0.5">
-                    My Journal
-                  </span>
-                  <div className="w-4 h-[0.5px] bg-white/30 mt-0.5"></div>
+          {/* 4. Attached lightboxScrollRef to the zoomed-in view */}
+          <div
+            ref={lightboxScrollRef}
+            className="photo-gallery-scroll native-scroll-y flex-1 w-full overflow-y-auto p-4 no-scrollbar"
+            onClick={() => setActiveIndex(null)}
+          >
+            <div className="min-h-full w-full flex items-center justify-center">
+              <div
+                className="relative w-fit h-fit"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <img
+                  key={photos[activeIndex]}
+                  src={
+                    typeof getOptimizedUrl === 'function'
+                      ? getOptimizedUrl(photos[activeIndex], 1200, 85)
+                      : photos[activeIndex]
+                  }
+                  className="max-w-full max-h-[85vh] object-contain rounded-lg shadow-2xl animate-in fade-in zoom-in-95 duration-500"
+                  alt={`${placeName || 'Gallery'} featured view`}
+                  fetchPriority="high"
+                  loading="eager"
+                  draggable={false} // Prevents ghost dragging
+                />
+
+                <div className="absolute bottom-6 right-6 pointer-events-none select-none">
+                  <div className="flex flex-col items-end drop-shadow-[0_2px_4px_rgba(0,0,0,0.5)]">
+                    <span className="text-[10px] md:text-xs font-light tracking-[0.4em] text-white/70 uppercase border-b border-white/30 pb-0.5">
+                      My Journal
+                    </span>
+                    <div className="w-4 h-[0.5px] bg-white/30 mt-0.5"></div>
+                  </div>
                 </div>
               </div>
             </div>
@@ -1492,6 +1619,7 @@ export const PhotoGallery = React.memo(({ photos, onClose, placeName, selectedLo
     </div>
   );
 });
+
 
 export const VideoGallery = React.memo(({ videos, onClose }) => {
   useEffect(() => {
@@ -2361,6 +2489,8 @@ function App() {
   const [isFabExpanded, setIsFabExpanded] = useState(false);
   const [isSocialExpanded, setIsSocialExpanded] = useState(false);
   const [isAddExpanded, setIsAddExpanded] = useState(false);
+  const locationGridScrollRef = useDragScroll();
+  const articleWindowScrollRef = useDragScroll();
 
   // ============================================================================
   // 26. EXTERNAL METRIC UTILITIES (WEATHER, MAP POIs)
@@ -4561,7 +4691,10 @@ function App() {
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto overscroll-y-contain touch-pan-y px-4 md:px-10 pb-20 no-scrollbar">
+      <div
+        ref={locationGridScrollRef}
+        className="location-grid-scroll native-scroll-y flex-1 px-4 md:px-10 pb-20 no-scrollbar"
+      >
 
         {/* 1. Main Grid: Location Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6 pt-2">
@@ -5219,7 +5352,10 @@ function App() {
                 </button>
               </div>
 
-              <div className="p-8 overflow-y-auto scrollable-list no-scrollbar bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100">
+              <div
+                ref={articleWindowScrollRef}
+                className="article-window-scroll native-scroll-y p-8 scrollable-list no-scrollbar bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100"
+              >
 
                 {/* ============================================================
               META BAR
