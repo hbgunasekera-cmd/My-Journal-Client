@@ -1,41 +1,39 @@
+# =================================================-------------------------
+# HYBRID CONFIGURATION: ALLOW AI SEARCH & SOCIAL, BLOCK MASS MODEL TRAINING
+# Domain: www.myjournalview.com
+# =================================================-------------------------
+
 # -------------------------------------------------------------------------
-# SECTION 1: BLOCK PURE TRAINING BOTS & SCRAPERS
+# SECTION 1: BLOCK PURE TRAINING-ONLY SCRAPERS
 # -------------------------------------------------------------------------
-User-agent: GPTBot
-User-agent: Google-Extended
-User-agent: ClaudeBot
-User-agent: Anthropic-AI
-User-agent: Meta-ExternalAgent
-User-agent: FacebookBot
 User-agent: CCBot
-User-agent: Omgilibot
-User-agent: Diffbot
 User-agent: Bytespider
-User-agent: Cookiebot
-User-agent: CookieYesbot
+User-agent: Diffbot
+User-agent: Omgilibot
 Disallow: /
 
 # -------------------------------------------------------------------------
-# SECTION 2: EXPLICITLY ALLOW AI SEARCH & SOCIAL PREVIEWS
+# SECTION 2: ALLOW REAL-TIME AI SEARCH & SOCIAL PREVIEWS
 # -------------------------------------------------------------------------
 User-agent: ChatGPT-User
+User-agent: OAI-SearchBot
 User-agent: PerplexityBot
 User-agent: facebookexternalhit
+User-agent: Twitterbot
+User-agent: LinkedInBot
+User-agent: WhatsApp
+User-agent: TelegramBot
 Allow: /
 
 # -------------------------------------------------------------------------
-# SECTION 3: ALLOW ALL TRADITIONAL SEARCH ENGINES (Including Naver)
+# SECTION 3: DEFAULT ALLOW FOR SEARCH ENGINES & COMPLIANCE BOTS
 # -------------------------------------------------------------------------
-# Explicitly allow Naver's crawler (Yeti)
 User-agent: Yeti
-Allow: /
-
-# Allow all other standard search engines
 User-agent: *
 Allow: /
 
 # -------------------------------------------------------------------------
 # SECTION 4: METADATA & SITE INDEX
 # -------------------------------------------------------------------------
-Host: www.myjournalview.com
+Host: https://www.myjournalview.com
 Sitemap: https://www.myjournalview.com/sitemap.xml
