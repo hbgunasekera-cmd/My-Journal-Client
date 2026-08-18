@@ -69,18 +69,17 @@ Allow: /
 #
 # This keeps the site broadly discoverable while avoiding an
 # unnecessary restriction on Google's evolving AI/search ecosystem.
-#
-# If you later decide that preventing certain Gemini training use
-# is more important than maximum AI ecosystem exposure, this can
-# be reviewed separately.
 # ----------------------------------------------------------------
 
 
 # ----------------------------------------------------------------
-# 5. PERPLEXITY
+# 5. PERPLEXITY & CLAUDE AI SEARCH
 # ----------------------------------------------------------------
 
 User-agent: PerplexityBot
+Allow: /
+
+User-agent: Claude-SearchBot
 Allow: /
 
 
@@ -122,6 +121,12 @@ User-agent: WhatsApp
 Allow: /
 
 User-agent: TelegramBot
+Allow: /
+
+User-agent: Pinterestbot
+Allow: /
+
+User-agent: Discordbot
 Allow: /
 
 
