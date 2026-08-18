@@ -82,6 +82,9 @@ Allow: /
 User-agent: Claude-SearchBot
 Allow: /
 
+User-agent: ClaudeBot
+Disallow: /
+
 
 # ----------------------------------------------------------------
 # 6. MICROSOFT / BING
