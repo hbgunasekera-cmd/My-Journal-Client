@@ -35,5 +35,5 @@ Allow: /
 # -------------------------------------------------------------------------
 # SECTION 4: METADATA & SITE INDEX
 # -------------------------------------------------------------------------
-Host: https://www.myjournalview.com
+
 Sitemap: https://www.myjournalview.com/sitemap.xml
