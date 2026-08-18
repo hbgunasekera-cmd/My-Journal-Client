@@ -10,7 +10,8 @@ body,
   height: 100%;
   margin: 0;
   font-family: 'Plus Jakarta Sans', sans-serif;
-  background-color: #ffffff; /* Forces white background regardless of mobile dark mode settings */
+  background-color: #ffffff;
+  /* Forces white background regardless of mobile dark mode settings */
   color: #0f172a;
 
   /* Touchpad & Inner Scroll Fix: 
@@ -47,11 +48,14 @@ body,
 
 /* Utility 1: Primary scrollbar removal */
 @utility no-scrollbar {
-  scrollbar-width: none !important; /* Firefox */
-  -ms-overflow-style: none !important; /* IE / Edge */
+  scrollbar-width: none !important;
+  /* Firefox */
+  -ms-overflow-style: none !important;
+  /* IE / Edge */
 
   &::-webkit-scrollbar {
-    display: none !important; /* Chrome, Safari, and Opera */
+    display: none !important;
+    /* Chrome, Safari, and Opera */
     width: 0 !important;
     height: 0 !important;
   }
@@ -59,11 +63,14 @@ body,
 
 /* Utility 2: Legacy fallback to ensure elements using 'custom-scrollbar' remain hidden */
 @utility custom-scrollbar {
-  scrollbar-width: none !important; /* Firefox */
-  -ms-overflow-style: none !important; /* IE / Edge */
+  scrollbar-width: none !important;
+  /* Firefox */
+  -ms-overflow-style: none !important;
+  /* IE / Edge */
 
   &::-webkit-scrollbar {
-    display: none !important; /* Chrome, Safari, and Opera */
+    display: none !important;
+    /* Chrome, Safari, and Opera */
     width: 0 !important;
     height: 0 !important;
   }
