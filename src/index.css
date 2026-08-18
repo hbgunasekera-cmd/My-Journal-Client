@@ -1,68 +1,84 @@
 @import "tailwindcss";
-
 @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap');
 
-/* --- Base Styles --- */
-html, body, #root {
-    height: 100%;
-    margin: 0;
-    font-family: 'Plus Jakarta Sans', sans-serif;
-    /* Force white background to match desktop regardless of mobile system settings */
-    background-color: #ffffff;
-    color: #0f172a;
+/* ==========================================================================
+   Base Styles & Layout Locking
+   ========================================================================== */
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  background-color: #ffffff; /* Forces white background regardless of mobile dark mode settings */
+  color: #0f172a;
+
+  /* Touchpad & Inner Scroll Fix: 
+     Locks the global window viewport to prevent trackpad gestures / rubber-banding 
+     from hijacking touch/wheel events away from inner scrollable containers. */
+  overflow: hidden;
+  overscroll-behavior: none;
 }
 
-/* --- Layered Utility & Protection Styles --- */
+/* ==========================================================================
+   Layered Protection & Interaction Utilities
+   ========================================================================== */
 @layer base {
-    .no-copy {
-        user-select: none;
-        -webkit-touch-callout: none;
-    }
+  .no-copy {
+    user-select: none;
+    -webkit-touch-callout: none;
+  }
 
-    img {
-        -webkit-user-drag: none;
-        user-select: none;
-        pointer-events: none;
-    }
+  img {
+    -webkit-user-drag: none;
+    user-select: none;
+    pointer-events: none;
+  }
 
-    .touch-none {
-        -webkit-tap-highlight-color: transparent;
-        touch-action: none;
-    }
+  .touch-none {
+    -webkit-tap-highlight-color: transparent;
+    touch-action: none;
+  }
 }
 
-/* --- Tailwind v4 Absolute Hide Utilities --- */
+/* ==========================================================================
+   Tailwind v4 Scrollbar Hiding Utilities
+   ========================================================================== */
 
-/* Utility 1: Explicitly hides scrollbars when applied */
+/* Utility 1: Primary scrollbar removal */
 @utility no-scrollbar {
-    scrollbar-width: none !important; /* Firefox */
-    -ms-overflow-style: none !important; /* IE and Edge */
-    
-    &::-webkit-scrollbar {
-        display: none !important; /* Chrome, Safari, and Opera */
-        width: 0 !important;
-        height: 0 !important;
-    }
+  scrollbar-width: none !important; /* Firefox */
+  -ms-overflow-style: none !important; /* IE / Edge */
+
+  &::-webkit-scrollbar {
+    display: none !important; /* Chrome, Safari, and Opera */
+    width: 0 !important;
+    height: 0 !important;
+  }
 }
 
-/* Utility 2: Safety Override (If your elements are still using custom-scrollbar, this forces them hidden too) */
+/* Utility 2: Legacy fallback to ensure elements using 'custom-scrollbar' remain hidden */
 @utility custom-scrollbar {
-    scrollbar-width: none !important; /* Firefox */
-    -ms-overflow-style: none !important; /* IE/Edge */
+  scrollbar-width: none !important; /* Firefox */
+  -ms-overflow-style: none !important; /* IE / Edge */
 
-    &::-webkit-scrollbar {
-        display: none !important; /* Chrome, Safari, and Opera */
-        width: 0 !important;
-        height: 0 !important;
-    }
+  &::-webkit-scrollbar {
+    display: none !important; /* Chrome, Safari, and Opera */
+    width: 0 !important;
+    height: 0 !important;
+  }
 }
 
-/* --- Google Places AutoComplete --- */
+/* ==========================================================================
+   Third-Party Overrides
+   ========================================================================== */
+
+/* Google Places AutoComplete Dropdown Styling */
 .pac-container {
-    z-index: 9999 !important;
-    border-radius: 16px;
-    border: 1px solid #f1f5f9 !important;
-    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1) !important;
-    font-family: 'Plus Jakarta Sans', sans-serif !important;
-    background-color: #ffffff;
+  z-index: 9999 !important;
+  border-radius: 16px;
+  border: 1px solid #f1f5f9 !important;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1) !important;
+  font-family: 'Plus Jakarta Sans', sans-serif !important;
+  background-color: #ffffff;
 }

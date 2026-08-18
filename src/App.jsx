@@ -1385,7 +1385,7 @@ export const PhotoGallery = React.memo(({ photos, onClose, placeName, selectedLo
         </div>
       </header>
 
-      <main className="flex-1 overflow-y-auto p-4 md:p-10 custom-scrollbar">
+      <main className="flex-1 overflow-y-auto overscroll-y-contain touch-pan-y p-4 md:p-10 custom-scrollbar">
         <div className="max-w-5xl mx-auto grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
           {photos.map((url, i) => (
             <article
@@ -2103,7 +2103,7 @@ export const LegalAndAboutModal = ({ isOpen, onClose, currentView, setView }) =>
           </button>
         </div>
 
-        <div className="flex-1 overflow-y-auto p-8 custom-scrollbar space-y-8 text-slate-600 dark:text-slate-300">
+        <div className="flex-1 overflow-y-auto overscroll-y-contain touch-pan-y p-8 custom-scrollbar space-y-8 text-slate-600 dark:text-slate-300">
           {currentView === 'about' ? (
             <>
               <section className="space-y-3 animate-in fade-in slide-in-from-bottom-3 duration-300">
@@ -4560,7 +4560,7 @@ function App() {
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto px-4 md:px-10 pb-20 no-scrollbar">
+      <div className="flex-1 overflow-y-auto overscroll-y-contain touch-pan-y px-4 md:px-10 pb-20 no-scrollbar">
 
         {/* 1. Main Grid: Location Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6 pt-2">
@@ -5816,7 +5816,7 @@ function App() {
               </div>
 
               {/* 2. Scrollable Content Area: Waypoints & Available Locations */}
-              <div className="flex-1 overflow-y-auto custom-scrollbar bg-white dark:bg-slate-900 pb-28 md:pb-24 p-4 space-y-6">
+              <div className="flex-1 overflow-y-auto overscroll-y-contain touch-pan-y custom-scrollbar bg-white dark:bg-slate-900 pb-28 md:pb-24 p-4 space-y-6">
 
                 {/* Section A: Active Waypoints (Drag-and-Drop) */}
                 <div>
