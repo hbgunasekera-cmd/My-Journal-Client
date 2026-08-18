@@ -1,39 +1,145 @@
-# =================================================-------------------------
-# HYBRID CONFIGURATION: ALLOW AI SEARCH & SOCIAL, BLOCK MASS MODEL TRAINING
-# Domain: www.myjournalview.com
-# =================================================-------------------------
+# ================================================================
+# MyJournalView - SEO + AI Search + Social Discovery Policy
+# Domain: https://www.myjournalview.com
+#
+# OBJECTIVE:
+# Maximize legitimate search-engine, AI-search and social discovery
+# while blocking selected high-volume / low-value data crawlers.
+# ================================================================
 
-# -------------------------------------------------------------------------
-# SECTION 1: BLOCK PURE TRAINING-ONLY SCRAPERS
-# -------------------------------------------------------------------------
+
+# ----------------------------------------------------------------
+# 1. SELECTED CRAWLERS TO BLOCK
+# ----------------------------------------------------------------
+# These are intentionally excluded to reduce unwanted automated
+# data collection and unnecessary crawler traffic.
+#
+# NOTE:
+# Blocking a crawler here does NOT provide security protection.
+# Sensitive/private content should be protected with authentication
+# or server-side access controls.
+# ----------------------------------------------------------------
+
 User-agent: CCBot
+Disallow: /
+
 User-agent: Bytespider
-User-agent: Diffbot
+Disallow: /
+
 User-agent: Omgilibot
 Disallow: /
 
-# -------------------------------------------------------------------------
-# SECTION 2: ALLOW REAL-TIME AI SEARCH & SOCIAL PREVIEWS
-# -------------------------------------------------------------------------
-User-agent: ChatGPT-User
+
+# ----------------------------------------------------------------
+# 2. OPTIONAL: DIFFBOT
+# ----------------------------------------------------------------
+# Diffbot can have uses beyond simple model training/data collection.
+# Therefore it is NOT blocked by default.
+#
+# If server logs later show that Diffbot provides no value and creates
+# significant crawl/bandwidth usage, it can be blocked by adding:
+#
+# User-agent: Diffbot
+# Disallow: /
+# ----------------------------------------------------------------
+
+
+# ----------------------------------------------------------------
+# 3. OPENAI / CHATGPT SEARCH
+# ----------------------------------------------------------------
+# OAI-SearchBot helps make public content discoverable in ChatGPT
+# Search.
+#
+# ChatGPT-User is allowed for user-triggered browsing/access.
+# ----------------------------------------------------------------
+
 User-agent: OAI-SearchBot
+Allow: /
+
+User-agent: ChatGPT-User
+Allow: /
+
+
+# ----------------------------------------------------------------
+# 4. GOOGLE AI / GEMINI
+# ----------------------------------------------------------------
+# Googlebot remains fully allowed for Google Search and Google Images.
+#
+# Google-Extended is intentionally NOT blocked here.
+#
+# This keeps the site broadly discoverable while avoiding an
+# unnecessary restriction on Google's evolving AI/search ecosystem.
+#
+# If you later decide that preventing certain Gemini training use
+# is more important than maximum AI ecosystem exposure, this can
+# be reviewed separately.
+# ----------------------------------------------------------------
+
+
+# ----------------------------------------------------------------
+# 5. PERPLEXITY
+# ----------------------------------------------------------------
+
 User-agent: PerplexityBot
+Allow: /
+
+
+# ----------------------------------------------------------------
+# 6. MICROSOFT / BING
+# ----------------------------------------------------------------
+# Bingbot is covered by the global Allow rule below.
+# MicrosoftPreview is also allowed for previews.
+# ----------------------------------------------------------------
+
+User-agent: Bingbot
+Allow: /
+
+User-agent: MicrosoftPreview
+Allow: /
+
+
+# ----------------------------------------------------------------
+# 7. SOCIAL MEDIA / SOCIAL SHARING PREVIEWS
+# ----------------------------------------------------------------
+# These crawlers are important because MyJournalView is a
+# photography/travel website where social sharing can generate
+# additional referral traffic.
+# ----------------------------------------------------------------
+
 User-agent: facebookexternalhit
+Allow: /
+
+User-agent: Facebot
+Allow: /
+
 User-agent: Twitterbot
+Allow: /
+
 User-agent: LinkedInBot
+Allow: /
+
 User-agent: WhatsApp
+Allow: /
+
 User-agent: TelegramBot
 Allow: /
 
-# -------------------------------------------------------------------------
-# SECTION 3: DEFAULT ALLOW FOR SEARCH ENGINES & COMPLIANCE BOTS
-# -------------------------------------------------------------------------
-User-agent: Yeti
+
+# ----------------------------------------------------------------
+# 8. GENERAL SEARCH ENGINES & LEGITIMATE CRAWLERS
+# ----------------------------------------------------------------
+# Default policy: ALLOW.
+#
+# This is intentionally permissive because the objective is maximum
+# legitimate discovery and traffic.
+# ----------------------------------------------------------------
+
 User-agent: *
 Allow: /
 
-# -------------------------------------------------------------------------
-# SECTION 4: METADATA & SITE INDEX
-# -------------------------------------------------------------------------
+
+# ----------------------------------------------------------------
+# 9. XML SITEMAP
+# ----------------------------------------------------------------
 
 Sitemap: https://www.myjournalview.com/sitemap.xml
