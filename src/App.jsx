@@ -1293,8 +1293,8 @@ const MapSelectionComponent = React.memo(({ onLocationSelect, initialCoords, onM
       attributionControl: false
     }).setView([initialCoords?.lat || 7.8731, initialCoords?.lng || 80.7718], 8);
 
-    L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
-      attribution: '© OpenStreetMap'
+    L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}', {
+      attribution: 'Tiles &copy; Esri'
     }).addTo(mapInstance.current);
 
     // Pass the Leaflet instance back to App.jsx so Autocomplete can sync with it
@@ -1782,7 +1782,9 @@ export const MapComponent = ({
         attributionControl: true,
       }).setView([userCoords?.lat || 7.0777, userCoords?.lng || 79.8924], 10);
 
-      L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png').addTo(mapInstance.current);
+      L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}', {
+        attribution: 'Tiles &copy; Esri'
+      }).addTo(mapInstance.current);
       if (mapInstanceRef) mapInstanceRef.current = mapInstance.current;
     }
 
