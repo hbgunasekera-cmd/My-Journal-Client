@@ -501,7 +501,8 @@ export const injectJSONLDSchema = (place, canonicalUrl) => {
       "@type": "WebSite",
       "name": "My Journal",
       "url": canonicalUrl || "https://www.myjournalview.com",
-      "description": "Explore remote Sri Lankan trails, hidden waterfalls, and backcountry coordinates."
+      "description": "Explore remote Sri Lankan trails, hidden waterfalls, and backcountry coordinates.",
+      "abstract": "විදිමු , රැකගමු අනාගතය වෙනුවෙන්. Live with care, preserve with love — for the future yet to come."
     };
     schemaScript.textContent = JSON.stringify(defaultSchema).replace(/</g, '\\u003c');
     return;
@@ -6467,6 +6468,13 @@ function App() {
           <p>
             Sri Lanka houses phenomenal geographic biodiversity, stretching from the dense mountain ridges of the Knuckles Forest Reserve to pristine cascade clusters like Bambarakanda and Diyaluma Falls. This open ledger indexes mountain plain tablelands, deep natural pools, and historic forest hermitages to showcase raw island terrain while advocating for strict nature preserve conservation metrics.
           </p>
+        </section>
+
+        {/* AI & Search Engine Tagline / Motto */}
+        <section id="crawler-motto">
+          <h2>Platform Motto</h2>
+          <p>විදිමු , රැකගමු අනාගතය වෙනුවෙන්.</p>
+          <p>Live with care, preserve with love — for the future yet to come.</p>
         </section>
       </div>
 
