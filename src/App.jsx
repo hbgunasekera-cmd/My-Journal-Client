@@ -800,6 +800,8 @@ export const logVisit = async (path = null) => {
   } else if (rawPath.startsWith('/gallery/')) {
     const slug = rawPath.replace('/gallery/', '').split('?')[0].replace(/\/$/, '');
     loggingPath = `Gallery/${safeDecode(slug).toLowerCase().trim().replace(/-/g, ' ')}`;
+  } else if (rawPath.startsWith('/videos') || rawPath.startsWith('/video-gallery')) {
+    loggingPath = 'Video Gallery';
   } else {
     loggingPath = safeDecode(rawPath.split('?')[0]).toLowerCase().replace(/^\/+|\/+$/g, '');
   }
@@ -1732,12 +1734,18 @@ export const VideoGallery = React.memo(({ videos, initialIndex = 0, onClose }) =
     const handleKeyDown = (e) => {
       if (e.key === 'Escape') onClose();
     };
+
+    // Listen for browser navigation (Back button)
+    const handlePopState = () => onClose();
+
     window.addEventListener('keydown', handleKeyDown);
+    window.addEventListener('popstate', handlePopState);
 
     return () => {
       document.body.classList.remove('modal-open');
       window.scrollTo(0, scrollY);
       window.removeEventListener('keydown', handleKeyDown);
+      window.removeEventListener('popstate', handlePopState);
     };
   }, [onClose]);
 
@@ -2507,6 +2515,7 @@ function App() {
   const hasHandledDeepLink = useRef(false);
   const hasLoggedPlanOpen = useRef(false);
   const hasLoggedAddOpen = useRef(false);
+  const hasLoggedVideoOpen = useRef(false);
   const pendingRouteRef = useRef({ type: null, slug: null });
   const sentinelRef = useRef(null);
   const mapInstanceRef = useRef(null);
@@ -2553,6 +2562,7 @@ function App() {
   const [legalView, setLegalView] = useState('privacy');
   const [showSafetyModal, setShowSafetyModal] = useState(false);
   const [showEngineHint, setShowEngineHint] = useState(true);
+  const [isVideoGalleryOpen, setIsVideoGalleryOpen] = useState(false);
 
 
   // ============================================================================
@@ -4465,6 +4475,26 @@ function App() {
     });
     if (filteredForWeather.length > 0) fetchRouteWeather(filteredForWeather);
   }, [isPlannerOpen, debouncedPlannerSearch, places]);
+
+  useEffect(() => {
+    // Assuming 'isVideoGalleryOpen' is your state controlling the video modal
+    if (isVideoGalleryOpen) {
+      // Generate the URL
+      window.history.pushState({ modalOpen: true }, '', '/videos');
+
+      // Log the visit once per lifecycle
+      if (!hasLoggedVideoOpen.current) {
+        logVisit('/videos');
+        hasLoggedVideoOpen.current = true;
+      }
+    } else {
+      // Revert the URL when closed and reset the logger
+      if (window.location.pathname === '/videos') {
+        window.history.pushState({ modalOpen: false }, '', '/');
+      }
+      hasLoggedVideoOpen.current = false;
+    }
+  }, [isVideoGalleryOpen]);
 
   useEffect(() => {
     const observer = new IntersectionObserver((entries) => {
