@@ -1,4 +1,15 @@
 {
+  "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [
+        {
+          "key": "Content-Security-Policy",
+          "value": "frame-src 'self' https://www.youtube.com https://*.doubleclick.net https://*.google.com https://*.googlesyndication.com; frame-ancestors 'self';"
+        }
+      ]
+    }
+  ],
   "rewrites": [
     {
       "source": "/sitemap.xml",

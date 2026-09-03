@@ -1622,77 +1622,217 @@ export const PhotoGallery = React.memo(({ photos, onClose, placeName, selectedLo
 });
 
 
-export const VideoGallery = React.memo(({ videos, onClose }) => {
+
+// YouTube Video ID parser
+
+export const getYouTubeId = (url) => {
+  if (!url) return null;
+  const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|shorts\/|live\/|watch\?v=|&v=)([^#&?]*).*/;
+  const match = url.match(regExp);
+  return (match && match[2].length === 11) ? match[2] : null;
+};
+
+
+export const HubVideoList = ({ supabaseClient, onVideosLoaded }) => {
+  const [videos, setVideos] = useState([]);
+
   useEffect(() => {
-    document.body.style.overflow = 'hidden';
-    const scriptId = 'tiktok-embed-script';
-    if (!document.getElementById(scriptId)) {
-      const script = document.createElement('script');
-      script.id = scriptId;
-      script.src = "https://www.tiktok.com/embed.js";
-      script.async = true;
-      document.body.appendChild(script);
-    }
+    let isSubscribed = true;
+
+    const fetchVideos = async () => {
+      if (!supabaseClient) {
+        if (onVideosLoaded) onVideosLoaded([]);
+        return;
+      }
+
+      try {
+        const { data, error } = await supabaseClient
+          .from('hub_videos')
+          .select('id, url, title, custom_thumbnail_url')
+          .eq('is_active', true)
+          .order('display_order', {
+            ascending: false,
+            nullsFirst: false
+          })
+          .order('created_at', {
+            ascending: false
+          });
+
+        if (!error && data && isSubscribed) {
+          setVideos(data);
+
+          if (onVideosLoaded) {
+            onVideosLoaded(data);
+          }
+        } else if (isSubscribed) {
+          setVideos([]);
+
+          if (onVideosLoaded) {
+            onVideosLoaded([]);
+          }
+        }
+      } catch (err) {
+        console.error("Error loading hub videos:", err);
+
+        if (isSubscribed) {
+          setVideos([]);
+
+          if (onVideosLoaded) {
+            onVideosLoaded([]);
+          }
+        }
+      }
+    };
+
+    fetchVideos();
 
     return () => {
-      document.body.style.overflow = 'unset';
+      isSubscribed = false;
     };
-  }, []);
+  }, [supabaseClient, onVideosLoaded]);
 
-  const getTikTokId = (url) => {
-    if (!url || typeof url !== 'string') return null;
-    const matches = url.match(/\/video\/(\d+)/);
-    return matches ? matches[1] : null;
-  };
+  // This component is now a data loader only.
+  // There is NO intermediate Video Hub UI.
+  return null;
+};
 
+
+
+export const VideoGallery = React.memo(({ videos, initialIndex = 0, onClose }) => {
+  const [activeIndex, setActiveIndex] = useState(initialIndex);
+
+  // FIX 1: Robust URL parsing using Regex to handle commas, spaces, newlines, and semicolons
   const videoList = (Array.isArray(videos) ? videos : [videos])
-    .flatMap(item => (typeof item === 'string' ? item.split(',') : item))
-    .map(s => s.trim())
-    .filter(s => s !== "");
+    .flatMap(item => {
+      if (typeof item === 'string') {
+        return item.split(/[\s,;\|]+/);
+      }
+      // Handle cases where a DB object is passed but its url property contains multiple links
+      if (item && typeof item === 'object' && typeof item.url === 'string') {
+        const urls = item.url.split(/[\s,;\|]+/);
+        if (urls.length > 1) {
+          return urls.map(u => ({ ...item, url: u }));
+        }
+      }
+      return item;
+    })
+    .map(item => {
+      if (typeof item === 'string') {
+        const trimmed = item.trim();
+        return { url: trimmed, title: '', custom_thumbnail_url: '' };
+      }
+      return item;
+    })
+    .filter(item => item && (item.url || item.custom_thumbnail_url) && String(item.url).trim() !== '');
+
+  useEffect(() => {
+    const scrollY = window.scrollY;
+    document.body.classList.add('modal-open');
+
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') onClose();
+    };
+    window.addEventListener('keydown', handleKeyDown);
+
+    return () => {
+      document.body.classList.remove('modal-open');
+      window.scrollTo(0, scrollY);
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [onClose]);
 
   if (videoList.length === 0) return null;
 
+  const currentVideo = videoList[activeIndex] || videoList[0];
+  const videoId = getYouTubeId(currentVideo.url);
+
   return (
-    <div className="fixed inset-0 z-[10000] bg-slate-900/98 backdrop-blur-3xl flex flex-col animate-in fade-in duration-200">
-      <div className="flex justify-between items-center p-6 border-b border-white/10 shrink-0">
+    <div className="fixed inset-0 z-[10000] bg-slate-900/98 backdrop-blur-3xl flex flex-col animate-in fade-in duration-200 select-none">
+
+      <header className="flex justify-between items-center p-6 border-b border-white/10 shrink-0">
         <div>
           <h3 className="text-white font-black uppercase tracking-widest text-xs">Video Journal</h3>
-          <p className="text-[10px] text-indigo-400 font-bold uppercase">{videoList.length} Clips Loaded</p>
+          <p className="text-[10px] text-indigo-400 font-bold uppercase">
+            {activeIndex + 1} of {videoList.length} Clips
+          </p>
         </div>
         <button
           onClick={onClose}
-          className="w-12 h-12 flex items-center justify-center bg-white/10 hover:bg-rose-500 text-white rounded-full transition-all active:scale-90"
+          aria-label="Close video gallery"
+          className="w-12 h-12 flex items-center justify-center bg-white/10 hover:bg-rose-500 text-white rounded-full transition-all shadow-md focus:outline-none focus:ring-2 focus:ring-white"
         >
           <X className="w-5 h-5" />
         </button>
-      </div>
+      </header>
 
-      <div className="flex-1 overflow-y-auto p-4 md:p-10 custom-scrollbar">
-        <div className="max-w-6xl mx-auto grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
-          {videoList.map((url, i) => {
-            const videoId = getTikTokId(url);
-            if (!videoId) return null;
+      <main className="flex-1 flex flex-col lg:flex-row gap-6 p-4 md:p-6 overflow-hidden">
+
+        {/* FIX 2A: Changed mobile 'flex-1' to 'flex-none' so it doesn't force the list out of bounds */}
+        <div className="flex-none lg:flex-1 w-full flex items-center justify-center relative min-h-[40vh] lg:min-h-0">
+          <div className="relative w-full max-w-5xl aspect-video rounded-[2rem] overflow-hidden bg-black border border-white/10 shadow-2xl">
+            {videoId ? (
+              <iframe
+                key={videoId}
+                src={`https://www.youtube.com/embed/${videoId}?autoplay=1&rel=0`}
+                className="absolute top-0 left-0 w-full h-full border-0"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                allowFullScreen
+                title={currentVideo.title || "Video Journal Player"}
+              />
+            ) : (
+              <div className="flex items-center justify-center h-full text-white/50 text-sm">
+                Invalid or Unsupported Video URL
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* FIX 2B: Added 'flex-1 min-h-0' to enforce an internal scrolling boundary on mobile screens */}
+        <aside className="w-full lg:w-80 flex-1 lg:flex-none flex flex-col gap-3 overflow-y-auto custom-scrollbar pr-2 pb-20 lg:pb-0 min-h-0">
+          <h4 className="text-white/70 text-xs font-bold uppercase tracking-widest mb-2 px-1">More Videos</h4>
+          {videoList.map((item, idx) => {
+            const listVideoId = getYouTubeId(item.url);
+            const thumbnailUrl = item.custom_thumbnail_url ||
+              (listVideoId ? `https://img.youtube.com/vi/${listVideoId}/hqdefault.jpg` : '/default-video-placeholder.jpg');
+            const isActive = activeIndex === idx;
 
             return (
-              <div key={i} className="relative aspect-[9/16] rounded-[2rem] overflow-hidden bg-black border border-white/5 shadow-2xl">
-                <iframe
-                  src={`https://www.tiktok.com/embed/v2/${videoId}`}
-                  className="w-full h-full border-0"
-                  allow="autoplay; encrypted-media"
-                  allowFullScreen
-                  loading="eager"
-                ></iframe>
-              </div>
+              <button
+                key={item.id || item.url || idx}
+                onClick={() => setActiveIndex(idx)}
+                className={`group flex items-start gap-3 w-full text-left p-2 rounded-xl transition-all ${isActive ? 'bg-white/10 border border-indigo-500' : 'hover:bg-white/5 border border-transparent'
+                  }`}
+              >
+                <div className="relative w-24 aspect-video flex-shrink-0 rounded-lg overflow-hidden bg-slate-800">
+                  <img
+                    src={thumbnailUrl}
+                    alt={item.title || "Thumbnail"}
+                    className={`w-full h-full object-cover transition-opacity ${isActive ? 'opacity-100' : 'opacity-70 group-hover:opacity-100'}`}
+                    onError={(e) => {
+                      e.target.onerror = null;
+                      e.target.src = '/default-video-placeholder.jpg';
+                    }}
+                  />
+                  {isActive && (
+                    <div className="absolute inset-0 bg-indigo-500/30 flex items-center justify-center">
+                      <Play className="w-4 h-4 text-white fill-white" />
+                    </div>
+                  )}
+                </div>
+                <div className="flex-1 overflow-hidden">
+                  <p className={`text-xs font-semibold line-clamp-2 ${isActive ? 'text-white' : 'text-slate-300'}`}>
+                    {item.title || "Journal Entry"}
+                  </p>
+                </div>
+              </button>
             );
           })}
-        </div>
-        <div className="h-24"></div>
-      </div>
+        </aside>
+
+      </main>
     </div>
   );
 });
-
-
 
 export const MapComponent = ({
   places = [],
@@ -2414,6 +2554,7 @@ function App() {
   const [showSafetyModal, setShowSafetyModal] = useState(false);
   const [showEngineHint, setShowEngineHint] = useState(true);
 
+
   // ============================================================================
   // 21. DATA LISTS, FILTERING & PAGINATION STATE
   // ============================================================================
@@ -2500,10 +2641,48 @@ function App() {
   // ============================================================================
   const [weatherData, setWeatherData] = useState({});
   const [activeId, setActiveId] = useState(null);
-  const [activeVideoId, setActiveVideoId] = useState(null);
+  const [activeVideos, setActiveVideos] = useState([]);
   const [nearbyAttractions, setNearbyAttractions] = useState([]);
   const [qrUrl, setQrUrl] = useState(null);
   const fetchedWeatherKeys = useRef(new Set());
+
+  // ADD THE INVISIBLE VIDEO DATA LOADER HERE
+  const [videoLibrary, setVideoLibrary] = useState([]);
+  const [isVideosLoading, setIsVideosLoading] = useState(false);
+
+  const fetchVideoLibrary = useCallback(async () => {
+    if (!supabaseClient) return [];
+
+    setIsVideosLoading(true);
+
+    try {
+      const { data, error } = await supabaseClient
+        .from('hub_videos')
+        .select('id, url, title, custom_thumbnail_url')
+        .eq('is_active', true)
+        .order('display_order', { ascending: false, nullsFirst: false })
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        console.error('Error loading videos:', error);
+        return [];
+      }
+
+      const videos = data || [];
+      setVideoLibrary(videos);
+      return videos;
+    } catch (err) {
+      console.error('Error loading video library:', err);
+      return [];
+    } finally {
+      setIsVideosLoading(false);
+    }
+  }, [supabaseClient]);
+
+  // Pre-load videos silently in the background
+  useEffect(() => {
+    fetchVideoLibrary();
+  }, [fetchVideoLibrary]);
 
   // ============================================================================
   // 27. PERFORMANCE OPTIMIZATION & DEBOUNCED / DERIVED STATE
@@ -4555,11 +4734,12 @@ function App() {
 
             {/* --- FIXED HUB SYSTEM --- */}
             {!isAddOpen && !isPlannerOpen && !isArticleOpen && !isShareModalOpen && (
-              <div className="fixed bottom-4 right-3 z-[4000] flex flex-col items-end gap-2 max-w-[140px]">
+              <div className="fixed bottom-4 right-3 z-[4000] flex flex-col items-end gap-2 max-w-[280px]">
 
                 {/* HUB 1: SOCIAL HUB */}
-                <div className="flex flex-col items-end gap-2">
-                  <div className={`flex flex-col items-center gap-1.5 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md p-1.5 rounded-2xl shadow-xl border border-slate-100 dark:border-slate-800 transition-all duration-400 ${isSocialOpen ? 'opacity-100 translate-x-0 scale-100' : 'opacity-0 translate-x-10 scale-90 pointer-events-none'}`}>
+                <div className="flex flex-col items-end gap-2 relative">
+                  <div className={`flex flex-col items-center gap-1.5 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md p-1.5 rounded-2xl shadow-xl border border-slate-100 dark:border-slate-800 transition-all duration-400 ${isSocialOpen ? 'opacity-100 translate-x-0 scale-100' : 'opacity-0 translate-x-10 scale-90 pointer-events-none absolute'
+                    }`}>
                     <a href="https://web.facebook.com/profile.php?id=61571059524746" target="_blank" rel="noreferrer" className="p-2.5 bg-[#1877F2] text-white rounded-xl hover:scale-105 transition-transform shadow-md">
                       <svg className="w-4 h-4 fill-current" viewBox="0 0 24 24">
                         <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" />
@@ -4581,54 +4761,112 @@ function App() {
                       </svg>
                     </a>
                   </div>
-                  <button
-                    onClick={() => { setIsSocialOpen(!isSocialOpen); setIsEngineOpen(false); }}
-                    className={`w-14 h-14 shadow-lg flex items-center justify-center transition-all duration-300 rounded-full ${isSocialOpen
-                      ? 'bg-white dark:bg-slate-800 text-slate-900 dark:text-white border border-slate-100 dark:border-slate-700'
-                      : 'bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900'
-                      }`}
-                  >
-                    {isSocialOpen ? <X className="w-5 h-5" /> : <Share2 className="w-6 h-6" />}
-                  </button>
+
+                  <div className="relative">
+                    <button
+                      onClick={() => {
+                        setIsSocialOpen(!isSocialOpen);
+                        setIsEngineOpen(false);
+                        setIsVideoHubOpen?.(false);
+                      }}
+                      className={`relative z-10 w-14 h-14 shadow-lg flex items-center justify-center transition-all duration-300 rounded-full ${isSocialOpen
+                        ? 'bg-rose-600 text-white'
+                        : 'bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900'
+                        }`}
+                    >
+                      {isSocialOpen ? <X className="w-5 h-5" /> : <Share2 className="w-5 h-5" />}
+                    </button>
+                  </div>
                 </div>
 
-                {/* HUB 2: ENGINE HUB */}
-                <div className="flex flex-col items-end gap-2 relative">
-                  {showEngineHint && !isEngineOpen && (
-                    <div className="absolute bottom-16 right-0 mb-2 w-40 animate-in fade-in slide-out-to-top-2 slide-in-from-bottom-2 duration-500 z-[4001]">
-                      <div className="bg-slate-900 text-white p-2.5 rounded-xl shadow-2xl relative border border-slate-800">
-                        <p className="text-[9px] font-black uppercase tracking-tight leading-tight text-center">{t('hub.engine_hint', { defaultValue: 'Tap "Engine" to build your route' })}</p>
-                        <div className="absolute -bottom-1 right-6 w-2 h-2 bg-slate-900 rotate-45"></div>
-                      </div>
-                    </div>
+
+                {/* HUB 2: DIRECT VIDEO PLAYER */}
+                <div className="relative">
+
+                  {/* Blue Ping Effect */}
+                  {activeVideos.length === 0 && (
+                    <span className="absolute inset-0 rounded-full bg-blue-500 animate-ping opacity-40 z-0"></span>
                   )}
-                  <div className={`flex flex-col gap-2 transition-all duration-400 ${isEngineOpen ? 'opacity-100 translate-x-0 scale-100' : 'opacity-0 translate-x-10 scale-90 pointer-events-none'}`}>
-                    <button onClick={() => { setIsAddOpen(true); setIsEngineOpen(false); }} className="flex items-center justify-end gap-2 bg-white text-slate-900 p-1.5 pr-2 rounded-2xl shadow-lg border border-slate-100">
+
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      // Close other FAB panels
+                      setIsSocialOpen(false);
+                      setIsEngineOpen(false);
+
+                      // Videos are already preloaded — open immediately
+                      if (videoLibrary.length > 0) {
+                        setActiveVideos(videoLibrary);
+                        return;
+                      }
+
+                      // Safety fallback if background loading has not finished yet
+                      const videos = await fetchVideoLibrary();
+
+                      if (videos.length > 0) {
+                        setActiveVideos(videos);
+                      } else {
+                        console.warn("No active videos found in hub_videos.");
+                      }
+                    }}
+                    className="relative z-10 w-14 h-14 shadow-lg flex items-center justify-center transition-all duration-300 rounded-full bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900 hover:scale-105 active:scale-95"
+                    aria-label="Open Video Player"
+                    title="Video Journal"
+                  >
+                    <Video className="w-5 h-5" />
+                  </button>
+
+                </div>
+
+                {/* HUB 3: ENGINE HUB */}
+                <div className="flex flex-col items-end gap-2 relative">
+
+                  <div className={`flex flex-col gap-2 transition-all duration-400 ${isEngineOpen ? 'opacity-100 translate-x-0 scale-100' : 'opacity-0 translate-x-10 scale-90 pointer-events-none absolute'
+                    }`}>
+                    <button
+                      onClick={() => { setIsAddOpen(true); setIsEngineOpen(false); }}
+                      className="flex items-center justify-end gap-2 bg-white text-slate-900 p-1.5 pr-2 rounded-2xl shadow-lg border border-slate-100"
+                    >
                       <span className="font-black uppercase text-[8px] tracking-tighter ml-2">{t('hub.add', { defaultValue: 'Add' })}</span>
                       <div className="w-8 h-8 bg-indigo-600 rounded-xl flex items-center justify-center text-white"><Plus className="w-4 h-4" /></div>
                     </button>
-                    <button onClick={() => { setIsPlannerOpen(true); setIsEngineOpen(false); }} className="flex items-center justify-end gap-2 bg-white text-slate-900 p-1.5 pr-2 rounded-2xl shadow-lg border border-slate-100">
+                    <button
+                      onClick={() => { setIsPlannerOpen(true); setIsEngineOpen(false); }}
+                      className="flex items-center justify-end gap-2 bg-white text-slate-900 p-1.5 pr-2 rounded-2xl shadow-lg border border-slate-100"
+                    >
                       <span className="font-black uppercase text-[8px] tracking-tighter ml-2">{t('hub.plan', { defaultValue: 'Plan' })}</span>
                       <div className="w-8 h-8 bg-orange-500 rounded-xl flex items-center justify-center text-white"><MapIcon className="w-6 h-6" /></div>
                     </button>
                   </div>
+
                   <div className="relative">
                     {!isEngineOpen && <span className="absolute inset-0 rounded-full bg-rose-500 animate-ping opacity-40 z-0"></span>}
                     <button
-                      onClick={() => { setIsEngineOpen(!isEngineOpen); setIsSocialOpen(false); setShowEngineHint(false); }}
-                      className={`relative z-10 w-14 h-14 shadow-xl flex items-center justify-center transition-all duration-500 rounded-full ${isEngineOpen ? 'bg-white text-slate-900 border border-slate-100' : 'bg-slate-900 text-white'}`}
+                      onClick={() => {
+                        setIsEngineOpen(!isEngineOpen);
+                        setIsSocialOpen(false);
+                        setIsVideoHubOpen?.(false);
+                        setShowEngineHint(false);
+                      }}
+                      className={`relative z-10 w-14 h-14 shadow-lg flex items-center justify-center transition-all duration-300 rounded-full ${isEngineOpen
+                        ? 'bg-rose-600 text-white'
+                        : 'bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900'
+                        }`}
                     >
-                      {isEngineOpen ? <X className="w-6 h-6 text-red-500" /> : (
-                        <div className="flex flex-col items-center pointer-events-none">
-                          <svg className="w-5 h-5 text-yellow-400 fill-yellow-400" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>
-                          <span className="text-[6px] font-black uppercase mt-0.5">{t('hub.engine', { defaultValue: 'Engine' })}</span>
-                        </div>
+                      {isEngineOpen ? (
+                        <X className="w-5 h-5" />
+                      ) : (
+                        <svg className="w-5 h-5 text-yellow-400 fill-yellow-400" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                          <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
+                        </svg>
                       )}
                     </button>
                   </div>
                 </div>
               </div>
             )}
+
           </div>
         </header>
 
@@ -6339,7 +6577,6 @@ function App() {
       {/* --- MEDIA OVERLAYS --- */}
       {activeId && (
         <PhotoGallery
-          // FIX: Changed from .photos to .album_photos to match your Supabase query
           photos={places.find(p => p.id === activeId)?.album_photos || []}
           placeName={places.find(p => p.id === activeId)?.place_name}
           selectedLocation={places.find(p => p.id === activeId)}
@@ -6348,11 +6585,12 @@ function App() {
         />
       )}
 
-      {activeVideoId && (
+      {/* NEW: VIDEO OVERLAY */}
+      {activeVideos.length > 0 && (
         <VideoGallery
-          key={activeVideoId}
-          videos={places.find(p => p.id === activeVideoId)?.tiktok_urls || []}
-          onClose={() => setActiveVideoId(null)}
+          videos={activeVideos}
+          initialIndex={0}
+          onClose={() => setActiveVideos([])}
         />
       )}
 
