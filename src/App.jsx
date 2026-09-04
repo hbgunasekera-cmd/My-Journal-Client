@@ -1700,8 +1700,6 @@ export const HubVideoList = ({ supabaseClient, onVideosLoaded }) => {
     };
   }, [supabaseClient, onVideosLoaded]);
 
-  // This component is now a data loader only.
-  // There is NO intermediate Video Hub UI.
   return null;
 };
 
