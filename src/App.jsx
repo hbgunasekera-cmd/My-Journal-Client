@@ -2582,8 +2582,6 @@ function App() {
   const [legalView, setLegalView] = useState('privacy');
   const [showSafetyModal, setShowSafetyModal] = useState(false);
   const [showEngineHint, setShowEngineHint] = useState(true);
-  const [isVideoGalleryOpen, setIsVideoGalleryOpen] = useState(false);
-
 
   // ============================================================================
   // 21. DATA LISTS, FILTERING & PAGINATION STATE
@@ -4246,43 +4244,107 @@ function App() {
 
   useEffect(() => {
     const watchId = getUserLocation(setUserCoords, toast);
+
     fetchPlaces();
     fetchInteractions();
     logVisit();
 
     const urlParams = new URLSearchParams(window.location.search);
     const viewParam = urlParams.get('view');
-    const normalizedPath = window.location.pathname.toLowerCase().replace(/\/$/, '');
+
+    const normalizedPath = window.location.pathname
+      .toLowerCase()
+      .replace(/\/$/, '');
+
     const placeMatch = window.location.pathname.match(/\/place\/([^/]+)/i);
     const galleryMatch = window.location.pathname.match(/\/gallery\/([^/]+)/i);
 
+    // =====================================================================
+    // INITIAL ROUTE / DEEP-LINK HANDLING
+    // =====================================================================
+
     if (placeMatch && placeMatch[1]) {
-      pendingRouteRef.current = { type: 'place', slug: placeMatch[1] };
+      // Direct Place URL:
+      // /place/location-name
+      pendingRouteRef.current = {
+        type: 'place',
+        slug: placeMatch[1]
+      };
+
     } else if (galleryMatch && galleryMatch[1]) {
-      pendingRouteRef.current = { type: 'gallery', slug: galleryMatch[1] };
+      // Direct Photo Gallery URL:
+      // /gallery/location-name
+      pendingRouteRef.current = {
+        type: 'gallery',
+        slug: galleryMatch[1]
+      };
+
+    } else if (normalizedPath === '/videos') {
+      // Direct Video Gallery URL:
+      // /videos
+      //
+      // The VideoGallery component is controlled by activeVideos,
+      // so load the library and populate activeVideos directly.
+      fetchVideoLibrary().then((videos) => {
+        if (videos.length > 0) {
+          setActiveVideos(videos);
+          hasHandledDeepLink.current = true;
+        } else {
+          console.warn('No active videos found in hub_videos.');
+        }
+      });
+
     } else {
+      // ===================================================================
+      // LEGAL / UTILITY ROUTES
+      // ===================================================================
+
       const activeLegalView = ['privacy', 'terms', 'about'].find(
         (view) => viewParam === view || normalizedPath === `/${view}`
       );
+
       if (activeLegalView) {
         setLegalView(activeLegalView);
         setIsPrivacyOpen(true);
-      } else if (viewParam === 'route_planner' || normalizedPath === '/route-planner') {
+
+      } else if (
+        viewParam === 'route_planner' ||
+        normalizedPath === '/route-planner'
+      ) {
         setIsPlannerOpen(true);
-      } else if (viewParam === 'suggest_spot' || normalizedPath === '/suggest-spot') {
+
+      } else if (
+        viewParam === 'suggest_spot' ||
+        normalizedPath === '/suggest-spot'
+      ) {
         setIsAddOpen(true);
       }
     }
 
+    // =====================================================================
+    // COOKIE CONSENT / CLARITY INITIALIZATION
+    // =====================================================================
+
     if (localStorage.getItem('myjournal_cookie_consent') === 'granted') {
       initClarity();
+
       if (typeof window !== 'undefined') {
         window.dataLayer = window.dataLayer || [];
-        window.dataLayer.push({ event: 'cookie_consent_granted' });
+
+        window.dataLayer.push({
+          event: 'cookie_consent_granted'
+        });
       }
     }
-    return () => { if (watchId) navigator.geolocation.clearWatch(watchId); };
-  }, [setUserCoords, toast]);
+
+    return () => {
+      if (watchId) {
+        navigator.geolocation.clearWatch(watchId);
+      }
+    };
+
+  }, [setUserCoords, toast, fetchVideoLibrary]);
+
 
   // =======================================================================
   // 31. VISITATION LOGGING (ARTICLE & GALLERY)
@@ -4532,24 +4594,6 @@ function App() {
   }, [isPlannerOpen, debouncedPlannerSearch, places]);
 
 
-  useEffect(() => {
-    if (isVideoGalleryOpen) {
-      // Generate the URL
-      window.history.pushState({ modalOpen: true }, '', '/videos');
-
-      // Log the visit once per lifecycle using the display name
-      if (!hasLoggedVideoOpen.current) {
-        logVisit('Video Gallery');
-        hasLoggedVideoOpen.current = true;
-      }
-    } else {
-      // Revert the URL when closed and reset the logger
-      if (window.location.pathname === '/videos') {
-        window.history.pushState({ modalOpen: false }, '', '/');
-      }
-      hasLoggedVideoOpen.current = false;
-    }
-  }, [isVideoGalleryOpen]);
 
   useEffect(() => {
     const observer = new IntersectionObserver((entries) => {
