@@ -1731,6 +1731,14 @@ export const VideoGallery = React.memo(({ videos, initialIndex = 0, onClose }) =
     const scrollY = window.scrollY;
     document.body.classList.add('modal-open');
 
+    // 1. Log visit analytics upon mounting
+    if (typeof logVisit === 'function') {
+      logVisit('/videos');
+    }
+
+    // 2. Update browser URL history state for routing
+    window.history.pushState({ modalOpen: true }, '', '/videos');
+
     const handleKeyDown = (e) => {
       if (e.key === 'Escape') onClose();
     };
@@ -1746,6 +1754,11 @@ export const VideoGallery = React.memo(({ videos, initialIndex = 0, onClose }) =
       window.scrollTo(0, scrollY);
       window.removeEventListener('keydown', handleKeyDown);
       window.removeEventListener('popstate', handlePopState);
+
+      // 3. Revert URL history when modal is closed
+      if (window.location.pathname === '/videos') {
+        window.history.pushState({ modalOpen: false }, '', '/');
+      }
     };
   }, [onClose]);
 
