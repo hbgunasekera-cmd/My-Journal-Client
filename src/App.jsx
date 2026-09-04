@@ -792,18 +792,25 @@ export const logVisit = async (path = null) => {
   const rawPath = path || window.location.pathname;
 
   let loggingPath = rawPath;
-  if (rawPath === '/' || rawPath === '') {
+  if (rawPath === '/' || rawPath === '' || rawPath === 'Main Page') {
     loggingPath = 'Main Page';
+  } else if (rawPath === 'Video Gallery' || rawPath.startsWith('/videos') || rawPath.startsWith('/video-gallery')) {
+    loggingPath = 'Video Gallery';
+  } else if (rawPath === 'Add Function' || rawPath === '/add') {
+    loggingPath = 'Add Function';
+  } else if (rawPath === 'Plan Function' || rawPath === '/plan') {
+    loggingPath = 'Plan Function';
   } else if (rawPath.startsWith('/place/')) {
     const slug = rawPath.replace('/place/', '').split('?')[0].replace(/\/$/, '');
     loggingPath = `Place/${safeDecode(slug).toLowerCase().trim().replace(/-/g, ' ')}`;
   } else if (rawPath.startsWith('/gallery/')) {
     const slug = rawPath.replace('/gallery/', '').split('?')[0].replace(/\/$/, '');
     loggingPath = `Gallery/${safeDecode(slug).toLowerCase().trim().replace(/-/g, ' ')}`;
-  } else if (rawPath.startsWith('/videos') || rawPath.startsWith('/video-gallery')) {
-    loggingPath = 'Video Gallery';
-  } else {
+  } else if (rawPath.startsWith('/')) {
     loggingPath = safeDecode(rawPath.split('?')[0]).toLowerCase().replace(/^\/+|\/+$/g, '');
+  } else {
+    // Retains explicitly passed custom labels (e.g., custom display names)
+    loggingPath = rawPath;
   }
 
   // 4. Rate-limit cache check (10 seconds per path)
@@ -1731,9 +1738,9 @@ export const VideoGallery = React.memo(({ videos, initialIndex = 0, onClose }) =
     const scrollY = window.scrollY;
     document.body.classList.add('modal-open');
 
-    // 1. Log visit analytics upon mounting
+    // 1. Log visit analytics upon mounting using display name
     if (typeof logVisit === 'function') {
-      logVisit('/videos');
+      logVisit('Video Gallery');
     }
 
     // 2. Update browser URL history state for routing
@@ -4376,12 +4383,24 @@ function App() {
 
 
   useEffect(() => {
-    // Reset the log flag when the add panel is closed
+    // Reset the log flag and revert URL when the add panel is closed
     if (!isAddOpen) {
       hasLoggedAddOpen.current = false;
+      if (window.location.pathname === '/add') {
+        window.history.pushState({ modalOpen: false }, '', '/');
+      }
     }
 
     if (isAddOpen) {
+      // 1. Sync URL for the Add Function
+      if (window.location.pathname !== '/add') {
+        window.history.pushState({ modalOpen: true }, '', '/add');
+      }
+
+      // 2. Handle the browser back button to close the panel
+      const handlePopState = () => setIsAddOpen(false);
+      window.addEventListener('popstate', handlePopState);
+
       // Analytics logging (fires once per modal open)
       if (!hasLoggedAddOpen.current) {
         logVisit('Add Function');
@@ -4464,6 +4483,8 @@ function App() {
         if (window.google?.maps?.event && autocompleteInstance) {
           google.maps.event.clearInstanceListeners(autocompleteInstance);
         }
+        // 3. Cleanup the back button listener
+        window.removeEventListener('popstate', handlePopState);
       };
     }
   }, [isAddOpen, addMapInstance]);
@@ -4471,12 +4492,27 @@ function App() {
   useEffect(() => {
     if (!isPlannerOpen) {
       hasLoggedPlanOpen.current = false;
+      // Revert URL when the planner is closed
+      if (window.location.pathname === '/plan') {
+        window.history.pushState({ modalOpen: false }, '', '/');
+      }
       return;
     }
+
+    // 1. Sync URL for the Plan Function
+    if (window.location.pathname !== '/plan') {
+      window.history.pushState({ modalOpen: true }, '', '/plan');
+    }
+
+    // 2. Handle the browser back button to close the planner
+    const handlePopState = () => setIsPlannerOpen(false);
+    window.addEventListener('popstate', handlePopState);
+
     if (isPlannerOpen && places.length > 0 && !hasLoggedPlanOpen.current) {
       logVisit('Plan Function');
       hasLoggedPlanOpen.current = true;
     }
+
     const filteredForWeather = places.filter(place => {
       const search = (debouncedPlannerSearch || "").toLowerCase();
       if (!search) return place.status === 'done' || place.status === 'pending';
@@ -4486,18 +4522,24 @@ function App() {
       return (place.status === 'done' || place.status === 'pending') &&
         (name.includes(search) || locality.includes(search) || cat.includes(search));
     });
+
     if (filteredForWeather.length > 0) fetchRouteWeather(filteredForWeather);
+
+    return () => {
+      // 3. Cleanup the event listener to prevent memory leaks during re-renders
+      window.removeEventListener('popstate', handlePopState);
+    };
   }, [isPlannerOpen, debouncedPlannerSearch, places]);
 
+
   useEffect(() => {
-    // Assuming 'isVideoGalleryOpen' is your state controlling the video modal
     if (isVideoGalleryOpen) {
       // Generate the URL
       window.history.pushState({ modalOpen: true }, '', '/videos');
 
-      // Log the visit once per lifecycle
+      // Log the visit once per lifecycle using the display name
       if (!hasLoggedVideoOpen.current) {
-        logVisit('/videos');
+        logVisit('Video Gallery');
         hasLoggedVideoOpen.current = true;
       }
     } else {
