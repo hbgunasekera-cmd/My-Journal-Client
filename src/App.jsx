@@ -1335,301 +1335,703 @@ const MapSelectionComponent = React.memo(({ onLocationSelect, initialCoords, onM
 });
 
 
-export const PhotoGallery = React.memo(({ photos, onClose, placeName, selectedLocation, onShare }) => {
-  const [activeIndex, setActiveIndex] = useState(null);
-  const [isSlideshowActive, setIsSlideshowActive] = useState(false);
+/*
+* ============================================================
+* PHOTO GALLERY
+* ============================================================
+*/
 
-  // 1. Two separate refs for the two different scrollable areas in the modal
-  const gridScrollRef = useDragScroll();
-  const lightboxScrollRef = useDragScroll();
 
-  const preventCopy = (e) => {
-    e.preventDefault();
-    return false;
-  };
+export const PhotoGallery = React.memo(
+  ({ photos, onClose, placeName, selectedLocation, onShare }) => {
+    const [activeIndex, setActiveIndex] = useState(null);
+    const [isSlideshowActive, setIsSlideshowActive] = useState(false);
 
-  useEffect(() => {
-    if (selectedLocation || placeName) {
-      const locationObj = selectedLocation || { place_name: placeName };
-      if (locationObj.status === 'done') {
+    // Two separate refs for the two different scrollable areas in the modal
+    const gridScrollRef = useDragScroll();
+    const lightboxScrollRef = useDragScroll();
+
+    const preventCopy = (e) => {
+      e.preventDefault();
+      return false;
+    };
+
+    /*
+     * ============================================================
+     * PHOTO GALLERY SEO
+     * ============================================================
+     */
+    useEffect(() => {
+      if (selectedLocation || placeName) {
+        const locationObj =
+          selectedLocation || { place_name: placeName };
+
         updateSEO(locationObj, { isGallery: true });
       }
-    }
-  }, [selectedLocation, placeName]);
+    }, [selectedLocation, placeName]);
 
-  useEffect(() => {
-    const scrollY = window.scrollY;
-    document.body.classList.add('modal-open');
-    return () => {
-      document.body.classList.remove('modal-open');
-      window.scrollTo(0, scrollY);
+    /*
+     * ============================================================
+     * PHOTO GALLERY MODAL + URL LIFECYCLE
+     *
+     * Opening gallery:
+     *   /                       -> /gallery/place-name
+     *   /place/place-name      -> /gallery/place-name
+     *
+     * Browser Back:
+     *   /gallery/place-name    -> previous URL + closes gallery
+     *
+     * Explicit X:
+     *   -> / + closes gallery
+     *
+     * IMPORTANT:
+     * Cleanup NEVER modifies browser history.
+     * ============================================================
+     */
+    useEffect(() => {
+      const scrollY = window.scrollY;
+
+      document.body.classList.add('modal-open');
+
+      const locationObj =
+        selectedLocation ||
+        (placeName ? { place_name: placeName } : null);
+
+      if (locationObj?.place_name) {
+        const rawName = String(locationObj.place_name);
+
+        const gallerySlug =
+          typeof generateSlug === 'function'
+            ? generateSlug(rawName)
+            : rawName
+              .toLowerCase()
+              .trim()
+              .replace(/[^\w\s-]/g, '')
+              .replace(/[\s_-]+/g, '-')
+              .replace(/^-+|-+$/g, '');
+
+        const galleryPath = `/gallery/${gallerySlug}`;
+
+        /*
+         * Only push a new history entry when we are not
+         * already on the gallery URL.
+         *
+         * This is important for direct deep links such as:
+         * /gallery/diyaluma-falls
+         */
+        if (window.location.pathname !== galleryPath) {
+          window.history.pushState(
+            {
+              modalOpen: true,
+              gallery: true,
+              placeId: locationObj.id || null
+            },
+            '',
+            galleryPath
+          );
+        }
+      }
+
+      /*
+       * Browser Back closes the Photo Gallery.
+       *
+       * Do NOT call history.pushState() here.
+       * The browser has already changed the URL.
+       */
+      const handlePopState = () => {
+        if (typeof onClose === 'function') {
+          onClose();
+        }
+      };
+
+      window.addEventListener('popstate', handlePopState);
+
+      return () => {
+        document.body.classList.remove('modal-open');
+        window.scrollTo(0, scrollY);
+
+        window.removeEventListener(
+          'popstate',
+          handlePopState
+        );
+
+        /*
+         * IMPORTANT:
+         * No history manipulation here.
+         *
+         * The old implementation could cause URL/history
+         * inconsistencies when the component re-rendered.
+         */
+      };
+    }, [selectedLocation, placeName, onClose]);
+
+    /*
+     * ============================================================
+     * PINTEREST
+     * ============================================================
+     */
+    const handlePinterestSave = (e, imageUrl, locationData) => {
+      e.stopPropagation();
+
+      const locationName =
+        locationData?.place_name ||
+        placeName ||
+        'New Discovery';
+
+      const rawCategory =
+        locationData?.category ||
+        'Location';
+
+      const baseUrl =
+        'https://www.myjournalview.com';
+
+      const formattedLocation =
+        typeof generateSlug === 'function'
+          ? generateSlug(locationName)
+          : encodeURIComponent(
+            locationName.toLowerCase()
+          );
+
+      const sourceUrl =
+        `${baseUrl}/gallery/${formattedLocation}?utm_source=pinterest_save_btn`;
+
+      const mandatoryHashtags = [
+        'MyJournal',
+        'SriLanka',
+        'VisitSriLanka',
+        'TravelSriLanka',
+        'WanderlustSriLanka',
+        'BeautifulSriLanka',
+        'HiddenGemsSriLanka',
+        'SriLankaDiaries',
+        'ChasingWaterfalls',
+        'HikingAdventures',
+        'CampingLife',
+        'MountainViews',
+        'NatureSeekers',
+        'AdventureSriLanka',
+        'ExploreSriLanka',
+        'TravelPhotography',
+        'TravelDiaries',
+        'IslandParadise',
+        'ProtectNature',
+        'CeylonVibes'
+      ];
+
+      const categoryMap = {
+        Waterfall: ['Waterfalls', 'Nature'],
+        Mountain: ['Mountains', 'Peaks', 'Hiking'],
+        Trail: ['Trekking', 'Adventure'],
+        Viewpoint: ['ScenicViews', 'Landscape'],
+        Beach: ['Coastal', 'OceanVibes', 'BeachLife'],
+        Park: ['NationalPark', 'Wildlife'],
+        Plateaus: ['Highlands', 'Plains'],
+        'Reserved Forest': ['Rainforest', 'EcoTravel'],
+        Monastery: [
+          'Spiritual',
+          'BuddhistTemple',
+          'Serenity'
+        ],
+        Archaeology: [
+          'AncientHistory',
+          'Heritage',
+          'HistoricalSites'
+        ],
+        Reservoir: ['Lakes', 'WaterViews'],
+        Pool: ['NaturalPool', 'Swimming'],
+        Stream: ['Rivers', 'Streams'],
+        Location: ['Travel', 'Explore']
+      };
+
+      const uniqueHashtags =
+        new Set(mandatoryHashtags);
+
+      const locationHashtag =
+        locationName.replace(
+          /[^a-zA-Z0-9]/g,
+          ''
+        );
+
+      if (locationHashtag) {
+        uniqueHashtags.add(locationHashtag);
+      }
+
+      const dynamicTags =
+        categoryMap[rawCategory] || [];
+
+      dynamicTags.forEach((tag) => {
+        uniqueHashtags.add(tag);
+      });
+
+      const hashtagString =
+        Array.from(uniqueHashtags)
+          .map((tag) => `#${tag}`)
+          .join(' ');
+
+      const protectedDescription =
+        `New Adventure: ${locationName} (${rawCategory}) 🏔️ | ` +
+        `Experience breathtaking views and cinematic highlights. ` +
+        `See the full gallery on My Journal! © Hasitha Gunasekera\n\n` +
+        hashtagString;
+
+      const pinterestUrl =
+        `https://www.pinterest.com/pin/create/button/?` +
+        `url=${encodeURIComponent(sourceUrl)}` +
+        `&media=${encodeURIComponent(imageUrl)}` +
+        `&description=${encodeURIComponent(protectedDescription)}`;
+
+      window.open(
+        pinterestUrl,
+        '_blank',
+        'width=600,height=700,scrollbars=yes,resizable=yes'
+      );
     };
-  }, []);
 
-  const handlePinterestSave = (e, imageUrl, locationData) => {
-    e.stopPropagation();
+    /*
+     * ============================================================
+     * SLIDESHOW
+     * ============================================================
+     */
+    useEffect(() => {
+      let timer;
 
-    const locationName = locationData?.place_name || placeName || "New Discovery";
-    const rawCategory = locationData?.category || "Location";
-    const baseUrl = "https://www.myjournalview.com";
+      if (
+        isSlideshowActive &&
+        activeIndex !== null
+      ) {
+        timer = setTimeout(() => {
+          nextImage();
+        }, 5000);
+      }
 
-    const formattedLocation = typeof generateSlug === 'function'
-      ? generateSlug(locationName)
-      : encodeURIComponent(locationName.toLowerCase());
-    const sourceUrl = `${baseUrl}/gallery/${formattedLocation}?utm_source=pinterest_save_btn`;
+      return () => clearTimeout(timer);
+    }, [isSlideshowActive, activeIndex]);
 
-    const mandatoryHashtags = [
-      "MyJournal", "SriLanka", "VisitSriLanka", "TravelSriLanka",
-      "WanderlustSriLanka", "BeautifulSriLanka", "HiddenGemsSriLanka", "SriLankaDiaries",
-      "ChasingWaterfalls", "HikingAdventures", "CampingLife", "MountainViews",
-      "NatureSeekers", "AdventureSriLanka", "ExploreSriLanka", "TravelPhotography",
-      "TravelDiaries", "IslandParadise", "ProtectNature", "CeylonVibes"
-    ];
+    /*
+     * ============================================================
+     * KEYBOARD CONTROLS
+     * ============================================================
+     */
+    useEffect(() => {
+      const handleKeyDown = (e) => {
+        if (activeIndex === null) return;
 
-    const categoryMap = {
-      "Waterfall": ["Waterfalls", "Nature"],
-      "Mountain": ["Mountains", "Peaks", "Hiking"],
-      "Trail": ["Trekking", "Adventure"],
-      "Viewpoint": ["ScenicViews", "Landscape"],
-      "Beach": ["Coastal", "OceanVibes", "BeachLife"],
-      "Park": ["NationalPark", "Wildlife"],
-      "Plateaus": ["Highlands", "Plains"],
-      "Reserved Forest": ["Rainforest", "EcoTravel"],
-      "Monastery": ["Spiritual", "BuddhistTemple", "Serenity"],
-      "Archaeology": ["AncientHistory", "Heritage", "HistoricalSites"],
-      "Reservoir": ["Lakes", "WaterViews"],
-      "Pool": ["NaturalPool", "Swimming"],
-      "Stream": ["Rivers", "Streams"],
-      "Location": ["Travel", "Explore"]
+        if (e.key === 'ArrowRight') {
+          nextImage();
+          setIsSlideshowActive(false);
+        }
+
+        if (e.key === 'ArrowLeft') {
+          prevImage(e);
+          setIsSlideshowActive(false);
+        }
+
+        if (e.key === 'Escape') {
+          setActiveIndex(null);
+        }
+
+        if (e.key === ' ') {
+          e.preventDefault();
+
+          setIsSlideshowActive(
+            (prev) => !prev
+          );
+        }
+      };
+
+      window.addEventListener(
+        'keydown',
+        handleKeyDown
+      );
+
+      return () => {
+        window.removeEventListener(
+          'keydown',
+          handleKeyDown
+        );
+      };
+    }, [activeIndex]);
+
+    /*
+     * ============================================================
+     * IMAGE NAVIGATION
+     * ============================================================
+     */
+    const nextImage = (e) => {
+      if (e) e.stopPropagation();
+
+      setActiveIndex(
+        (prev) => (prev + 1) % photos.length
+      );
     };
 
-    const uniqueHashtags = new Set(mandatoryHashtags);
-    const locationHashtag = locationName.replace(/[^a-zA-Z0-9]/g, "");
-    if (locationHashtag) uniqueHashtags.add(locationHashtag);
+    const prevImage = (e) => {
+      if (e) e.stopPropagation();
 
-    const dynamicTags = categoryMap[rawCategory] || [];
-    dynamicTags.forEach(tag => uniqueHashtags.add(tag));
+      setActiveIndex(
+        (prev) =>
+          (prev - 1 + photos.length) %
+          photos.length
+      );
+    };
 
-    const hashtagString = Array.from(uniqueHashtags).map(tag => `#${tag}`).join(' ');
-    const protectedDescription = `New Adventure: ${locationName} (${rawCategory}) 🏔️ | Experience breathtaking views and cinematic highlights. See the full gallery on My Journal! © Hasitha Gunasekera\n\n${hashtagString}`;
+    /*
+     * ============================================================
+     * CLOSE GALLERY
+     *
+     * Explicit X always returns to root.
+     *
+     * Browser Back is handled separately by popstate above.
+     * ============================================================
+     */
+    const handleCloseGallery = (e) => {
+      if (e) {
+        e.stopPropagation();
+      }
 
-    const pinterestUrl = `https://www.pinterest.com/pin/create/button/?url=${encodeURIComponent(sourceUrl)}&media=${encodeURIComponent(imageUrl)}&description=${encodeURIComponent(protectedDescription)}`;
-    window.open(pinterestUrl, '_blank', 'width=600,height=700,scrollbars=yes,resizable=yes');
-  };
+      /*
+       * Only manipulate the URL if we are currently
+       * on the gallery route.
+       */
+      if (
+        window.location.pathname.startsWith(
+          '/gallery/'
+        )
+      ) {
+        window.history.replaceState(
+          {
+            modalOpen: false
+          },
+          '',
+          '/'
+        );
+      }
 
-  useEffect(() => {
-    let timer;
-    if (isSlideshowActive && activeIndex !== null) {
-      timer = setTimeout(() => nextImage(), 5000);
-    }
-    return () => clearTimeout(timer);
-  }, [isSlideshowActive, activeIndex]);
+      /*
+       * Restore default SEO.
+       */
+      updateSEO(null);
 
-  useEffect(() => {
-    const handleKeyDown = (e) => {
-      if (activeIndex === null) return;
-      if (e.key === 'ArrowRight') { nextImage(); setIsSlideshowActive(false); }
-      if (e.key === 'ArrowLeft') { prevImage(e); setIsSlideshowActive(false); }
-      if (e.key === 'Escape') setActiveIndex(null);
-      if (e.key === ' ') {
-        e.preventDefault();
-        setIsSlideshowActive(prev => !prev);
+      /*
+       * Close the React modal.
+       */
+      if (typeof onClose === 'function') {
+        onClose();
       }
     };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [activeIndex]);
 
-  const nextImage = (e) => {
-    if (e) e.stopPropagation();
-    setActiveIndex((prev) => (prev + 1) % photos.length);
-  };
+    /*
+     * ============================================================
+     * SAFETY
+     * ============================================================
+     */
+    if (!photos || photos.length === 0) {
+      return null;
+    }
 
-  const prevImage = (e) => {
-    if (e) e.stopPropagation();
-    setActiveIndex((prev) => (prev - 1 + photos.length) % photos.length);
-  };
-
-  if (!photos || photos.length === 0) return null;
-
-  return (
-    <div
-      className="fixed inset-0 z-[10000] bg-white/95 backdrop-blur-3xl flex flex-col animate-in fade-in duration-200 select-none"
-      style={{ height: '100dvh' }}
-      onClick={(e) => e.stopPropagation()}
-      onContextMenu={preventCopy}
-    >
-      <header className="flex justify-between items-center p-6 border-b border-white/10 shrink-0">
-        <div>
-          <h3 className="text-slate-600 font-black uppercase tracking-widest text-xs">
-            {placeName ? `${placeName} Gallery` : 'Location Gallery'}
-          </h3>
-          <p className="text-[10px] text-indigo-400 font-bold uppercase">{photos.length} Total Images</p>
-        </div>
-
-        <div className="flex items-center gap-3">
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              if (onShare) onShare(e, selectedLocation);
-            }}
-            aria-label="Share Gallery"
-            className="w-12 h-12 flex items-center justify-center bg-slate-800/10 text-slate-700 hover:bg-blue-500 hover:text-white rounded-full transition-all shadow-sm"
-          >
-            <Share2 className="w-5 h-5" />
-          </button>
-
-          <button
-            type="button"
-            onClick={(e) => {
-              e.stopPropagation();
-              const isPublished = selectedLocation?.status === 'done';
-
-              if (isPublished) {
-                window.history.pushState({ modalOpen: false }, '', '/');
-                updateSEO(null);
-              }
-
-              if (typeof onClose === 'function') {
-                onClose();
-              }
-            }}
-            aria-label="Close photo gallery"
-            className="w-12 h-12 flex items-center justify-center bg-gray-600/80 hover:bg-rose-600 text-white rounded-full transition-colors shadow-md focus:outline-none focus:ring-2 focus:ring-rose-500 focus:ring-offset-2"
-          >
-            <X className="w-5 h-5" aria-hidden="true" />
-          </button>
-        </div>
-      </header>
-
-      {/* 2. Attached gridScrollRef to the main scrollable grid */}
-      <main
-        ref={gridScrollRef}
-        className="flex-1 overflow-y-auto overscroll-y-contain touch-pan-y p-4 md:p-10 custom-scrollbar"
+    /*
+     * ============================================================
+     * RENDER
+     * ============================================================
+     */
+    return (
+      <div
+        className="fixed inset-0 z-[10000] bg-white/95 backdrop-blur-3xl flex flex-col animate-in fade-in duration-200 select-none"
+        style={{ height: '100dvh' }}
+        onClick={(e) => e.stopPropagation()}
+        onContextMenu={preventCopy}
       >
-        <div className="max-w-5xl mx-auto grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {photos.map((url, i) => (
-            <article
-              key={`${placeName}-${i}`}
-              onClick={() => setActiveIndex(i)}
-              className="group relative aspect-[4/5] rounded-[2rem] overflow-hidden bg-slate-800 border border-white/5 shadow-2xl cursor-zoom-in hover:scale-[1.02] transition-transform duration-300"
-            >
-              <img
-                src={typeof getOptimizedUrl === 'function' ? getOptimizedUrl(url, 400, 60) : url}
-                className="w-full h-full object-cover select-none pointer-events-none"
-                loading={i === 0 ? "eager" : "lazy"}
-                fetchPriority={i === 0 ? "high" : "auto"}
-                draggable={false} // 3. Prevents native browser ghost-dragging
-                alt={`${placeName || 'Adventure'} - Image ${i + 1}`}
-              />
-            </article>
-          ))}
-        </div>
-      </main>
+        {/* ======================================================
+            HEADER
+            ====================================================== */}
+        <header className="flex justify-between items-center p-6 border-b border-white/10 shrink-0">
+          <div>
+            <h3 className="text-slate-600 font-black uppercase tracking-widest text-xs">
+              {placeName
+                ? `${placeName} Gallery`
+                : 'Location Gallery'}
+            </h3>
 
-      {activeIndex !== null && (
-        <div className="fixed inset-0 z-[11000] bg-black/95 backdrop-blur-2xl flex flex-col animate-in zoom-in-95 duration-200" onContextMenu={preventCopy}>
-          {isSlideshowActive && (
-            <div className="absolute top-0 left-0 h-1 bg-indigo-500 z-[12001] animate-[progress_5s_linear_infinite]"></div>
-          )}
-
-          <div className="absolute top-6 right-6 flex gap-3 z-[12000]">
-            <button
-              className="w-12 h-12 flex items-center justify-center bg-white/10 hover:bg-[#E60023] text-white rounded-full transition-all shadow-lg"
-              onClick={(e) => handlePinterestSave(e, photos[activeIndex], selectedLocation)}
-              aria-label="Save to Pinterest"
-            >
-              <svg className="w-5 h-5 fill-current" viewBox="0 0 24 24">
-                <path d="M12.017 0C5.396 0 .029 5.367.029 11.987c0 5.079 3.158 9.417 7.618 11.162-.105-.949-.199-2.403.041-3.439.219-.937 1.406-5.966 1.406-5.966s-.359-.719-.359-1.782c0-1.668.967-2.914 2.171-2.914 1.023 0 1.518.769 1.518 1.69 0 1.029-.655 2.568-.994 3.995-.283 1.194.599 2.169 1.777 2.169 2.133 0 3.772-2.249 3.772-5.495 0-2.873-2.064-4.882-5.012-4.882-3.414 0-5.418 2.561-5.418 5.207 0 1.031.397 2.138.893 2.738.098.119.112.224.083.345l-.333 1.36c-.053.22-.174.267-.402.161-1.499-.698-2.436-2.889-2.436-4.649 0-3.785 2.75-7.261 7.929-7.261 4.162 0 7.397 2.966 7.397 6.93 0 4.136-2.607 7.464-6.227 7.464-1.216 0-2.359-.631-2.75-1.378l-.748 2.853c-.271 1.033-1.002 2.324-1.492 3.121 1.12.345 2.3.533 3.524.533 6.621 0 11.988-5.367 11.988-11.987C24.005 5.367 18.638 0 12.017 0z" />
-              </svg>
-            </button>
-
-            <button
-              className={`w-12 h-12 flex items-center justify-center rounded-full transition-all duration-300 ${isSlideshowActive ? 'bg-indigo-600 text-white shadow-lg' : 'bg-white/10 text-white hover:bg-white/20'}`}
-              onClick={(e) => {
-                e.stopPropagation();
-                setIsSlideshowActive(!isSlideshowActive);
-              }}
-              aria-label={isSlideshowActive ? "Pause Slideshow" : "Start Slideshow"}
-            >
-              {isSlideshowActive ? <Pause className="w-5 h-5" /> : <Play className="w-5 h-5" />}
-            </button>
-
-            <button
-              className="w-12 h-12 flex items-center justify-center bg-white/10 hover:bg-rose-500 text-white rounded-full transition-all"
-              onClick={() => setActiveIndex(null)}
-            >
-              <X className="w-5 h-5" />
-            </button>
+            <p className="text-[10px] text-indigo-400 font-bold uppercase">
+              {photos.length} Total Images
+            </p>
           </div>
 
-          <button
-            className="absolute left-4 top-1/2 -translate-y-1/2 w-14 h-14 flex items-center justify-center bg-white/5 hover:bg-white/20 text-white rounded-full transition-all z-[12000]"
-            onClick={(e) => { prevImage(e); setIsSlideshowActive(false); }}
-          >
-            <ChevronLeft className="w-8 h-8" />
-          </button>
-          <button
-            className="absolute right-4 top-1/2 -translate-y-1/2 w-14 h-14 flex items-center justify-center bg-white/5 hover:bg-white/20 text-white rounded-full transition-all z-[12000]"
-            onClick={(e) => { nextImage(e); setIsSlideshowActive(false); }}
-          >
-            <ChevronRight className="w-8 h-8" />
-          </button>
+          <div className="flex items-center gap-3">
+            {/* SHARE */}
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
 
-          {/* 4. Attached lightboxScrollRef to the zoomed-in view */}
-          <div
-            ref={lightboxScrollRef}
-            className="photo-gallery-scroll native-scroll-y flex-1 w-full overflow-y-auto p-4 no-scrollbar"
-            onClick={() => setActiveIndex(null)}
-          >
-            <div className="min-h-full w-full flex items-center justify-center">
-              <div
-                className="relative w-fit h-fit"
-                onClick={(e) => e.stopPropagation()}
+                if (onShare) {
+                  onShare(
+                    e,
+                    selectedLocation
+                  );
+                }
+              }}
+              aria-label="Share Gallery"
+              className="w-12 h-12 flex items-center justify-center bg-slate-800/10 text-slate-700 hover:bg-blue-500 hover:text-white rounded-full transition-all shadow-sm"
+            >
+              <Share2 className="w-5 h-5" />
+            </button>
+
+            {/* CLOSE */}
+            <button
+              type="button"
+              onClick={handleCloseGallery}
+              aria-label="Close photo gallery"
+              className="w-12 h-12 flex items-center justify-center bg-gray-600/80 hover:bg-rose-600 text-white rounded-full transition-colors shadow-md focus:outline-none focus:ring-2 focus:ring-rose-500 focus:ring-offset-2"
+            >
+              <X
+                className="w-5 h-5"
+                aria-hidden="true"
+              />
+            </button>
+          </div>
+        </header>
+
+        {/* ======================================================
+            PHOTO GRID
+            ====================================================== */}
+        <main
+          ref={gridScrollRef}
+          className="flex-1 overflow-y-auto overscroll-y-contain touch-pan-y p-4 md:p-10 custom-scrollbar"
+        >
+          <div className="max-w-5xl mx-auto grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            {photos.map((url, i) => (
+              <article
+                key={`${placeName}-${i}`}
+                onClick={() =>
+                  setActiveIndex(i)
+                }
+                className="group relative aspect-[4/5] rounded-[2rem] overflow-hidden bg-slate-800 border border-white/5 shadow-2xl cursor-zoom-in hover:scale-[1.02] transition-transform duration-300"
               >
                 <img
-                  key={photos[activeIndex]}
                   src={
-                    typeof getOptimizedUrl === 'function'
-                      ? getOptimizedUrl(photos[activeIndex], 1200, 85)
-                      : photos[activeIndex]
+                    typeof getOptimizedUrl ===
+                      'function'
+                      ? getOptimizedUrl(
+                        url,
+                        400,
+                        60
+                      )
+                      : url
                   }
-                  className="max-w-full max-h-[85vh] object-contain rounded-lg shadow-2xl animate-in fade-in zoom-in-95 duration-500"
-                  alt={`${placeName || 'Gallery'} featured view`}
-                  fetchPriority="high"
-                  loading="eager"
-                  draggable={false} // Prevents ghost dragging
+                  className="w-full h-full object-cover select-none pointer-events-none"
+                  loading={
+                    i === 0
+                      ? 'eager'
+                      : 'lazy'
+                  }
+                  fetchPriority={
+                    i === 0
+                      ? 'high'
+                      : 'auto'
+                  }
+                  draggable={false}
+                  alt={`${placeName || 'Adventure'} - Image ${i + 1}`}
                 />
+              </article>
+            ))}
+          </div>
+        </main>
 
-                <div className="absolute bottom-6 right-6 pointer-events-none select-none">
-                  <div className="flex flex-col items-end drop-shadow-[0_2px_4px_rgba(0,0,0,0.5)]">
-                    <span className="text-[10px] md:text-xs font-light tracking-[0.4em] text-white/70 uppercase border-b border-white/30 pb-0.5">
-                      My Journal
-                    </span>
-                    <div className="w-4 h-[0.5px] bg-white/30 mt-0.5"></div>
+        {/* ======================================================
+            LIGHTBOX
+            ====================================================== */}
+        {activeIndex !== null && (
+          <div
+            className="fixed inset-0 z-[11000] bg-black/95 backdrop-blur-2xl flex flex-col animate-in zoom-in-95 duration-200"
+            onContextMenu={preventCopy}
+          >
+            {/* SLIDESHOW PROGRESS */}
+            {isSlideshowActive && (
+              <div className="absolute top-0 left-0 h-1 bg-indigo-500 z-[12001] animate-[progress_5s_linear_infinite]" />
+            )}
+
+            {/* LIGHTBOX CONTROLS */}
+            <div className="absolute top-6 right-6 flex gap-3 z-[12000]">
+              {/* PINTEREST */}
+              <button
+                className="w-12 h-12 flex items-center justify-center bg-white/10 hover:bg-[#E60023] text-white rounded-full transition-all shadow-lg"
+                onClick={(e) =>
+                  handlePinterestSave(
+                    e,
+                    photos[activeIndex],
+                    selectedLocation
+                  )
+                }
+                aria-label="Save to Pinterest"
+              >
+                <svg
+                  className="w-5 h-5 fill-current"
+                  viewBox="0 0 24 24"
+                >
+                  <path d="M12.017 0C5.396 0 .029 5.367.029 11.987c0 5.079 3.158 9.417 7.618 11.162-.105-.949-.199-2.403.041-3.439.219-.937 1.406-5.966 1.406-5.966s-.359-.719-.359-1.782c0-1.668.967-2.914 2.171-2.914 1.023 0 1.518.769 1.518 1.69 0 1.029-.655 2.568-.994 3.995-.283 1.194.599 2.169 1.777 2.169 2.133 0 3.772-2.249 3.772-5.495 0-2.873-2.064-4.882-5.012-4.882-3.414 0-5.418 2.561-5.418 5.207 0 1.031.397 2.138.893 2.738.098.119.112.224.083.345l-.333 1.36c-.053.22-.174.267-.402.161-1.499-.698-2.436-2.889-2.436-4.649 0-3.785 2.75-7.261 7.929-7.261 4.162 0 7.397 2.966 7.397 6.93 0 4.136-2.607 7.464-6.227 7.464-1.216 0-2.359-.631-2.75-1.378l-.748 2.853c-.271 1.033-1.002 2.324-1.492 3.121 1.12.345 2.3.533 3.524.533 6.621 0 11.988-5.367 11.988-11.987C24.005 5.367 18.638 0 12.017 0z" />
+                </svg>
+              </button>
+
+              {/* SLIDESHOW */}
+              <button
+                className={`w-12 h-12 flex items-center justify-center rounded-full transition-all duration-300 ${isSlideshowActive
+                  ? 'bg-indigo-600 text-white shadow-lg'
+                  : 'bg-white/10 text-white hover:bg-white/20'
+                  }`}
+                onClick={(e) => {
+                  e.stopPropagation();
+
+                  setIsSlideshowActive(
+                    (prev) => !prev
+                  );
+                }}
+                aria-label={
+                  isSlideshowActive
+                    ? 'Pause Slideshow'
+                    : 'Start Slideshow'
+                }
+              >
+                {isSlideshowActive ? (
+                  <Pause className="w-5 h-5" />
+                ) : (
+                  <Play className="w-5 h-5" />
+                )}
+              </button>
+
+              {/* CLOSE LIGHTBOX */}
+              <button
+                className="w-12 h-12 flex items-center justify-center bg-white/10 hover:bg-rose-500 text-white rounded-full transition-all"
+                onClick={() =>
+                  setActiveIndex(null)
+                }
+                aria-label="Close image"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* PREVIOUS */}
+            <button
+              className="absolute left-4 top-1/2 -translate-y-1/2 w-14 h-14 flex items-center justify-center bg-white/5 hover:bg-white/20 text-white rounded-full transition-all z-[12000]"
+              onClick={(e) => {
+                prevImage(e);
+                setIsSlideshowActive(false);
+              }}
+              aria-label="Previous image"
+            >
+              <ChevronLeft className="w-8 h-8" />
+            </button>
+
+            {/* NEXT */}
+            <button
+              className="absolute right-4 top-1/2 -translate-y-1/2 w-14 h-14 flex items-center justify-center bg-white/5 hover:bg-white/20 text-white rounded-full transition-all z-[12000]"
+              onClick={(e) => {
+                nextImage(e);
+                setIsSlideshowActive(false);
+              }}
+              aria-label="Next image"
+            >
+              <ChevronRight className="w-8 h-8" />
+            </button>
+
+            {/* IMAGE */}
+            <div
+              ref={lightboxScrollRef}
+              className="photo-gallery-scroll native-scroll-y flex-1 w-full overflow-y-auto p-4 no-scrollbar"
+              onClick={() =>
+                setActiveIndex(null)
+              }
+            >
+              <div className="min-h-full w-full flex items-center justify-center">
+                <div
+                  className="relative w-fit h-fit"
+                  onClick={(e) =>
+                    e.stopPropagation()
+                  }
+                >
+                  <img
+                    key={photos[activeIndex]}
+                    src={
+                      typeof getOptimizedUrl ===
+                        'function'
+                        ? getOptimizedUrl(
+                          photos[activeIndex],
+                          1200,
+                          85
+                        )
+                        : photos[activeIndex]
+                    }
+                    className="max-w-full max-h-[85vh] object-contain rounded-lg shadow-2xl animate-in fade-in zoom-in-95 duration-500"
+                    alt={`${placeName || 'Gallery'} featured view`}
+                    fetchPriority="high"
+                    loading="eager"
+                    draggable={false}
+                  />
+
+                  {/* WATERMARK */}
+                  <div className="absolute bottom-6 right-6 pointer-events-none select-none">
+                    <div className="flex flex-col items-end drop-shadow-[0_2px_4px_rgba(0,0,0,0.5)]">
+                      <span className="text-[10px] md:text-xs font-light tracking-[0.4em] text-white/70 uppercase border-b border-white/30 pb-0.5">
+                        My Journal
+                      </span>
+
+                      <div className="w-4 h-[0.5px] bg-white/30 mt-0.5" />
+                    </div>
                   </div>
                 </div>
               </div>
             </div>
+
+            {/* COUNTER */}
+            <footer className="absolute bottom-10 left-1/2 -translate-x-1/2 bg-white/10 px-6 py-2 rounded-full border border-white/10 z-[12000]">
+              <p className="text-white text-[10px] font-black tracking-[0.2em] uppercase">
+                {activeIndex + 1} / {photos.length}
+              </p>
+            </footer>
           </div>
+        )}
 
-          <footer className="absolute bottom-10 left-1/2 -translate-x-1/2 bg-white/10 px-6 py-2 rounded-full border border-white/10 z-[12000]">
-            <p className="text-white text-[10px] font-black tracking-[0.2em] uppercase">{activeIndex + 1} / {photos.length}</p>
-          </footer>
-        </div>
-      )}
+        {/* ======================================================
+            STYLES
+            ====================================================== */}
+        <style>{`
+          @keyframes progress {
+            from {
+              width: 0%;
+            }
 
-      <style>{`
-        @keyframes progress { from { width: 0%; } to { width: 100%; } }
-        .modal-open { overflow: hidden !important; }
-        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
-        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
-        .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.1); border-radius: 10px; }
-      `}</style>
-    </div>
-  );
-});
+            to {
+              width: 100%;
+            }
+          }
 
+          .modal-open {
+            overflow: hidden !important;
+          }
+
+          .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
+          }
+
+          .custom-scrollbar::-webkit-scrollbar-track {
+            background: transparent;
+          }
+
+          .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: rgba(0, 0, 0, 0.1);
+            border-radius: 10px;
+          }
+        `}</style>
+      </div>
+    );
+  }
+);
+
+/*
+* ============================================================
+* VIDEO GALLERY
+* ============================================================
+*/
 
 
 // YouTube Video ID parser
@@ -1704,52 +2106,87 @@ export const HubVideoList = ({ supabaseClient, onVideosLoaded }) => {
 };
 
 
-
 export const VideoGallery = React.memo(({ videos, initialIndex = 0, onClose }) => {
   const [activeIndex, setActiveIndex] = useState(initialIndex);
 
-  // FIX 1: Robust URL parsing using Regex to handle commas, spaces, newlines, and semicolons
+  // FIX 1: Robust URL parsing using Regex to handle
+  // commas, spaces, newlines, semicolons, and pipe separators
   const videoList = (Array.isArray(videos) ? videos : [videos])
-    .flatMap(item => {
+    .flatMap((item) => {
       if (typeof item === 'string') {
-        return item.split(/[\s,;\|]+/);
+        return item.split(/[\s,;|]+/);
       }
-      // Handle cases where a DB object is passed but its url property contains multiple links
-      if (item && typeof item === 'object' && typeof item.url === 'string') {
-        const urls = item.url.split(/[\s,;\|]+/);
+
+      // Handle DB objects where the url property contains multiple links
+      if (
+        item &&
+        typeof item === 'object' &&
+        typeof item.url === 'string'
+      ) {
+        const urls = item.url.split(/[\s,;|]+/);
+
         if (urls.length > 1) {
-          return urls.map(u => ({ ...item, url: u }));
+          return urls.map((u) => ({
+            ...item,
+            url: u,
+          }));
         }
       }
+
       return item;
     })
-    .map(item => {
+    .map((item) => {
       if (typeof item === 'string') {
         const trimmed = item.trim();
-        return { url: trimmed, title: '', custom_thumbnail_url: '' };
+
+        return {
+          url: trimmed,
+          title: '',
+          custom_thumbnail_url: '',
+        };
       }
+
       return item;
     })
-    .filter(item => item && (item.url || item.custom_thumbnail_url) && String(item.url).trim() !== '');
+    .filter(
+      (item) =>
+        item &&
+        (item.url || item.custom_thumbnail_url) &&
+        String(item.url).trim() !== ''
+    );
 
+  // FIX 2: Gallery lifecycle + URL synchronization
+  // The parent MUST provide a stable onClose callback.
   useEffect(() => {
     const scrollY = window.scrollY;
+
     document.body.classList.add('modal-open');
 
-    // 1. Log visit analytics upon mounting using display name
+    // Log visit analytics once when Video Gallery mounts
     if (typeof logVisit === 'function') {
       logVisit('Video Gallery');
     }
 
-    // 2. Update browser URL history state for routing
-    window.history.pushState({ modalOpen: true }, '', '/videos');
+    // FIX 3: Do not push /videos if we are already there.
+    // Prevents unnecessary history entries and URL blinking.
+    if (window.location.pathname !== '/videos') {
+      window.history.pushState(
+        { modalOpen: true },
+        '',
+        '/videos'
+      );
+    }
 
     const handleKeyDown = (e) => {
-      if (e.key === 'Escape') onClose();
+      if (e.key === 'Escape') {
+        onClose();
+      }
     };
 
-    // Listen for browser navigation (Back button)
-    const handlePopState = () => onClose();
+    // Browser Back button closes the gallery
+    const handlePopState = () => {
+      onClose();
+    };
 
     window.addEventListener('keydown', handleKeyDown);
     window.addEventListener('popstate', handlePopState);
@@ -1757,31 +2194,45 @@ export const VideoGallery = React.memo(({ videos, initialIndex = 0, onClose }) =
     return () => {
       document.body.classList.remove('modal-open');
       window.scrollTo(0, scrollY);
+
       window.removeEventListener('keydown', handleKeyDown);
       window.removeEventListener('popstate', handlePopState);
 
-      // 3. Revert URL history when modal is closed
+      // Revert URL when the gallery actually closes
       if (window.location.pathname === '/videos') {
-        window.history.pushState({ modalOpen: false }, '', '/');
+        window.history.pushState(
+          { modalOpen: false },
+          '',
+          '/'
+        );
       }
     };
   }, [onClose]);
 
-  if (videoList.length === 0) return null;
+  if (videoList.length === 0) {
+    return null;
+  }
 
-  const currentVideo = videoList[activeIndex] || videoList[0];
+  const currentVideo =
+    videoList[activeIndex] || videoList[0];
+
   const videoId = getYouTubeId(currentVideo.url);
 
   return (
     <div className="fixed inset-0 z-[10000] bg-slate-900/98 backdrop-blur-3xl flex flex-col animate-in fade-in duration-200 select-none">
 
+      {/* Header */}
       <header className="flex justify-between items-center p-6 border-b border-white/10 shrink-0">
         <div>
-          <h3 className="text-white font-black uppercase tracking-widest text-xs">Video Journal</h3>
+          <h3 className="text-white font-black uppercase tracking-widest text-xs">
+            Video Journal
+          </h3>
+
           <p className="text-[10px] text-indigo-400 font-bold uppercase">
             {activeIndex + 1} of {videoList.length} Clips
           </p>
         </div>
+
         <button
           onClick={onClose}
           aria-label="Close video gallery"
@@ -1791,11 +2242,17 @@ export const VideoGallery = React.memo(({ videos, initialIndex = 0, onClose }) =
         </button>
       </header>
 
+      {/* Main Content */}
       <main className="flex-1 flex flex-col lg:flex-row gap-6 p-4 md:p-6 overflow-hidden">
 
-        {/* FIX 2A: Changed mobile 'flex-1' to 'flex-none' so it doesn't force the list out of bounds */}
+        {/* FIX 4:
+            Mobile uses flex-none instead of flex-1 so the
+            video area does not force the playlist off-screen.
+        */}
         <div className="flex-none lg:flex-1 w-full flex items-center justify-center relative min-h-[40vh] lg:min-h-0">
+
           <div className="relative w-full max-w-5xl aspect-video rounded-[2rem] overflow-hidden bg-black border border-white/10 shadow-2xl">
+
             {videoId ? (
               <iframe
                 key={videoId}
@@ -1803,58 +2260,92 @@ export const VideoGallery = React.memo(({ videos, initialIndex = 0, onClose }) =
                 className="absolute top-0 left-0 w-full h-full border-0"
                 allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                 allowFullScreen
-                title={currentVideo.title || "Video Journal Player"}
+                title={currentVideo.title || 'Video Journal Player'}
               />
             ) : (
               <div className="flex items-center justify-center h-full text-white/50 text-sm">
                 Invalid or Unsupported Video URL
               </div>
             )}
+
           </div>
         </div>
 
-        {/* FIX 2B: Added 'flex-1 min-h-0' to enforce an internal scrolling boundary on mobile screens */}
+        {/* FIX 5:
+            flex-1 + min-h-0 creates an internal scrolling boundary
+            for the video list on mobile.
+        */}
         <aside className="w-full lg:w-80 flex-1 lg:flex-none flex flex-col gap-3 overflow-y-auto custom-scrollbar pr-2 pb-20 lg:pb-0 min-h-0">
-          <h4 className="text-white/70 text-xs font-bold uppercase tracking-widest mb-2 px-1">More Videos</h4>
+
+          <h4 className="text-white/70 text-xs font-bold uppercase tracking-widest mb-2 px-1">
+            More Videos
+          </h4>
+
           {videoList.map((item, idx) => {
             const listVideoId = getYouTubeId(item.url);
-            const thumbnailUrl = item.custom_thumbnail_url ||
-              (listVideoId ? `https://img.youtube.com/vi/${listVideoId}/hqdefault.jpg` : '/default-video-placeholder.jpg');
+
+            const thumbnailUrl =
+              item.custom_thumbnail_url ||
+              (
+                listVideoId
+                  ? `https://img.youtube.com/vi/${listVideoId}/hqdefault.jpg`
+                  : '/default-video-placeholder.jpg'
+              );
+
             const isActive = activeIndex === idx;
 
             return (
               <button
                 key={item.id || item.url || idx}
                 onClick={() => setActiveIndex(idx)}
-                className={`group flex items-start gap-3 w-full text-left p-2 rounded-xl transition-all ${isActive ? 'bg-white/10 border border-indigo-500' : 'hover:bg-white/5 border border-transparent'
+                className={`group flex items-start gap-3 w-full text-left p-2 rounded-xl transition-all ${isActive
+                  ? 'bg-white/10 border border-indigo-500'
+                  : 'hover:bg-white/5 border border-transparent'
                   }`}
               >
+
+                {/* Thumbnail */}
                 <div className="relative w-24 aspect-video flex-shrink-0 rounded-lg overflow-hidden bg-slate-800">
+
                   <img
                     src={thumbnailUrl}
-                    alt={item.title || "Thumbnail"}
-                    className={`w-full h-full object-cover transition-opacity ${isActive ? 'opacity-100' : 'opacity-70 group-hover:opacity-100'}`}
+                    alt={item.title || 'Thumbnail'}
+                    className={`w-full h-full object-cover transition-opacity ${isActive
+                      ? 'opacity-100'
+                      : 'opacity-70 group-hover:opacity-100'
+                      }`}
                     onError={(e) => {
                       e.target.onerror = null;
-                      e.target.src = '/default-video-placeholder.jpg';
+                      e.target.src =
+                        '/default-video-placeholder.jpg';
                     }}
                   />
+
                   {isActive && (
                     <div className="absolute inset-0 bg-indigo-500/30 flex items-center justify-center">
                       <Play className="w-4 h-4 text-white fill-white" />
                     </div>
                   )}
+
                 </div>
+
+                {/* Title */}
                 <div className="flex-1 overflow-hidden">
-                  <p className={`text-xs font-semibold line-clamp-2 ${isActive ? 'text-white' : 'text-slate-300'}`}>
-                    {item.title || "Journal Entry"}
+                  <p
+                    className={`text-xs font-semibold line-clamp-2 ${isActive
+                      ? 'text-white'
+                      : 'text-slate-300'
+                      }`}
+                  >
+                    {item.title || 'Journal Entry'}
                   </p>
                 </div>
+
               </button>
             );
           })}
-        </aside>
 
+        </aside>
       </main>
     </div>
   );
@@ -2671,8 +3162,6 @@ function App() {
   const [nearbyAttractions, setNearbyAttractions] = useState([]);
   const [qrUrl, setQrUrl] = useState(null);
   const fetchedWeatherKeys = useRef(new Set());
-
-  // ADD THE INVISIBLE VIDEO DATA LOADER HERE
   const [videoLibrary, setVideoLibrary] = useState([]);
   const [isVideosLoading, setIsVideosLoading] = useState(false);
 
@@ -2705,10 +3194,17 @@ function App() {
     }
   }, [supabaseClient]);
 
-  // Pre-load videos silently in the background
   useEffect(() => {
     fetchVideoLibrary();
   }, [fetchVideoLibrary]);
+
+  const handleClosePhotoGallery = useCallback(() => {
+    setActiveId(null);
+  }, []);
+
+  const handleCloseVideoGallery = useCallback(() => {
+    setActiveVideos([]);
+  }, []);
 
   // ============================================================================
   // 27. PERFORMANCE OPTIMIZATION & DEBOUNCED / DERIVED STATE
@@ -6702,22 +7198,33 @@ function App() {
       )}
 
       {/* --- MEDIA OVERLAYS --- */}
+
+      {/*PHOTO OVERLAY */}
+      {/* PHOTO OVERLAY */}
       {activeId && (
         <PhotoGallery
-          photos={places.find(p => p.id === activeId)?.album_photos || []}
-          placeName={places.find(p => p.id === activeId)?.place_name}
-          selectedLocation={places.find(p => p.id === activeId)}
-          onClose={() => setActiveId(null)}
-          onShare={(e, location) => handleShare(e, location, true)}
+          photos={
+            places.find(p => p.id === activeId)?.album_photos || []
+          }
+          placeName={
+            places.find(p => p.id === activeId)?.place_name
+          }
+          selectedLocation={
+            places.find(p => p.id === activeId)
+          }
+          onClose={handleClosePhotoGallery}
+          onShare={(e, location) =>
+            handleShare(e, location, true)
+          }
         />
       )}
 
-      {/* NEW: VIDEO OVERLAY */}
+      {/* VIDEO OVERLAY */}
       {activeVideos.length > 0 && (
         <VideoGallery
           videos={activeVideos}
           initialIndex={0}
-          onClose={() => setActiveVideos([])}
+          onClose={handleCloseVideoGallery}
         />
       )}
 
