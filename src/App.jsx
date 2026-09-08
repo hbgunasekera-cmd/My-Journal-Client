@@ -482,13 +482,6 @@ export const truncateText = (text, maxLength = 155) => {
 // 12. CONSOLIDATED SEO & SCHEMA MANAGERS
 // =======================================================================
 
-// =======================================================================
-// 12. CONSOLIDATED SEO & SCHEMA MANAGERS
-// =======================================================================
-
-/**
- * Injects or updates Schema.org JSON-LD structured data with XSS prevention
- */
 export const injectJSONLDSchema = (place, canonicalUrl, isGallery = false, photos = []) => {
   let schemaScript = document.getElementById('json-ld-schema');
 
@@ -523,7 +516,7 @@ export const injectJSONLDSchema = (place, canonicalUrl, isGallery = false, photo
   const metrics = article.metrics || {};
   const about = article.about || {};
 
-  const description =
+  const placeDescription =
     about.overview ||
     article.story ||
     legacyStory ||
@@ -537,19 +530,23 @@ export const injectJSONLDSchema = (place, canonicalUrl, isGallery = false, photo
       ? photos
       : (Array.isArray(place.photos) ? place.photos : []);
 
+    // Unique photo gallery schema description to avoid duplicating the place guide text
+    const galleryDescription = `High-resolution photo gallery and aerial drone perspectives of ${place.place_name}, a ${place.category || 'location'} in ${place.locality || 'Sri Lanka'}. Dedicated visual field notes and landscape photography.`;
+
     schemaData = {
       "@context": "https://schema.org",
       "@type": "ImageGallery",
-      "name": `${place.place_name || 'Gallery'} Photos`,
-      "description": description,
+      "name": `${place.place_name} High-Resolution Photo Gallery & Aerial Perspectives`,
+      "description": galleryDescription,
       "url": canonicalUrl,
       "primaryImageOfPage": place.cover_photo_url || `${BASE_URL}/my-journal-logo.png`,
       "image": photosList.map((url, idx) => ({
         "@type": "ImageObject",
         "url": typeof getOptimizedUrl === 'function' ? getOptimizedUrl(url, 1200, 85) : url,
         "contentUrl": url,
-        "name": `${place.place_name || 'Gallery'} Photo ${idx + 1}`,
-        "description": description
+        "name": `${place.place_name} - Photo ${idx + 1}`,
+        "caption": `${place.place_name} visual record ${idx + 1} (${place.locality || 'Sri Lanka'})`,
+        "description": `High-resolution photograph capturing the landscape, terrain features, and aerial view at ${place.place_name}.`
       }))
     };
   } else {
@@ -557,7 +554,7 @@ export const injectJSONLDSchema = (place, canonicalUrl, isGallery = false, photo
       "@context": "https://schema.org",
       "@type": "TouristAttraction",
       "name": place.place_name,
-      "description": description,
+      "description": placeDescription,
       "url": canonicalUrl,
       "image": place.cover_photo_url || `${BASE_URL}/my-journal-logo.png`,
       "location": {
@@ -645,10 +642,8 @@ export const updateSEO = (place = null, options = {}) => {
       title = `${placeName} Photos & Aerial Views (${categoryName}), Sri Lanka | My Journal`;
       ogTitle = `Explore ${placeName} (${categoryName}) - Aerial Photos & Field Notes`;
 
-      const rawStory = place.ai_article?.story || place.description;
-      description = rawStory
-        ? truncateText(`Photo gallery of ${placeName}${localityName}. ${rawStory}`, 155)
-        : `Browse high-resolution photo gallery and drone perspectives of ${placeName}${localityName}, Sri Lanka. Field notes and route details included.`;
+      // Unique photo gallery metadata to eliminate keyword cannibalization with the place page
+      description = `Complete high-resolution photo gallery and aerial drone perspectives of ${placeName}, a ${categoryName} in ${place.locality || 'Sri Lanka'}. Explore visual field notes, terrain conditions, and landscape photography.`;
 
       rawCanonicalUrl = `${BASE_URL}/gallery/${slug}`;
     } else {
@@ -1806,9 +1801,22 @@ export const PhotoGallery = React.memo(
         {/* ======================================================
             SEO CONTEXT BLOCK (VISUALLY HIDDEN FOR END USERS, ACCESSIBLE TO CRAWLERS)
             ====================================================== */}
-        {(selectedLocation?.description || selectedLocation?.ai_article?.story) && (
-          <div className="sr-only">
-            <p>{selectedLocation.description || selectedLocation.ai_article.story}</p>
+        {selectedLocation && (
+          <div className="sr-only" itemScope itemType="https://schema.org/ImageGallery">
+            <h2>Visual Field Notes and Photography Archive: {selectedLocation.place_name || placeName}</h2>
+            <p>
+              Welcome to the dedicated photo gallery and visual repository for {selectedLocation.place_name || placeName}, categorized as a {selectedLocation.category || 'natural attraction'} in {selectedLocation.locality || 'Sri Lanka'}.
+              This page serves as a comprehensive visual field guide, completely distinct from our main route logs, specifically curated to aid landscape photographers, drone pilots, and backcountry researchers.
+            </p>
+            <p>
+              Within this specific gallery, you are exploring a collection of {photos?.length || 'several'} high-resolution images capturing the unique terrain, weather anomalies, and spatial geography of {selectedLocation.place_name || placeName}.
+              Unlike standard travel overviews, this visual ledger documents the physical reality of the environment—showcasing vegetation density, trail exposure, and ambient lighting crucial for expedition planning.
+              {selectedLocation.ai_article?.metrics?.elevation_m ? ` The mapped area features a baseline elevation of approximately ${selectedLocation.ai_article.metrics.elevation_m} meters, directly dictating the atmospheric conditions and cloud forest borders visible in these specific frames.` : ''}
+              {selectedLocation.ai_article?.metrics?.difficulty_level ? ` The approach terrain corresponds to a ${selectedLocation.ai_article.metrics.difficulty_level} difficulty level, highlighting the physical characteristics of the landscape.` : ''}
+            </p>
+            <p>
+              By analyzing these photographic records, explorers can better assess on-the-ground reality before deployment. Every image in this archive emphasizes raw environmental data, ensuring that the natural scale, topographic challenges, and geographical features of this {selectedLocation.category || 'location'} in {selectedLocation.locality || 'Sri Lanka'} are mapped accurately for visual reference.
+            </p>
           </div>
         )}
 
