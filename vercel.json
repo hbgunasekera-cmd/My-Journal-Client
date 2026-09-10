@@ -28,7 +28,7 @@
         {
           "type": "header",
           "key": "user-agent",
-          "value": "(?i).*(bot|mediapartners-google|facebookexternalhit|whatsapp|telegram|pinterest|linkedin|slack|discord).*"
+          "value": "(?i).*(bot|crawler|spider|mediapartners-google|facebookexternalhit|whatsapp|telegram|pinterest|linkedin|slack|discord|yandex|baidu|duckduck|applebot|bingbot|google-inspectiontool|gptbot|perplexity|claudebot|cohere|bytespider).*"
         }
       ],
       "destination": "/api/og-metadata"

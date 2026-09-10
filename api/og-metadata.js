@@ -60,11 +60,10 @@ export default async function handler(req, res) {
       process.env.VITE_SUPABASE_KEY ||
       process.env.VITE_SUPABASE_ANON_KEY;
 
-    if (SUPABASE_URL && SUPABASE_KEY && decodedName) {
-      // Query database using case-insensitive lookup
-      const queryUrl = `${SUPABASE_URL}/rest/v1/travel_bucket_list?place_name=ilike.${encodeURIComponent(
-        decodedName
-      )}&select=place_name,cover_photo_url,ai_article&limit=1`;
+    if (SUPABASE_URL && SUPABASE_KEY && (rawSlug || decodedName)) {
+      // Query database using indexed slug column OR fallback case-insensitive place_name lookup
+      const filter = `or=(slug.eq.${encodeURIComponent(rawSlug)},place_name.ilike.${encodeURIComponent(decodedName)})`;
+      const queryUrl = `${SUPABASE_URL}/rest/v1/travel_bucket_list?${filter}&select=place_name,cover_photo_url,ai_article&limit=1`;
 
       const response = await fetch(queryUrl, {
         headers: {
@@ -158,6 +157,21 @@ export default async function handler(req, res) {
 
     // Inject fresh metadata block before closing </head>
     html = html.replace("</head>", `${metaBlock}\n</head>`);
+
+    // 5. Replace static body fallback content inside #root with route-specific DOM content
+    // Prevents duplicate content penalties by removing static index.html fallback text for dynamic paths
+    const crawlerBody = `
+      <div id="root">
+        <main style="max-width: 800px; margin: 0 auto; padding: 40px 24px; font-family: system-ui, -apple-system, sans-serif; color: #334155; line-height: 1.7;">
+          <header style="margin-bottom: 24px;">
+            <h1 style="font-size: 24px; font-weight: 800; color: #0f172a; margin: 0 0 12px 0;">${safeTitle}</h1>
+            <p style="font-size: 16px; color: #475569; margin: 0;">${safeDescription}</p>
+          </header>
+        </main>
+      </div>
+    `;
+
+    html = html.replace(/<div id="root">[\s\S]*?<\/div>/gi, crawlerBody);
 
     res.setHeader("Content-Type", "text/html; charset=utf-8");
     res.setHeader(
