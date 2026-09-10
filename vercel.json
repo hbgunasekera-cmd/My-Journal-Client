@@ -6,6 +6,18 @@
         {
           "key": "Content-Security-Policy",
           "value": "frame-src 'self' https://www.youtube.com https://www.youtube-nocookie.com https://*.doubleclick.net https://*.google.com https://*.google https://*.googlesyndication.com https://vercel.live; frame-ancestors 'self';"
+        },
+        {
+          "key": "X-Content-Type-Options",
+          "value": "nosniff"
+        },
+        {
+          "key": "X-Frame-Options",
+          "value": "DENY"
+        },
+        {
+          "key": "Referrer-Policy",
+          "value": "strict-origin-when-cross-origin"
         }
       ]
     }
@@ -28,10 +40,10 @@
         {
           "type": "header",
           "key": "user-agent",
-          "value": "(?i).*(bot|crawler|spider|mediapartners-google|facebookexternalhit|whatsapp|telegram|pinterest|linkedin|slack|discord|yandex|baidu|duckduck|applebot|bingbot|google-inspectiontool|gptbot|perplexity|claudebot|cohere|bytespider).*"
+          "value": "(?i).*(bot|crawler|spider|twitterbot|facebookexternalhit|whatsapp|telegram|pinterest|linkedin|slack|discord|yandex|baidu|duckduck|applebot|bingbot|google-inspectiontool|gptbot|perplexity|claudebot|cohere|bytespider|mediapartners-google).*"
         }
       ],
-      "destination": "/api/og-metadata"
+      "destination": "/api/og-metadata?type=:type&slug=:slug"
     },
     {
       "source": "/(.*)",

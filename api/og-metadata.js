@@ -26,7 +26,14 @@ function escapeHtml(str = "") {
 export default async function handler(req, res) {
   const { slug, type } = req.query;
   const rawSlug = slug || "";
-  const decodedName = decodeURIComponent(rawSlug).replace(/-/g, " ");
+
+  // Defensive URI decoding to prevent 500 crashes on malformed percent-encoding
+  let decodedName = "";
+  try {
+    decodedName = decodeURIComponent(rawSlug).replace(/-/g, " ");
+  } catch (err) {
+    decodedName = rawSlug.replace(/-/g, " ");
+  }
 
   // 1. Fixed Base URL setup using environment variables to mitigate Host Header Injection
   const baseUrl = (
@@ -61,9 +68,10 @@ export default async function handler(req, res) {
       process.env.VITE_SUPABASE_ANON_KEY;
 
     if (SUPABASE_URL && SUPABASE_KEY && (rawSlug || decodedName)) {
-      // Query database using indexed slug column OR fallback case-insensitive place_name lookup
-      const filter = `or=(slug.eq.${encodeURIComponent(rawSlug)},place_name.ilike.${encodeURIComponent(decodedName)})`;
-      const queryUrl = `${SUPABASE_URL}/rest/v1/travel_bucket_list?${filter}&select=place_name,cover_photo_url,ai_article&limit=1`;
+      // Synchronized status filtering with sitemap logic & fallback name matching
+      const statusFilter = "status=in.(done,Completed,Visited)";
+      const matchFilter = `or=(slug.eq.${encodeURIComponent(rawSlug)},place_name.ilike.${encodeURIComponent(decodedName)})`;
+      const queryUrl = `${SUPABASE_URL}/rest/v1/travel_bucket_list?${statusFilter}&${matchFilter}&select=place_name,cover_photo_url,ai_article&limit=1`;
 
       const response = await fetch(queryUrl, {
         headers: {

@@ -70,10 +70,11 @@ export default async function handler(req, res) {
       const from = page * pageSize;
       const to = from + pageSize - 1;
 
+      // Select 'slug' column and capture all completed status variants
       const { data, error } = await supabase
         .from("travel_bucket_list")
-        .select("place_name, album_photos, created_at")
-        .eq("status", "done")
+        .select("slug, place_name, album_photos, created_at")
+        .in("status", ["done", "Completed", "Visited"])
         .range(from, to);
 
       if (error) throw error;
@@ -123,9 +124,11 @@ export default async function handler(req, res) {
     // 5. Append dynamic routes based on database records
     if (places.length > 0) {
       places.forEach((place) => {
-        if (place.place_name) {
-          // Standardize slug format using generateSlug and escape for XML
-          const cleanSlug = escapeXml(generateSlug(place.place_name));
+        // Prioritize database 'slug' column over dynamic generateSlug fallback
+        const locationSlug = place.slug || generateSlug(place.place_name);
+
+        if (locationSlug) {
+          const cleanSlug = escapeXml(locationSlug);
 
           // Use created_at or fallback to today
           const lastMod = place.created_at

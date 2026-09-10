@@ -482,37 +482,49 @@ export const truncateText = (text, maxLength = 155) => {
 // 12. CONSOLIDATED SEO & SCHEMA MANAGERS
 // =======================================================================
 
-export const injectJSONLDSchema = (place, canonicalUrl, isGallery = false, photos = []) => {
-  let schemaScript = document.getElementById('json-ld-schema');
+export const injectJSONLDSchema = (
+  place,
+  canonicalUrl,
+  isGallery = false,
+  photos = []
+) => {
+  let schemaScript = document.getElementById("json-ld-schema");
 
   if (!schemaScript) {
-    schemaScript = document.createElement('script');
-    schemaScript.id = 'json-ld-schema';
-    schemaScript.setAttribute('type', 'application/ld+json');
+    schemaScript = document.createElement("script");
+    schemaScript.id = "json-ld-schema";
+    schemaScript.setAttribute("type", "application/ld+json");
     document.head.appendChild(schemaScript);
   }
 
   const BASE_URL = "https://www.myjournalview.com";
 
   // Default website schema for home/fallback contexts
-  if (!place || typeof place !== 'object' || !place.place_name) {
+  if (!place || typeof place !== "object" || !place.place_name) {
     const defaultSchema = {
       "@context": "https://schema.org",
       "@type": "WebSite",
-      "name": "My Journal",
-      "url": canonicalUrl || BASE_URL,
-      "description": "Explore remote Sri Lankan trails, hidden waterfalls, and backcountry coordinates.",
-      "abstract": "විදිමු , රැකගමු අනාගතය වෙනුවෙන්. Live with care, preserve with love — for the future yet to come."
+      name: "My Journal",
+      url: canonicalUrl || BASE_URL,
+      description:
+        "Explore remote Sri Lankan trails, hidden waterfalls, and backcountry coordinates.",
+      abstract:
+        "විදිමු , රැකගමු අනාගතය වෙනුවෙන්. Live with care, preserve with love — for the future yet to come.",
     };
-    schemaScript.textContent = JSON.stringify(defaultSchema).replace(/</g, '\\u003c');
+    schemaScript.textContent = JSON.stringify(defaultSchema).replace(
+      /</g,
+      "\\u003c"
+    );
     return;
   }
 
   // Handle structured JSONB objects and legacy string entries
-  const article = typeof place.ai_article === 'object' && place.ai_article !== null
-    ? place.ai_article
-    : {};
-  const legacyStory = typeof place.ai_article === 'string' ? place.ai_article : null;
+  const article =
+    typeof place.ai_article === "object" && place.ai_article !== null
+      ? place.ai_article
+      : {};
+  const legacyStory =
+    typeof place.ai_article === "string" ? place.ai_article : null;
   const metrics = article.metrics || {};
   const about = article.about || {};
 
@@ -521,78 +533,93 @@ export const injectJSONLDSchema = (place, canonicalUrl, isGallery = false, photo
     article.story ||
     legacyStory ||
     place.description ||
-    `Explore ${place.place_name} in ${place.locality || 'Sri Lanka'}.`;
+    `Explore ${place.place_name} in ${place.locality || "Sri Lanka"}.`;
 
   let schemaData;
 
   if (isGallery) {
-    const photosList = (Array.isArray(photos) && photos.length > 0)
-      ? photos
-      : (Array.isArray(place.photos) ? place.photos : []);
+    const photosList =
+      Array.isArray(photos) && photos.length > 0
+        ? photos
+        : Array.isArray(place.photos)
+          ? place.photos
+          : [];
 
-    // Unique photo gallery schema description to avoid duplicating the place guide text
-    const galleryDescription = `High-resolution photo gallery and aerial drone perspectives of ${place.place_name}, a ${place.category || 'location'} in ${place.locality || 'Sri Lanka'}. Dedicated visual field notes and landscape photography.`;
+    const galleryDescription = `High-resolution photo gallery and aerial drone perspectives of ${place.place_name
+      }, a ${place.category || "location"} in ${place.locality || "Sri Lanka"
+      }. Dedicated visual field notes and landscape photography.`;
 
     schemaData = {
       "@context": "https://schema.org",
       "@type": "ImageGallery",
-      "name": `${place.place_name} High-Resolution Photo Gallery & Aerial Perspectives`,
-      "description": galleryDescription,
-      "url": canonicalUrl,
-      "primaryImageOfPage": place.cover_photo_url || `${BASE_URL}/my-journal-logo.png`,
-      "image": photosList.map((url, idx) => ({
+      name: `${place.place_name} High-Resolution Photo Gallery & Aerial Perspectives`,
+      description: galleryDescription,
+      url: canonicalUrl,
+      primaryImageOfPage:
+        place.cover_photo_url || `${BASE_URL}/my-journal-logo.png`,
+      image: photosList.map((url, idx) => ({
         "@type": "ImageObject",
-        "url": typeof getOptimizedUrl === 'function' ? getOptimizedUrl(url, 1200, 85) : url,
-        "contentUrl": url,
-        "name": `${place.place_name} - Photo ${idx + 1}`,
-        "caption": `${place.place_name} visual record ${idx + 1} (${place.locality || 'Sri Lanka'})`,
-        "description": `High-resolution photograph capturing the landscape, terrain features, and aerial view at ${place.place_name}.`
-      }))
+        url:
+          typeof getOptimizedUrl === "function"
+            ? getOptimizedUrl(url, 1200, 85)
+            : url,
+        contentUrl: url,
+        name: `${place.place_name} - Photo ${idx + 1}`,
+        caption: `${place.place_name} visual record ${idx + 1} (${place.locality || "Sri Lanka"
+          })`,
+        description: `High-resolution photograph capturing the landscape, terrain features, and aerial view at ${place.place_name}.`,
+      })),
     };
   } else {
     schemaData = {
       "@context": "https://schema.org",
       "@type": "TouristAttraction",
-      "name": place.place_name,
-      "description": placeDescription,
-      "url": canonicalUrl,
-      "image": place.cover_photo_url || `${BASE_URL}/my-journal-logo.png`,
-      "location": {
+      name: place.place_name,
+      description: placeDescription,
+      url: canonicalUrl,
+      image: place.cover_photo_url || `${BASE_URL}/my-journal-logo.png`,
+      location: {
         "@type": "Place",
-        "name": place.locality || "Sri Lanka",
-        "address": {
+        name: place.locality || "Sri Lanka",
+        address: {
           "@type": "PostalAddress",
-          "addressCountry": "LK"
+          addressCountry: "LK",
         },
-        "geo": (place.latitude && place.longitude) ? {
-          "@type": "GeoCoordinates",
-          "latitude": place.latitude,
-          "longitude": place.longitude
-        } : undefined,
-        "elevation": metrics.elevation_m ? `${metrics.elevation_m} m` : undefined
+        geo:
+          place.latitude && place.longitude
+            ? {
+              "@type": "GeoCoordinates",
+              latitude: place.latitude,
+              longitude: place.longitude,
+            }
+            : undefined,
+        elevation: metrics.elevation_m ? `${metrics.elevation_m} m` : undefined,
       },
-      "additionalProperty": [
+      additionalProperty: [
         metrics.difficulty_level && {
           "@type": "PropertyValue",
-          "name": "Trail Difficulty",
-          "value": metrics.difficulty_level
+          name: "Trail Difficulty",
+          value: metrics.difficulty_level,
         },
         metrics.trek_distance_km && {
           "@type": "PropertyValue",
-          "name": "Trek Distance",
-          "value": `${metrics.trek_distance_km} km`
+          name: "Trek Distance",
+          value: `${metrics.trek_distance_km} km`,
         },
         metrics.estimated_time_mins && {
           "@type": "PropertyValue",
-          "name": "Estimated Time",
-          "value": `${metrics.estimated_time_mins} mins`
-        }
-      ].filter(Boolean)
+          name: "Estimated Time",
+          value: `${metrics.estimated_time_mins} mins`,
+        },
+      ].filter(Boolean),
     };
   }
 
   // Prevent XSS script tag escape breakout by escaping '<'
-  schemaScript.textContent = JSON.stringify(schemaData).replace(/</g, '\\u003c');
+  schemaScript.textContent = JSON.stringify(schemaData).replace(
+    /</g,
+    "\\u003c"
+  );
 };
 
 /**
@@ -603,48 +630,55 @@ export const updateSEO = (place = null, options = {}) => {
   const {
     isGallery = false,
     galleryPhotos = [],
-    category = 'All',
-    searchTerm = '',
+    category = "All",
+    searchTerm = "",
     categoryDescriptions = {},
-    isNotFound = false, // Flag passed when route/ID fails to match data
-    isLoading = false
-  } = typeof options === 'boolean' ? { isGallery: options } : options;
+    isNotFound = false,
+    isLoading = false,
+  } = typeof options === "boolean" ? { isGallery: options } : options;
 
   const BASE_URL = (
-    (typeof process !== 'undefined' && (process.env.NEXT_PUBLIC_SITE_URL || process.env.VITE_SITE_URL)) ||
+    (typeof process !== "undefined" &&
+      (process.env.NEXT_PUBLIC_SITE_URL || process.env.VITE_SITE_URL)) ||
     "https://www.myjournalview.com"
   ).replace(/\/$/, "");
 
   const DEFAULT_LOGO = `${BASE_URL}/my-journal-logo.png`;
 
   let title = "Sri Lanka Backcountry Travel Guide & Maps | My Journal";
-  let ogTitle = "Sri Lanka Backcountry Travel Guide: Waterfalls, Hidden Trails & Maps";
-  let description = "Explore remote Sri Lankan trails, hidden waterfalls, coordinates, and high-altitude mountain lookouts captured by Drone and iPhone.";
+  let ogTitle =
+    "Sri Lanka Backcountry Travel Guide: Waterfalls, Hidden Trails & Maps";
+  let description =
+    "Explore remote Sri Lankan trails, hidden waterfalls, coordinates, and high-altitude mountain lookouts captured by Drone and iPhone.";
   let rawCanonicalUrl = `${BASE_URL}/`;
   let imageUrl = DEFAULT_LOGO;
   let isNoIndex = false;
 
-  const hasPlace = Boolean(place && typeof place === 'object' && place.place_name);
+  const hasPlace = Boolean(
+    place && typeof place === "object" && place.place_name
+  );
 
   // 1. Handle Soft-404 / Missing Data States
   if (isNotFound && !isLoading) {
     title = "Page Not Found | My Journal";
     ogTitle = "404 - Page Not Found";
-    description = "The requested location, gallery, or resource could not be found on My Journal.";
+    description =
+      "The requested location, gallery, or resource could not be found on My Journal.";
     isNoIndex = true;
   } else if (hasPlace) {
     const placeName = place.place_name.trim();
-    const categoryName = place.category || 'Attraction';
-    const localityName = place.locality ? `, ${place.locality}` : '';
-    const slug = typeof generateSlug === 'function' ? generateSlug(placeName) : encodeURIComponent(placeName.toLowerCase());
+    const categoryName = place.category || "Attraction";
+    const localityName = place.locality ? `, ${place.locality}` : "";
+    const slug =
+      typeof generateSlug === "function"
+        ? generateSlug(placeName)
+        : encodeURIComponent(placeName.toLowerCase());
 
     if (isGallery) {
       title = `${placeName} Photos & Aerial Views (${categoryName}), Sri Lanka | My Journal`;
       ogTitle = `Explore ${placeName} (${categoryName}) - Aerial Photos & Field Notes`;
-
-      // Unique photo gallery metadata to eliminate keyword cannibalization with the place page
-      description = `Complete high-resolution photo gallery and aerial drone perspectives of ${placeName}, a ${categoryName} in ${place.locality || 'Sri Lanka'}. Explore visual field notes, terrain conditions, and landscape photography.`;
-
+      description = `Complete high-resolution photo gallery and aerial drone perspectives of ${placeName}, a ${categoryName} in ${place.locality || "Sri Lanka"
+        }. Explore visual field notes, terrain conditions, and landscape photography.`;
       rawCanonicalUrl = `${BASE_URL}/gallery/${slug}`;
     } else {
       title = `${placeName} ${categoryName} Guide${localityName} Sri Lanka | My Journal`;
@@ -654,19 +688,19 @@ export const updateSEO = (place = null, options = {}) => {
       if (rawStory) {
         description = truncateText(rawStory, 150);
       } else {
-        description = `Complete travel & trail guide for ${placeName} in ${place.locality || 'Sri Lanka'}. Mapped coordinates, elevation telemetry, and visitor access notes.`;
+        description = `Complete travel & trail guide for ${placeName} in ${place.locality || "Sri Lanka"
+          }. Mapped coordinates, elevation telemetry, and visitor access notes.`;
       }
       rawCanonicalUrl = `${BASE_URL}/place/${slug}`;
     }
 
     if (place.cover_photo_url) {
       imageUrl = place.cover_photo_url;
-      if (imageUrl.includes('googleusercontent.com')) {
-        imageUrl = `${imageUrl.split('=')[0].split('?')[0]}=w1200-rw`;
+      if (imageUrl.includes("googleusercontent.com")) {
+        imageUrl = `${imageUrl.split("=")[0].split("?")[0]}=w1200-rw`;
       }
     }
-
-  } else if (category && category !== 'All') {
+  } else if (category && category !== "All") {
     title = `Best ${category}s in Sri Lanka: Mapped Trails & Field Notes | My Journal`;
     ogTitle = `Explore Top ${category}s in Sri Lanka | Route Maps & Coordinates`;
 
@@ -674,31 +708,31 @@ export const updateSEO = (place = null, options = {}) => {
     description = catDesc
       ? truncateText(catDesc, 155)
       : `Explore mapped ${category.toLowerCase()} locations across Sri Lanka with exact coordinates, weather tracking, and access details.`;
-    rawCanonicalUrl = `${BASE_URL}/?category=${encodeURIComponent(category.toLowerCase())}`;
-
+    rawCanonicalUrl = `${BASE_URL}/?category=${encodeURIComponent(
+      category.toLowerCase()
+    )}`;
   } else if (searchTerm) {
     title = `Search Results for "${searchTerm}" | Sri Lanka Travel Logs`;
     ogTitle = `Sri Lanka Travel Logs: Results for "${searchTerm}"`;
     description = `Explore mapped locations, trails, and field notes matching "${searchTerm}" in Sri Lanka on My Journal.`;
   }
 
-  // 2. Canonical URL Normalization (Cleans tracking params & query pollution)
+  // 2. Canonical URL Normalization
   let canonicalUrl = rawCanonicalUrl;
   try {
     const cleanUrl = new URL(rawCanonicalUrl);
-    cleanUrl.searchParams.delete('utm_source');
-    cleanUrl.searchParams.delete('utm_medium');
-    cleanUrl.searchParams.delete('utm_campaign');
-    cleanUrl.searchParams.delete('fbclid');
-    canonicalUrl = cleanUrl.toString().replace(/\/$/, ""); // Strips trailing slashes
+    cleanUrl.searchParams.delete("utm_source");
+    cleanUrl.searchParams.delete("utm_medium");
+    cleanUrl.searchParams.delete("utm_campaign");
+    cleanUrl.searchParams.delete("fbclid");
+    canonicalUrl = cleanUrl.toString().replace(/\/$/, "");
   } catch (e) {
-    // Fallback to raw canonical if URL parsing fails
     canonicalUrl = rawCanonicalUrl;
   }
 
   // 3. Enforce SERP Snippet Safety (Truncate title if exceeding 65 chars)
   if (title.length > 65) {
-    const brandIndex = title.indexOf(' | My Journal');
+    const brandIndex = title.indexOf(" | My Journal");
     if (brandIndex > 0) {
       const coreTitle = title.substring(0, brandIndex);
       title = `${truncateText(coreTitle, 52)} | My Journal`;
@@ -711,44 +745,48 @@ export const updateSEO = (place = null, options = {}) => {
   // 5. Sync Canonical Link Element
   let canonicalEl = document.querySelector('link[rel="canonical"]');
   if (!canonicalEl) {
-    canonicalEl = document.createElement('link');
-    canonicalEl.setAttribute('rel', 'canonical');
+    canonicalEl = document.createElement("link");
+    canonicalEl.setAttribute("rel", "canonical");
     document.head.appendChild(canonicalEl);
   }
-  canonicalEl.setAttribute('href', canonicalUrl);
+  canonicalEl.setAttribute("href", canonicalUrl);
 
-  // 6. Sync Meta & OpenGraph Tags (Including soft-404 noindex check)
+  // 6. Sync Meta & OpenGraph Tags
   const metaTags = {
-    'fb:app_id': '966242223397117',
-    'robots': isNoIndex ? 'noindex, follow' : 'index, follow, max-image-preview:large',
-    'description': description,
-    'og:title': ogTitle,
-    'og:description': description,
-    'og:image': imageUrl,
-    'og:url': canonicalUrl,
-    'og:type': hasPlace ? 'article' : 'website',
-    'og:site_name': 'My Journal',
-    'twitter:card': 'summary_large_image',
-    'twitter:title': ogTitle,
-    'twitter:description': description,
-    'twitter:image': imageUrl
+    "fb:app_id": "966242223397117",
+    robots: isNoIndex
+      ? "noindex, follow"
+      : "index, follow, max-image-preview:large",
+    description: description,
+    "og:title": ogTitle,
+    "og:description": description,
+    "og:image": imageUrl,
+    "og:url": canonicalUrl,
+    "og:type": hasPlace ? "article" : "website",
+    "og:site_name": "My Journal",
+    "twitter:card": "summary_large_image",
+    "twitter:title": ogTitle,
+    "twitter:description": description,
+    "twitter:image": imageUrl,
   };
 
   Object.entries(metaTags).forEach(([key, content]) => {
-    const isProperty = key.startsWith('og:') || key.startsWith('fb:');
-    const selector = isProperty ? `meta[property="${key}"]` : `meta[name="${key}"]`;
+    const isProperty = key.startsWith("og:") || key.startsWith("fb:");
+    const selector = isProperty
+      ? `meta[property="${key}"]`
+      : `meta[name="${key}"]`;
     let el = document.querySelector(selector);
 
     if (!el) {
-      el = document.createElement('meta');
-      el.setAttribute(isProperty ? 'property' : 'name', key);
+      el = document.createElement("meta");
+      el.setAttribute(isProperty ? "property" : "name", key);
       document.head.appendChild(el);
     }
-    el.setAttribute('content', content || '');
+    el.setAttribute("content", content || "");
   });
 
-  // 7. Inject Structured JSON-LD Schema (Skipped on 404 routes)
-  if (!isNoIndex && typeof injectJSONLDSchema === 'function') {
+  // 7. Inject Structured JSON-LD Schema
+  if (!isNoIndex && typeof injectJSONLDSchema === "function") {
     injectJSONLDSchema(place, canonicalUrl, isGallery, galleryPhotos);
   }
 };
@@ -1407,9 +1445,9 @@ export const PhotoGallery = React.memo(
     const [activeIndex, setActiveIndex] = useState(null);
     const [isSlideshowActive, setIsSlideshowActive] = useState(false);
 
-    // Two separate refs for the two different scrollable areas in the modal
-    const gridScrollRef = useDragScroll();
-    const lightboxScrollRef = useDragScroll();
+    // Two separate refs for scrollable areas in the modal (using external custom hook)
+    const gridScrollRef = typeof useDragScroll === 'function' ? useDragScroll() : null;
+    const lightboxScrollRef = typeof useDragScroll === 'function' ? useDragScroll() : null;
 
     const preventCopy = (e) => {
       e.preventDefault();
@@ -1423,13 +1461,14 @@ export const PhotoGallery = React.memo(
      */
     useEffect(() => {
       if (selectedLocation || placeName) {
-        const locationObj =
-          selectedLocation || { place_name: placeName };
+        const locationObj = selectedLocation || { place_name: placeName };
 
-        updateSEO(locationObj, {
-          isGallery: true,
-          galleryPhotos: photos
-        });
+        if (typeof updateSEO === 'function') {
+          updateSEO(locationObj, {
+            isGallery: true,
+            galleryPhotos: photos,
+          });
+        }
       }
     }, [selectedLocation, placeName, photos]);
 
@@ -1440,18 +1479,17 @@ export const PhotoGallery = React.memo(
      */
     useEffect(() => {
       const scrollY = window.scrollY;
-
       document.body.classList.add('modal-open');
 
       const locationObj =
-        selectedLocation ||
-        (placeName ? { place_name: placeName } : null);
+        selectedLocation || (placeName ? { place_name: placeName } : null);
 
       if (locationObj?.place_name) {
         const rawName = String(locationObj.place_name);
-
-        const gallerySlug = generateSlug(rawName);
-
+        const gallerySlug =
+          typeof generateSlug === 'function'
+            ? generateSlug(rawName)
+            : encodeURIComponent(rawName.toLowerCase());
         const galleryPath = `/gallery/${gallerySlug}`;
 
         if (window.location.pathname !== galleryPath) {
@@ -1459,7 +1497,7 @@ export const PhotoGallery = React.memo(
             {
               modalOpen: true,
               gallery: true,
-              placeId: locationObj.id || null
+              placeId: locationObj.id || null,
             },
             '',
             galleryPath
@@ -1478,134 +1516,25 @@ export const PhotoGallery = React.memo(
       return () => {
         document.body.classList.remove('modal-open');
         window.scrollTo(0, scrollY);
-
-        window.removeEventListener(
-          'popstate',
-          handlePopState
-        );
+        window.removeEventListener('popstate', handlePopState);
       };
     }, [selectedLocation, placeName, onClose]);
 
     /*
      * ============================================================
-     * PINTEREST
+     * IMAGE NAVIGATION
      * ============================================================
      */
-    const handlePinterestSave = (e, imageUrl, locationData) => {
-      e.stopPropagation();
+    const nextImage = (e) => {
+      if (e) e.stopPropagation();
+      if (!photos || photos.length === 0) return;
+      setActiveIndex((prev) => (prev + 1) % photos.length);
+    };
 
-      const locationName =
-        locationData?.place_name ||
-        placeName ||
-        'New Discovery';
-
-      const rawCategory =
-        locationData?.category ||
-        'Location';
-
-      const baseUrl =
-        'https://www.myjournalview.com';
-
-      const formattedLocation =
-        typeof generateSlug === 'function'
-          ? generateSlug(locationName)
-          : encodeURIComponent(
-            locationName.toLowerCase()
-          );
-
-      const sourceUrl =
-        `${baseUrl}/gallery/${formattedLocation}?utm_source=pinterest_save_btn`;
-
-      const mandatoryHashtags = [
-        'MyJournal',
-        'SriLanka',
-        'VisitSriLanka',
-        'TravelSriLanka',
-        'WanderlustSriLanka',
-        'BeautifulSriLanka',
-        'HiddenGemsSriLanka',
-        'SriLankaDiaries',
-        'ChasingWaterfalls',
-        'HikingAdventures',
-        'CampingLife',
-        'MountainViews',
-        'NatureSeekers',
-        'AdventureSriLanka',
-        'ExploreSriLanka',
-        'TravelPhotography',
-        'TravelDiaries',
-        'IslandParadise',
-        'ProtectNature',
-        'CeylonVibes'
-      ];
-
-      const categoryMap = {
-        Waterfall: ['Waterfalls', 'Nature'],
-        Mountain: ['Mountains', 'Peaks', 'Hiking'],
-        Trail: ['Trekking', 'Adventure'],
-        Viewpoint: ['ScenicViews', 'Landscape'],
-        Beach: ['Coastal', 'OceanVibes', 'BeachLife'],
-        Park: ['NationalPark', 'Wildlife'],
-        Plateaus: ['Highlands', 'Plains'],
-        'Reserved Forest': ['Rainforest', 'EcoTravel'],
-        Monastery: [
-          'Spiritual',
-          'BuddhistTemple',
-          'Serenity'
-        ],
-        Archaeology: [
-          'AncientHistory',
-          'Heritage',
-          'HistoricalSites'
-        ],
-        Reservoir: ['Lakes', 'WaterViews'],
-        Pool: ['NaturalPool', 'Swimming'],
-        Stream: ['Rivers', 'Streams'],
-        Location: ['Travel', 'Explore']
-      };
-
-      const uniqueHashtags =
-        new Set(mandatoryHashtags);
-
-      const locationHashtag =
-        locationName.replace(
-          /[^a-zA-Z0-9]/g,
-          ''
-        );
-
-      if (locationHashtag) {
-        uniqueHashtags.add(locationHashtag);
-      }
-
-      const dynamicTags =
-        categoryMap[rawCategory] || [];
-
-      dynamicTags.forEach((tag) => {
-        uniqueHashtags.add(tag);
-      });
-
-      const hashtagString =
-        Array.from(uniqueHashtags)
-          .map((tag) => `#${tag}`)
-          .join(' ');
-
-      const protectedDescription =
-        `New Adventure: ${locationName} (${rawCategory}) 🏔️ | ` +
-        `Experience breathtaking views and cinematic highlights. ` +
-        `See the full gallery on My Journal! © Hasitha Gunasekera\n\n` +
-        hashtagString;
-
-      const pinterestUrl =
-        `https://www.pinterest.com/pin/create/button/?` +
-        `url=${encodeURIComponent(sourceUrl)}` +
-        `&media=${encodeURIComponent(imageUrl)}` +
-        `&description=${encodeURIComponent(protectedDescription)}`;
-
-      window.open(
-        pinterestUrl,
-        '_blank',
-        'width=600,height=700,scrollbars=yes,resizable=yes'
-      );
+    const prevImage = (e) => {
+      if (e) e.stopPropagation();
+      if (!photos || photos.length === 0) return;
+      setActiveIndex((prev) => (prev - 1 + photos.length) % photos.length);
     };
 
     /*
@@ -1616,17 +1545,14 @@ export const PhotoGallery = React.memo(
     useEffect(() => {
       let timer;
 
-      if (
-        isSlideshowActive &&
-        activeIndex !== null
-      ) {
+      if (isSlideshowActive && activeIndex !== null) {
         timer = setTimeout(() => {
           nextImage();
         }, 5000);
       }
 
       return () => clearTimeout(timer);
-    }, [isSlideshowActive, activeIndex]);
+    }, [isSlideshowActive, activeIndex, photos]);
 
     /*
      * ============================================================
@@ -1653,46 +1579,107 @@ export const PhotoGallery = React.memo(
 
         if (e.key === ' ') {
           e.preventDefault();
-
-          setIsSlideshowActive(
-            (prev) => !prev
-          );
+          setIsSlideshowActive((prev) => !prev);
         }
       };
 
-      window.addEventListener(
-        'keydown',
-        handleKeyDown
-      );
+      window.addEventListener('keydown', handleKeyDown);
 
       return () => {
-        window.removeEventListener(
-          'keydown',
-          handleKeyDown
-        );
+        window.removeEventListener('keydown', handleKeyDown);
       };
-    }, [activeIndex]);
+    }, [activeIndex, photos]);
 
     /*
      * ============================================================
-     * IMAGE NAVIGATION
+     * PINTEREST
      * ============================================================
      */
-    const nextImage = (e) => {
-      if (e) e.stopPropagation();
+    const handlePinterestSave = (e, imageUrl, locationData) => {
+      e.stopPropagation();
 
-      setActiveIndex(
-        (prev) => (prev + 1) % photos.length
-      );
-    };
+      const locationName =
+        locationData?.place_name || placeName || 'New Discovery';
+      const rawCategory = locationData?.category || 'Location';
+      const baseUrl = 'https://www.myjournalview.com';
 
-    const prevImage = (e) => {
-      if (e) e.stopPropagation();
+      const formattedLocation =
+        typeof generateSlug === 'function'
+          ? generateSlug(locationName)
+          : encodeURIComponent(locationName.toLowerCase());
 
-      setActiveIndex(
-        (prev) =>
-          (prev - 1 + photos.length) %
-          photos.length
+      const sourceUrl = `${baseUrl}/gallery/${formattedLocation}?utm_source=pinterest_save_btn`;
+
+      const mandatoryHashtags = [
+        'MyJournal',
+        'SriLanka',
+        'VisitSriLanka',
+        'TravelSriLanka',
+        'WanderlustSriLanka',
+        'BeautifulSriLanka',
+        'HiddenGemsSriLanka',
+        'SriLankaDiaries',
+        'ChasingWaterfalls',
+        'HikingAdventures',
+        'CampingLife',
+        'MountainViews',
+        'NatureSeekers',
+        'AdventureSriLanka',
+        'ExploreSriLanka',
+        'TravelPhotography',
+        'TravelDiaries',
+        'IslandParadise',
+        'ProtectNature',
+        'CeylonVibes',
+      ];
+
+      const categoryMap = {
+        Waterfall: ['Waterfalls', 'Nature'],
+        Mountain: ['Mountains', 'Peaks', 'Hiking'],
+        Trail: ['Trekking', 'Adventure'],
+        Viewpoint: ['ScenicViews', 'Landscape'],
+        Beach: ['Coastal', 'OceanVibes', 'BeachLife'],
+        Park: ['NationalPark', 'Wildlife'],
+        Plateaus: ['Highlands', 'Plains'],
+        'Reserved Forest': ['Rainforest', 'EcoTravel'],
+        Monastery: ['Spiritual', 'BuddhistTemple', 'Serenity'],
+        Archaeology: ['AncientHistory', 'Heritage', 'HistoricalSites'],
+        Reservoir: ['Lakes', 'WaterViews'],
+        Pool: ['NaturalPool', 'Swimming'],
+        Stream: ['Rivers', 'Streams'],
+        Location: ['Travel', 'Explore'],
+      };
+
+      const uniqueHashtags = new Set(mandatoryHashtags);
+      const locationHashtag = locationName.replace(/[^a-zA-Z0-9]/g, '');
+
+      if (locationHashtag) {
+        uniqueHashtags.add(locationHashtag);
+      }
+
+      const dynamicTags = categoryMap[rawCategory] || [];
+      dynamicTags.forEach((tag) => uniqueHashtags.add(tag));
+
+      const hashtagString = Array.from(uniqueHashtags)
+        .map((tag) => `#${tag}`)
+        .join(' ');
+
+      const protectedDescription =
+        `New Adventure: ${locationName} (${rawCategory}) 🏔️ | ` +
+        `Experience breathtaking views and cinematic highlights. ` +
+        `See the full gallery on My Journal! © Hasitha Gunasekera\n\n` +
+        hashtagString;
+
+      const pinterestUrl =
+        `https://www.pinterest.com/pin/create/button/?` +
+        `url=${encodeURIComponent(sourceUrl)}` +
+        `&media=${encodeURIComponent(imageUrl)}` +
+        `&description=${encodeURIComponent(protectedDescription)}`;
+
+      window.open(
+        pinterestUrl,
+        '_blank',
+        'width=600,height=700,scrollbars=yes,resizable=yes'
       );
     };
 
@@ -1702,25 +1689,15 @@ export const PhotoGallery = React.memo(
      * ============================================================
      */
     const handleCloseGallery = (e) => {
-      if (e) {
-        e.stopPropagation();
+      if (e) e.stopPropagation();
+
+      if (window.location.pathname.startsWith('/gallery/')) {
+        window.history.replaceState({ modalOpen: false }, '', '/');
       }
 
-      if (
-        window.location.pathname.startsWith(
-          '/gallery/'
-        )
-      ) {
-        window.history.replaceState(
-          {
-            modalOpen: false
-          },
-          '',
-          '/'
-        );
+      if (typeof updateSEO === 'function') {
+        updateSEO(null);
       }
-
-      updateSEO(null);
 
       if (typeof onClose === 'function') {
         onClose();
@@ -1736,11 +1713,6 @@ export const PhotoGallery = React.memo(
       return null;
     }
 
-    /*
-     * ============================================================
-     * RENDER
-     * ============================================================
-     */
     return (
       <div
         className="fixed inset-0 z-[10000] bg-white/95 backdrop-blur-3xl flex flex-col animate-in fade-in duration-200 select-none"
@@ -1748,17 +1720,12 @@ export const PhotoGallery = React.memo(
         onClick={(e) => e.stopPropagation()}
         onContextMenu={preventCopy}
       >
-        {/* ======================================================
-            HEADER
-            ====================================================== */}
+        {/* HEADER */}
         <header className="flex justify-between items-center p-6 border-b border-slate-100 shrink-0">
           <div>
             <h3 className="text-slate-600 font-black uppercase tracking-widest text-xs">
-              {placeName
-                ? `${placeName} Gallery`
-                : 'Location Gallery'}
+              {placeName ? `${placeName} Gallery` : 'Location Gallery'}
             </h3>
-
             <p className="text-[10px] text-indigo-400 font-bold uppercase">
               {photos.length} Total Images
             </p>
@@ -1767,15 +1734,10 @@ export const PhotoGallery = React.memo(
           <div className="flex items-center gap-3">
             {/* SHARE */}
             <button
+              type="button"
               onClick={(e) => {
                 e.stopPropagation();
-
-                if (onShare) {
-                  onShare(
-                    e,
-                    selectedLocation
-                  );
-                }
+                if (onShare) onShare(e, selectedLocation);
               }}
               aria-label="Share Gallery"
               className="w-12 h-12 flex items-center justify-center bg-slate-800/10 text-slate-700 hover:bg-blue-500 hover:text-white rounded-full transition-all shadow-sm"
@@ -1790,39 +1752,49 @@ export const PhotoGallery = React.memo(
               aria-label="Close photo gallery"
               className="w-12 h-12 flex items-center justify-center bg-gray-600/80 hover:bg-rose-600 text-white rounded-full transition-colors shadow-md focus:outline-none focus:ring-2 focus:ring-rose-500 focus:ring-offset-2"
             >
-              <X
-                className="w-5 h-5"
-                aria-hidden="true"
-              />
+              <X className="w-5 h-5" aria-hidden="true" />
             </button>
           </div>
         </header>
 
-        {/* ======================================================
-            SEO CONTEXT BLOCK (VISUALLY HIDDEN FOR END USERS, ACCESSIBLE TO CRAWLERS)
-            ====================================================== */}
+        {/* SEO CONTEXT BLOCK (CRAWLER ACCESSIBLE) */}
         {selectedLocation && (
           <div className="sr-only" itemScope itemType="https://schema.org/ImageGallery">
-            <h2>Visual Field Notes and Photography Archive: {selectedLocation.place_name || placeName}</h2>
+            <h2>
+              Visual Field Notes and Photography Archive: {selectedLocation.place_name || placeName}
+            </h2>
             <p>
-              Welcome to the dedicated photo gallery and visual repository for {selectedLocation.place_name || placeName}, categorized as a {selectedLocation.category || 'natural attraction'} in {selectedLocation.locality || 'Sri Lanka'}.
-              This page serves as a comprehensive visual field guide, completely distinct from our main route logs, specifically curated to aid landscape photographers, drone pilots, and backcountry researchers.
+              Welcome to the dedicated photo gallery and visual repository for{' '}
+              {selectedLocation.place_name || placeName}, categorized as a{' '}
+              {selectedLocation.category || 'natural attraction'} in{' '}
+              {selectedLocation.locality || 'Sri Lanka'}. This page serves as a comprehensive visual
+              field guide, completely distinct from our main route logs, specifically curated to aid
+              landscape photographers, drone pilots, and backcountry researchers.
             </p>
             <p>
-              Within this specific gallery, you are exploring a collection of {photos?.length || 'several'} high-resolution images capturing the unique terrain, weather anomalies, and spatial geography of {selectedLocation.place_name || placeName}.
-              Unlike standard travel overviews, this visual ledger documents the physical reality of the environment—showcasing vegetation density, trail exposure, and ambient lighting crucial for expedition planning.
-              {selectedLocation.ai_article?.metrics?.elevation_m ? ` The mapped area features a baseline elevation of approximately ${selectedLocation.ai_article.metrics.elevation_m} meters, directly dictating the atmospheric conditions and cloud forest borders visible in these specific frames.` : ''}
-              {selectedLocation.ai_article?.metrics?.difficulty_level ? ` The approach terrain corresponds to a ${selectedLocation.ai_article.metrics.difficulty_level} difficulty level, highlighting the physical characteristics of the landscape.` : ''}
+              Within this specific gallery, you are exploring a collection of {photos?.length || 'several'}{' '}
+              high-resolution images capturing the unique terrain, weather anomalies, and spatial
+              geography of {selectedLocation.place_name || placeName}. Unlike standard travel
+              overviews, this visual ledger documents the physical reality of the environment—showcasing
+              vegetation density, trail exposure, and ambient lighting crucial for expedition planning.
+              {selectedLocation.ai_article?.metrics?.elevation_m
+                ? ` The mapped area features a baseline elevation of approximately ${selectedLocation.ai_article.metrics.elevation_m} meters, directly dictating the atmospheric conditions and cloud forest borders visible in these specific frames.`
+                : ''}
+              {selectedLocation.ai_article?.metrics?.difficulty_level
+                ? ` The approach terrain corresponds to a ${selectedLocation.ai_article.metrics.difficulty_level} difficulty level, highlighting the physical characteristics of the landscape.`
+                : ''}
             </p>
             <p>
-              By analyzing these photographic records, explorers can better assess on-the-ground reality before deployment. Every image in this archive emphasizes raw environmental data, ensuring that the natural scale, topographic challenges, and geographical features of this {selectedLocation.category || 'location'} in {selectedLocation.locality || 'Sri Lanka'} are mapped accurately for visual reference.
+              By analyzing these photographic records, explorers can better assess on-the-ground reality
+              before deployment. Every image in this archive emphasizes raw environmental data,
+              ensuring that the natural scale, topographic challenges, and geographical features of this{' '}
+              {selectedLocation.category || 'location'} in {selectedLocation.locality || 'Sri Lanka'}{' '}
+              are mapped accurately for visual reference.
             </p>
           </div>
         )}
 
-        {/* ======================================================
-            PHOTO GRID
-            ====================================================== */}
+        {/* PHOTO GRID */}
         <main
           ref={gridScrollRef}
           className="flex-1 overflow-y-auto overscroll-y-contain touch-pan-y p-4 md:p-10 custom-scrollbar"
@@ -1830,45 +1802,29 @@ export const PhotoGallery = React.memo(
           <div className="max-w-5xl mx-auto grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {photos.map((url, i) => (
               <article
-                key={`${placeName}-${i}`}
-                onClick={() =>
-                  setActiveIndex(i)
-                }
+                key={`${placeName || 'photo'}-${i}`}
+                onClick={() => setActiveIndex(i)}
                 className="group relative aspect-[4/5] rounded-[2rem] overflow-hidden bg-slate-800 border border-white/5 shadow-2xl cursor-zoom-in hover:scale-[1.02] transition-transform duration-300"
               >
                 <img
                   src={
-                    typeof getOptimizedUrl ===
-                      'function'
-                      ? getOptimizedUrl(
-                        url,
-                        400,
-                        60
-                      )
+                    typeof getOptimizedUrl === 'function'
+                      ? getOptimizedUrl(url, 400, 60)
                       : url
                   }
                   className="w-full h-full object-cover select-none pointer-events-none"
-                  loading={
-                    i === 0
-                      ? 'eager'
-                      : 'lazy'
-                  }
-                  fetchPriority={
-                    i === 0
-                      ? 'high'
-                      : 'auto'
-                  }
+                  loading={i === 0 ? 'eager' : 'lazy'}
+                  fetchPriority={i === 0 ? 'high' : 'auto'}
                   draggable={false}
-                  alt={`${placeName || 'Remote location'} ${selectedLocation?.category ? `(${selectedLocation.category})` : ''} in ${selectedLocation?.locality || 'Sri Lanka'} - High resolution image ${i + 1}`}
+                  alt={`${placeName || 'Remote location'} ${selectedLocation?.category ? `(${selectedLocation.category})` : ''
+                    } in ${selectedLocation?.locality || 'Sri Lanka'} - High resolution image ${i + 1}`}
                 />
               </article>
             ))}
           </div>
         </main>
 
-        {/* ======================================================
-            LIGHTBOX
-            ====================================================== */}
+        {/* LIGHTBOX */}
         {activeIndex !== null && (
           <div
             className="fixed inset-0 z-[11000] bg-black/95 backdrop-blur-2xl flex flex-col animate-in zoom-in-95 duration-200"
@@ -1883,56 +1839,37 @@ export const PhotoGallery = React.memo(
             <div className="absolute top-6 right-6 flex gap-3 z-[12000]">
               {/* PINTEREST */}
               <button
+                type="button"
                 className="w-12 h-12 flex items-center justify-center bg-white/10 hover:bg-[#E60023] text-white rounded-full transition-all shadow-lg"
-                onClick={(e) =>
-                  handlePinterestSave(
-                    e,
-                    photos[activeIndex],
-                    selectedLocation
-                  )
-                }
+                onClick={(e) => handlePinterestSave(e, photos[activeIndex], selectedLocation)}
                 aria-label="Save to Pinterest"
               >
-                <svg
-                  className="w-5 h-5 fill-current"
-                  viewBox="0 0 24 24"
-                >
+                <svg className="w-5 h-5 fill-current" viewBox="0 0 24 24">
                   <path d="M12.017 0C5.396 0 .029 5.367.029 11.987c0 5.079 3.158 9.417 7.618 11.162-.105-.949-.199-2.403.041-3.439.219-.937 1.406-5.966 1.406-5.966s-.359-.719-.359-1.782c0-1.668.967-2.914 2.171-2.914 1.023 0 1.518.769 1.518 1.69 0 1.029-.655 2.568-.994 3.995-.283 1.194.599 2.169 1.777 2.169 2.133 0 3.772-2.249 3.772-5.495 0-2.873-2.064-4.882-5.012-4.882-3.414 0-5.418 2.561-5.418 5.207 0 1.031.397 2.138.893 2.738.098.119.112.224.083.345l-.333 1.36c-.053.22-.174.267-.402.161-1.499-.698-2.436-2.889-2.436-4.649 0-3.785 2.75-7.261 7.929-7.261 4.162 0 7.397 2.966 7.397 6.93 0 4.136-2.607 7.464-6.227 7.464-1.216 0-2.359-.631-2.75-1.378l-.748 2.853c-.271 1.033-1.002 2.324-1.492 3.121 1.12.345 2.3.533 3.524.533 6.621 0 11.988-5.367 11.988-11.987C24.005 5.367 18.638 0 12.017 0z" />
                 </svg>
               </button>
 
               {/* SLIDESHOW */}
               <button
+                type="button"
                 className={`w-12 h-12 flex items-center justify-center rounded-full transition-all duration-300 ${isSlideshowActive
                   ? 'bg-indigo-600 text-white shadow-lg'
                   : 'bg-white/10 text-white hover:bg-white/20'
                   }`}
                 onClick={(e) => {
                   e.stopPropagation();
-
-                  setIsSlideshowActive(
-                    (prev) => !prev
-                  );
+                  setIsSlideshowActive((prev) => !prev);
                 }}
-                aria-label={
-                  isSlideshowActive
-                    ? 'Pause Slideshow'
-                    : 'Start Slideshow'
-                }
+                aria-label={isSlideshowActive ? 'Pause Slideshow' : 'Start Slideshow'}
               >
-                {isSlideshowActive ? (
-                  <Pause className="w-5 h-5" />
-                ) : (
-                  <Play className="w-5 h-5" />
-                )}
+                {isSlideshowActive ? <Pause className="w-5 h-5" /> : <Play className="w-5 h-5" />}
               </button>
 
               {/* CLOSE LIGHTBOX */}
               <button
+                type="button"
                 className="w-12 h-12 flex items-center justify-center bg-white/10 hover:bg-rose-500 text-white rounded-full transition-all"
-                onClick={() =>
-                  setActiveIndex(null)
-                }
+                onClick={() => setActiveIndex(null)}
                 aria-label="Close image"
               >
                 <X className="w-5 h-5" />
@@ -1941,6 +1878,7 @@ export const PhotoGallery = React.memo(
 
             {/* PREVIOUS */}
             <button
+              type="button"
               className="absolute left-4 top-1/2 -translate-y-1/2 w-14 h-14 flex items-center justify-center bg-white/5 hover:bg-white/20 text-white rounded-full transition-all z-[12000]"
               onClick={(e) => {
                 prevImage(e);
@@ -1953,6 +1891,7 @@ export const PhotoGallery = React.memo(
 
             {/* NEXT */}
             <button
+              type="button"
               className="absolute right-4 top-1/2 -translate-y-1/2 w-14 h-14 flex items-center justify-center bg-white/5 hover:bg-white/20 text-white rounded-full transition-all z-[12000]"
               onClick={(e) => {
                 nextImage(e);
@@ -1967,27 +1906,15 @@ export const PhotoGallery = React.memo(
             <div
               ref={lightboxScrollRef}
               className="photo-gallery-scroll native-scroll-y flex-1 w-full overflow-y-auto p-4 no-scrollbar"
-              onClick={() =>
-                setActiveIndex(null)
-              }
+              onClick={() => setActiveIndex(null)}
             >
               <div className="min-h-full w-full flex items-center justify-center">
-                <div
-                  className="relative w-fit h-fit"
-                  onClick={(e) =>
-                    e.stopPropagation()
-                  }
-                >
+                <div className="relative w-fit h-fit" onClick={(e) => e.stopPropagation()}>
                   <img
                     key={photos[activeIndex]}
                     src={
-                      typeof getOptimizedUrl ===
-                        'function'
-                        ? getOptimizedUrl(
-                          photos[activeIndex],
-                          1200,
-                          85
-                        )
+                      typeof getOptimizedUrl === 'function'
+                        ? getOptimizedUrl(photos[activeIndex], 1200, 85)
                         : photos[activeIndex]
                     }
                     className="max-w-full max-h-[85vh] object-contain rounded-lg shadow-2xl animate-in fade-in zoom-in-95 duration-500"
@@ -2003,7 +1930,6 @@ export const PhotoGallery = React.memo(
                       <span className="text-[10px] md:text-xs font-light tracking-[0.4em] text-white/70 uppercase border-b border-white/30 pb-0.5">
                         My Journal
                       </span>
-
                       <div className="w-4 h-[0.5px] bg-white/30 mt-0.5" />
                     </div>
                   </div>
@@ -2020,32 +1946,15 @@ export const PhotoGallery = React.memo(
           </div>
         )}
 
-        {/* ======================================================
-            STYLES
-            ====================================================== */}
+        {/* STYLES */}
         <style>{`
           @keyframes progress {
-            from {
-              width: 0%;
-            }
-
-            to {
-              width: 100%;
-            }
+            from { width: 0%; }
+            to { width: 100%; }
           }
-
-          .modal-open {
-            overflow: hidden !important;
-          }
-
-          .custom-scrollbar::-webkit-scrollbar {
-            width: 6px;
-          }
-
-          .custom-scrollbar::-webkit-scrollbar-track {
-            background: transparent;
-          }
-
+          .modal-open { overflow: hidden !important; }
+          .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+          .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
           .custom-scrollbar::-webkit-scrollbar-thumb {
             background: rgba(0, 0, 0, 0.1);
             border-radius: 10px;
