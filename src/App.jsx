@@ -647,7 +647,7 @@ export const updateSEO = (place = null, options = {}) => {
   const DEFAULT_LOGO = `${BASE_URL}/my-journal-logo.png`;
 
   // Default SEO tags explicitly stating video content, photos, guides, and articles
-  let title = "Sri Lanka Backcountry Travel Guide: Photos, Maps, Videos & Articles | My Journal";
+  let title = "Sri Lanka Backcountry Guide: Media & Articles | My Journal";
   let ogTitle =
     "Sri Lanka Backcountry Travel Guide: Photos, Maps, Videos & Articles";
   let description =
