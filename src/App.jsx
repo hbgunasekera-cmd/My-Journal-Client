@@ -499,7 +499,7 @@ export const injectJSONLDSchema = (
 
   const BASE_URL = "https://www.myjournalview.com";
 
-  // Default website schema for home/fallback contexts
+  // Default website schema informing crawlers of videos, photos, articles, and guides
   if (!place || typeof place !== "object" || !place.place_name) {
     const defaultSchema = {
       "@context": "https://schema.org",
@@ -507,7 +507,7 @@ export const injectJSONLDSchema = (
       name: "My Journal",
       url: canonicalUrl || BASE_URL,
       description:
-        "Explore remote Sri Lankan trails, hidden waterfalls, and backcountry coordinates.",
+        "Explore remote Sri Lankan trails, hidden waterfalls, video journals, photo galleries, travel articles, and backcountry coordinates.",
       abstract:
         "විදිමු , රැකගමු අනාගතය වෙනුවෙන්. Live with care, preserve with love — for the future yet to come.",
     };
@@ -629,6 +629,7 @@ export const injectJSONLDSchema = (
 export const updateSEO = (place = null, options = {}) => {
   const {
     isGallery = false,
+    isVideoGallery = false,
     galleryPhotos = [],
     category = "All",
     searchTerm = "",
@@ -645,11 +646,12 @@ export const updateSEO = (place = null, options = {}) => {
 
   const DEFAULT_LOGO = `${BASE_URL}/my-journal-logo.png`;
 
-  let title = "Sri Lanka Backcountry Travel Guide & Maps | My Journal";
+  // Default SEO tags explicitly stating video content, photos, guides, and articles
+  let title = "Sri Lanka Backcountry Travel Guide: Photos, Maps, Videos & Articles | My Journal";
   let ogTitle =
-    "Sri Lanka Backcountry Travel Guide: Waterfalls, Hidden Trails & Maps";
+    "Sri Lanka Backcountry Travel Guide: Photos, Maps, Videos & Articles";
   let description =
-    "Explore remote Sri Lankan trails, hidden waterfalls, coordinates, and high-altitude mountain lookouts captured by Drone and iPhone.";
+    "Explore remote Sri Lankan trails, hidden waterfalls, video journals, photo galleries, detailed articles, and backcountry coordinates captured by Drone and iPhone.";
   let rawCanonicalUrl = `${BASE_URL}/`;
   let imageUrl = DEFAULT_LOGO;
   let isNoIndex = false;
@@ -658,13 +660,20 @@ export const updateSEO = (place = null, options = {}) => {
     place && typeof place === "object" && place.place_name
   );
 
-  // 1. Handle Soft-404 / Missing Data States
+  // 1. Handle States
   if (isNotFound && !isLoading) {
     title = "Page Not Found | My Journal";
     ogTitle = "404 - Page Not Found";
     description =
       "The requested location, gallery, or resource could not be found on My Journal.";
     isNoIndex = true;
+  } else if (isVideoGallery) {
+    // Dedicated Video Gallery Browser Title and SEO Tags
+    title = "Video Journal & Aerial Perspectives | My Journal";
+    ogTitle = "Sri Lanka Video Journal & Aerial Drone Highlights | My Journal";
+    description =
+      "Explore high-resolution video journals, aerial drone perspectives, and backcountry travel logs across Sri Lanka on My Journal.";
+    rawCanonicalUrl = `${BASE_URL}/videos`;
   } else if (hasPlace) {
     const placeName = place.place_name.trim();
     const categoryName = place.category || "Attraction";
@@ -730,7 +739,7 @@ export const updateSEO = (place = null, options = {}) => {
     canonicalUrl = rawCanonicalUrl;
   }
 
-  // 3. Enforce SERP Snippet Safety (Truncate title if exceeding 65 chars)
+  // 3. Enforce SERP Snippet Safety
   if (title.length > 65) {
     const brandIndex = title.indexOf(" | My Journal");
     if (brandIndex > 0) {
@@ -739,7 +748,7 @@ export const updateSEO = (place = null, options = {}) => {
     }
   }
 
-  // 4. Sync Document Title
+  // 4. Update Document Title
   document.title = title;
 
   // 5. Sync Canonical Link Element
@@ -2021,6 +2030,7 @@ export const normalizeVideoRecords = (videos) => {
     );
 };
 
+
 /**
  * ============================================================
  * RANDOM VIDEO SHUFFLE
@@ -2029,13 +2039,10 @@ export const normalizeVideoRecords = (videos) => {
 export const shuffleVideoRecords = (records) => {
   if (!Array.isArray(records) || records.length === 0) return [];
 
-  // CRITICAL FIX: We map over the array to create brand new object references. 
-  // This guarantees React state will recognize it as a completely new array 
-  // and force a re-render, ignoring any stale cached state.
+  // Map over array to create fresh object references and guarantee React re-renders
   const shuffled = records.map((record) => ({ ...record }));
 
-  // Primitive Fisher-Yates shuffle using standard temp variables.
-  // This removes any potential ASI minifier bugs or Crypto API fallback failures.
+  // Standard Fisher-Yates shuffle
   for (let i = shuffled.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
     const temp = shuffled[i];
@@ -2051,7 +2058,6 @@ export const shuffleVideoRecords = (records) => {
  * HUB VIDEO LIST
  * ============================================================
  */
-
 export const HubVideoList = ({ supabaseClient, onVideosLoaded }) => {
   const onVideosLoadedRef = useRef(onVideosLoaded);
   const hasFetchedRef = useRef(false);
@@ -2075,10 +2081,12 @@ export const HubVideoList = ({ supabaseClient, onVideosLoaded }) => {
         if (!error && data && isSubscribed) {
           hasFetchedRef.current = true;
 
-          // 1. Flatten all grouped/comma-separated URLs first
-          const normalizedData = normalizeVideoRecords(data);
+          // 1. Flatten all grouped/comma-separated URLs
+          const normalizedData = typeof normalizeVideoRecords === 'function'
+            ? normalizeVideoRecords(data)
+            : data;
 
-          // 2. Shuffle the fully flattened array
+          // 2. Shuffle the flattened array
           const shuffledVideos = shuffleVideoRecords(normalizedData);
 
           if (onVideosLoadedRef.current) {
@@ -2105,241 +2113,228 @@ export const HubVideoList = ({ supabaseClient, onVideosLoaded }) => {
  * VIDEO GALLERY
  * ============================================================
  */
-export const VideoGallery = React.memo(
-  ({
-    videos,
-    initialIndex = 0,
-    onClose
-  }) => {
-    const [activeIndex, setActiveIndex] = useState(initialIndex);
+export const VideoGallery = React.memo(({ videos, initialIndex = 0, onClose }) => {
+  const [activeIndex, setActiveIndex] = useState(initialIndex);
 
-    /*
-     * Clean normalization of incoming video records.
-     * The order supplied by HubVideoList is already the
-     * randomized per-client playlist order.
-     */
-    const videoList = normalizeVideoRecords(videos);
+  /*
+   * Clean normalization of incoming video records.
+   * Memoized to prevent re-processing on every index change/re-render.
+   */
+  const videoList = useMemo(() => {
+    return typeof normalizeVideoRecords === 'function'
+      ? normalizeVideoRecords(videos)
+      : (Array.isArray(videos) ? videos : []);
+  }, [videos]);
 
-    /*
-     * ========================================================
-     * GALLERY LIFECYCLE + URL SYNCHRONIZATION
-     * ========================================================
-     */
-    useEffect(() => {
-      const scrollY = window.scrollY;
+  /*
+   * ========================================================
+   * GALLERY LIFECYCLE + URL SYNCHRONIZATION
+   * ========================================================
+   */
+  useEffect(() => {
+    const scrollY = window.scrollY;
 
-      document.body.classList.add('modal-open');
+    document.body.classList.add('modal-open');
 
-      /*
-       * Log visit analytics once when
-       * Video Gallery mounts.
-       */
-      if (typeof logVisit === 'function') {
-        logVisit('Video Gallery');
-      }
-
-      /*
-       * Do not push /videos if already there.
-       */
-      if (window.location.pathname !== '/videos') {
-        window.history.pushState(
-          {
-            modalOpen: true
-          },
-          '',
-          '/videos'
-        );
-      }
-
-      /*
-       * Escape closes gallery.
-       */
-      const handleKeyDown = (e) => {
-        if (e.key === 'Escape') {
-          onClose();
-        }
-      };
-
-      /*
-       * Browser Back button closes gallery.
-       */
-      const handlePopState = () => {
-        onClose();
-      };
-
-      window.addEventListener('keydown', handleKeyDown);
-      window.addEventListener('popstate', handlePopState);
-
-      return () => {
-        document.body.classList.remove('modal-open');
-
-        window.scrollTo(0, scrollY);
-
-        window.removeEventListener('keydown', handleKeyDown);
-        window.removeEventListener('popstate', handlePopState);
-
-        /*
-         * Revert URL when gallery closes.
-         */
-        if (window.location.pathname === '/videos') {
-          window.history.pushState(
-            {
-              modalOpen: false
-            },
-            '',
-            '/'
-          );
-        }
-      };
-    }, [onClose]);
-
-    /*
-     * No valid videos.
-     */
-    if (videoList.length === 0) {
-      return null;
+    // Log visit analytics
+    if (typeof logVisit === 'function') {
+      logVisit('Video Gallery');
     }
 
-    const currentVideo = videoList[activeIndex] || videoList[0];
-    const videoId = getYouTubeId(currentVideo.url);
+    // Push URL state for modal
+    if (window.location.pathname !== '/videos') {
+      window.history.pushState({ modalOpen: true }, '', '/videos');
+    }
 
-    return (
-      <div className="fixed inset-0 z-[10000] bg-slate-900/98 backdrop-blur-3xl flex flex-col animate-in fade-in duration-200 select-none">
+    // Escape key handling
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') {
+        onClose();
+      }
+    };
 
-        {/* Header */}
-        <header className="flex justify-between items-center p-6 border-b border-white/10 shrink-0">
+    // Back button handling
+    const handlePopState = () => {
+      onClose();
+    };
 
-          <div>
-            <h3 className="text-white font-black uppercase tracking-widest text-xs">
-              Video Journal
-            </h3>
+    window.addEventListener('keydown', handleKeyDown);
+    window.addEventListener('popstate', handlePopState);
 
-            <p className="text-[10px] text-indigo-400 font-bold uppercase">
-              {activeIndex + 1} of {videoList.length} Clips
+    return () => {
+      document.body.classList.remove('modal-open');
+      window.scrollTo(0, scrollY);
+
+      window.removeEventListener('keydown', handleKeyDown);
+      window.removeEventListener('popstate', handlePopState);
+
+      // Revert URL when gallery closes
+      if (window.location.pathname === '/videos') {
+        window.history.pushState({ modalOpen: false }, '', '/');
+      }
+    };
+  }, [onClose]);
+
+  /*
+   * ========================================================
+   * VIDEO GALLERY DYNAMIC SEO
+   * ========================================================
+   */
+  useEffect(() => {
+    if (typeof updateSEO === 'function') {
+      updateSEO(null, { isVideoGallery: true });
+    }
+
+    return () => {
+      if (typeof updateSEO === 'function') {
+        updateSEO(null);
+      }
+    };
+  }, []);
+
+  /*
+   * Fallback for empty list
+   */
+  if (!videoList || videoList.length === 0) {
+    return null;
+  }
+
+  const currentVideo = videoList[activeIndex] || videoList[0];
+  const videoId = typeof getYouTubeId === 'function'
+    ? getYouTubeId(currentVideo.url)
+    : null;
+
+  return (
+    <div className="fixed inset-0 z-[10000] bg-slate-900/98 backdrop-blur-3xl flex flex-col animate-in fade-in duration-200 select-none">
+
+      {/* Header */}
+      <header className="flex justify-between items-center p-6 border-b border-white/10 shrink-0">
+        <div>
+          <h3 className="text-white font-black uppercase tracking-widest text-xs">
+            Video Journal
+          </h3>
+          <p className="text-[10px] text-indigo-400 font-bold uppercase">
+            {activeIndex + 1} of {videoList.length} Clips
+          </p>
+        </div>
+
+        <button
+          onClick={onClose}
+          aria-label="Close video gallery"
+          className="w-12 h-12 flex items-center justify-center bg-white/10 hover:bg-rose-500 text-white rounded-full transition-all shadow-md focus:outline-none focus:ring-2 focus:ring-white"
+        >
+          <X className="w-5 h-5" />
+        </button>
+      </header>
+
+      {/* SEO CONTEXT BLOCK (CRAWLER ACCESSIBLE) */}
+      <div className="sr-only" itemScope itemType="https://schema.org/VideoGallery">
+        <h2>Video Journal and Aerial Highlights Archive</h2>
+        <p>
+          Welcome to the dedicated video gallery and visual repository. This page serves as a comprehensive visual video guide featuring {videoList.length} high-resolution clips, aerial drone perspectives, and backcountry travel logs across Sri Lanka.
+        </p>
+
+        {videoList.map((video, idx) => (
+          <div key={`seo-vid-${idx}`} itemScope itemProp="video" itemType="https://schema.org/VideoObject">
+            <h3 itemProp="name">{video.title || `Video Journal Entry ${idx + 1}`}</h3>
+            <meta itemProp="url" content={video.url} />
+            {video.custom_thumbnail_url && (
+              <meta itemProp="thumbnailUrl" content={video.custom_thumbnail_url} />
+            )}
+            <p itemProp="description">
+              Visual field note and landscape recording: {video.title || `Video Journal Entry ${idx + 1}`}. Documenting the physical reality of the environment.
             </p>
           </div>
-
-          <button
-            onClick={onClose}
-            aria-label="Close video gallery"
-            className="w-12 h-12 flex items-center justify-center bg-white/10 hover:bg-rose-500 text-white rounded-full transition-all shadow-md focus:outline-none focus:ring-2 focus:ring-white"
-          >
-            <X className="w-5 h-5" />
-          </button>
-
-        </header>
-
-        {/* Main Content */}
-        <main className="flex-1 flex flex-col lg:flex-row gap-6 p-4 md:p-6 overflow-hidden">
-
-          {/*
-           * Mobile uses flex-none so the video area
-           * does not force the playlist off-screen.
-           */}
-          <div className="flex-none lg:flex-1 w-full flex items-center justify-center relative min-h-[40vh] lg:min-h-0">
-
-            <div className="relative w-full max-w-5xl aspect-video rounded-[2rem] overflow-hidden bg-black border border-white/10 shadow-2xl">
-
-              {videoId ? (
-                <iframe
-                  key={videoId}
-                  src={`https://www.youtube-nocookie.com/embed/${videoId}?autoplay=1&rel=0`}
-                  className="absolute top-0 left-0 w-full h-full border-0"
-                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                  allowFullScreen
-                  title={
-                    currentVideo.title ||
-                    'Video Journal Player'
-                  }
-                />
-              ) : (
-                <div className="flex items-center justify-center h-full text-white/50 text-sm">
-                  Invalid or Unsupported Video URL
-                </div>
-              )}
-
-            </div>
-
-          </div>
-
-          {/*
-           * Playlist scrolling boundary.
-           */}
-          <aside className="w-full lg:w-80 flex-1 lg:flex-none flex flex-col gap-3 overflow-y-auto custom-scrollbar pr-2 pb-20 lg:pb-0 min-h-0">
-
-            <h4 className="text-white/70 text-xs font-bold uppercase tracking-widest mb-2 px-1">
-              More Videos
-            </h4>
-
-            {videoList.map((item, idx) => {
-              const listVideoId = getYouTubeId(item.url);
-
-              const thumbnailUrl =
-                item.custom_thumbnail_url ||
-                (listVideoId
-                  ? `https://img.youtube.com/vi/${listVideoId}/hqdefault.jpg`
-                  : '/default-video-placeholder.jpg');
-
-              const isActive = activeIndex === idx;
-
-              return (
-                <button
-                  key={item.id || item.url || idx}
-                  onClick={() => setActiveIndex(idx)}
-                  className={`group flex items-start gap-3 w-full text-left p-2 rounded-xl transition-all ${isActive
-                    ? 'bg-white/10 border border-indigo-500'
-                    : 'hover:bg-white/5 border border-transparent'
-                    }`}
-                >
-
-                  {/* Thumbnail */}
-                  <div className="relative w-24 aspect-video flex-shrink-0 rounded-lg overflow-hidden bg-slate-800">
-
-                    <img
-                      src={thumbnailUrl}
-                      alt={item.title || 'Thumbnail'}
-                      className={`w-full h-full object-cover transition-opacity ${isActive
-                        ? 'opacity-100'
-                        : 'opacity-70 group-hover:opacity-100'
-                        }`}
-                      onError={(e) => {
-                        e.target.onerror = null;
-                        e.target.src = '/default-video-placeholder.jpg';
-                      }}
-                    />
-
-                    {isActive && (
-                      <div className="absolute inset-0 bg-indigo-500/30 flex items-center justify-center">
-                        <Play className="w-4 h-4 text-white fill-white" />
-                      </div>
-                    )}
-
-                  </div>
-
-                  {/* Title */}
-                  <div className="flex-1 overflow-hidden">
-
-                    <p
-                      className={`text-xs font-semibold line-clamp-2 ${isActive ? 'text-white' : 'text-slate-300'
-                        }`}
-                    >
-                      {item.title || 'Journal Entry'}
-                    </p>
-
-                  </div>
-
-                </button>
-              );
-            })}
-
-          </aside>
-
-        </main>
-
+        ))}
       </div>
-    );
-  }
-);
+
+      {/* Main Content */}
+      <main className="flex-1 flex flex-col lg:flex-row gap-6 p-4 md:p-6 overflow-hidden">
+        {/* Active Player Frame */}
+        <div className="flex-none lg:flex-1 w-full flex items-center justify-center relative min-h-[40vh] lg:min-h-0">
+          <div className="relative w-full max-w-5xl aspect-video rounded-[2rem] overflow-hidden bg-black border border-white/10 shadow-2xl">
+            {videoId ? (
+              <iframe
+                key={videoId}
+                src={`https://www.youtube-nocookie.com/embed/${videoId}?autoplay=1&rel=0`}
+                className="absolute top-0 left-0 w-full h-full border-0"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                allowFullScreen
+                title={currentVideo.title || 'Video Journal Player'}
+              />
+            ) : (
+              <div className="flex items-center justify-center h-full text-white/50 text-sm">
+                Invalid or Unsupported Video URL
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Playlist Sidebar */}
+        <aside className="w-full lg:w-80 flex-1 lg:flex-none flex flex-col gap-3 overflow-y-auto custom-scrollbar pr-2 pb-20 lg:pb-0 min-h-0">
+          <h4 className="text-white/70 text-xs font-bold uppercase tracking-widest mb-2 px-1">
+            More Videos
+          </h4>
+
+          {videoList.map((item, idx) => {
+            const listVideoId = typeof getYouTubeId === 'function'
+              ? getYouTubeId(item.url)
+              : null;
+
+            const thumbnailUrl =
+              item.custom_thumbnail_url ||
+              (listVideoId
+                ? `https://img.youtube.com/vi/${listVideoId}/hqdefault.jpg`
+                : '/default-video-placeholder.jpg');
+
+            const isActive = activeIndex === idx;
+
+            return (
+              <button
+                key={item.id || item.url || idx}
+                onClick={() => setActiveIndex(idx)}
+                className={`group flex items-start gap-3 w-full text-left p-2 rounded-xl transition-all ${isActive
+                  ? 'bg-white/10 border border-indigo-500'
+                  : 'hover:bg-white/5 border border-transparent'
+                  }`}
+              >
+                {/* Thumbnail */}
+                <div className="relative w-24 aspect-video flex-shrink-0 rounded-lg overflow-hidden bg-slate-800">
+                  <img
+                    src={thumbnailUrl}
+                    alt={item.title || 'Thumbnail'}
+                    className={`w-full h-full object-cover transition-opacity ${isActive ? 'opacity-100' : 'opacity-70 group-hover:opacity-100'
+                      }`}
+                    onError={(e) => {
+                      e.target.onerror = null;
+                      e.target.src = '/default-video-placeholder.jpg';
+                    }}
+                  />
+
+                  {isActive && (
+                    <div className="absolute inset-0 bg-indigo-500/30 flex items-center justify-center">
+                      <Play className="w-4 h-4 text-white fill-white" />
+                    </div>
+                  )}
+                </div>
+
+                {/* Title */}
+                <div className="flex-1 overflow-hidden">
+                  <p
+                    className={`text-xs font-semibold line-clamp-2 ${isActive ? 'text-white' : 'text-slate-300'
+                      }`}
+                  >
+                    {item.title || 'Journal Entry'}
+                  </p>
+                </div>
+              </button>
+            );
+          })}
+        </aside>
+      </main>
+    </div>
+  );
+});
 
 export const MapComponent = ({
   places = [],
