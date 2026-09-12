@@ -645,34 +645,32 @@ export const updateSEO = (place = null, options = {}) => {
   ).replace(/\/$/, "");
 
   const DEFAULT_LOGO = `${BASE_URL}/my-journal-logo.png`;
+  const BRAND_SUFFIX = " | My Journal";
 
-  // Default SEO tags explicitly stating video content, photos, guides, and articles
-  let title = "Sri Lanka Backcountry Guide: Media & Articles | My Journal";
-  let ogTitle =
-    "Sri Lanka Backcountry Travel Guide: Photos, Maps, Videos & Articles";
-  let description =
-    "Explore remote Sri Lankan trails, hidden waterfalls, video journals, photo galleries, detailed articles, and backcountry coordinates captured by Drone and iPhone.";
+  // PERMANENT HOME METADATA (Do not alter dynamically)
+  const PERMANENT_DEFAULT_TITLE = "Sri Lanka Backcountry Travel Guide | My Journal";
+  const PERMANENT_DEFAULT_OG_TITLE = "Sri Lanka Backcountry Travel Guide: Maps, Trails & Media";
+  const PERMANENT_DEFAULT_DESC = "Explore Sri Lanka's backcountry trails, hidden waterfalls, aerial drone video journals, field notes, and GPS map routes captured by drone and iPhone.";
+
+  let title = PERMANENT_DEFAULT_TITLE;
+  let ogTitle = PERMANENT_DEFAULT_OG_TITLE;
+  let description = PERMANENT_DEFAULT_DESC;
   let rawCanonicalUrl = `${BASE_URL}/`;
   let imageUrl = DEFAULT_LOGO;
   let isNoIndex = false;
 
-  const hasPlace = Boolean(
-    place && typeof place === "object" && place.place_name
-  );
+  const hasPlace = Boolean(place && typeof place === "object" && place.place_name);
 
-  // 1. Handle States
+  // 1. Handle Page States
   if (isNotFound && !isLoading) {
-    title = "Page Not Found | My Journal";
+    title = `Page Not Found${BRAND_SUFFIX}`;
     ogTitle = "404 - Page Not Found";
-    description =
-      "The requested location, gallery, or resource could not be found on My Journal.";
+    description = "The requested location, gallery, or resource could not be found on My Journal.";
     isNoIndex = true;
   } else if (isVideoGallery) {
-    // Dedicated Video Gallery Browser Title and SEO Tags
-    title = "Video Journal & Aerial Perspectives | My Journal";
-    ogTitle = "Sri Lanka Video Journal & Aerial Drone Highlights | My Journal";
-    description =
-      "Explore high-resolution video journals, aerial drone perspectives, and backcountry travel logs across Sri Lanka on My Journal.";
+    title = `Aerial & Video Journal${BRAND_SUFFIX}`;
+    ogTitle = "Sri Lanka Backcountry Video Journal & Aerial Drone Clips";
+    description = "Watch aerial drone perspectives, high-resolution video logs, and backcountry terrain footage across Sri Lanka.";
     rawCanonicalUrl = `${BASE_URL}/videos`;
   } else if (hasPlace) {
     const placeName = place.place_name.trim();
@@ -684,21 +682,19 @@ export const updateSEO = (place = null, options = {}) => {
         : encodeURIComponent(placeName.toLowerCase());
 
     if (isGallery) {
-      title = `${placeName} Photos & Aerial Views (${categoryName}), Sri Lanka | My Journal`;
-      ogTitle = `Explore ${placeName} (${categoryName}) - Aerial Photos & Field Notes`;
-      description = `Complete high-resolution photo gallery and aerial drone perspectives of ${placeName}, a ${categoryName} in ${place.locality || "Sri Lanka"
-        }. Explore visual field notes, terrain conditions, and landscape photography.`;
+      title = `${placeName} Photos (${categoryName})${BRAND_SUFFIX}`;
+      ogTitle = `${placeName} - Aerial Drone & Field Photos`;
+      description = `Visual field notes, terrain photos, and high-resolution aerial drone photography of ${placeName}${localityName}, Sri Lanka.`;
       rawCanonicalUrl = `${BASE_URL}/gallery/${slug}`;
     } else {
-      title = `${placeName} ${categoryName} Guide${localityName} Sri Lanka | My Journal`;
-      ogTitle = `${placeName} ${categoryName} Guide: Mapped Coordinates & Trail Access`;
+      title = `${placeName} ${categoryName} Guide${BRAND_SUFFIX}`;
+      ogTitle = `${placeName} Trail Guide: GPS Maps & Field Notes`;
 
       const rawStory = place.ai_article?.story || place.description;
       if (rawStory) {
-        description = truncateText(rawStory, 150);
+        description = rawStory.slice(0, 155).replace(/\s+\S*$/, ""); // Clean truncation without trailing words
       } else {
-        description = `Complete travel & trail guide for ${placeName} in ${place.locality || "Sri Lanka"
-          }. Mapped coordinates, elevation telemetry, and visitor access notes.`;
+        description = `Backcountry guide for ${placeName}${localityName}, Sri Lanka. Features mapped GPS coordinates, route paths, terrain telemetry, and photos.`;
       }
       rawCanonicalUrl = `${BASE_URL}/place/${slug}`;
     }
@@ -710,20 +706,18 @@ export const updateSEO = (place = null, options = {}) => {
       }
     }
   } else if (category && category !== "All") {
-    title = `Best ${category}s in Sri Lanka: Mapped Trails & Field Notes | My Journal`;
-    ogTitle = `Explore Top ${category}s in Sri Lanka | Route Maps & Coordinates`;
+    title = `${category} Travel Guide & Maps${BRAND_SUFFIX}`;
+    ogTitle = `Explore Top ${category} Locations in Sri Lanka`;
 
     const catDesc = categoryDescriptions[category];
     description = catDesc
-      ? truncateText(catDesc, 155)
-      : `Explore mapped ${category.toLowerCase()} locations across Sri Lanka with exact coordinates, weather tracking, and access details.`;
-    rawCanonicalUrl = `${BASE_URL}/?category=${encodeURIComponent(
-      category.toLowerCase()
-    )}`;
+      ? catDesc.slice(0, 155).replace(/\s+\S*$/, "")
+      : `Explore mapped ${category.toLowerCase()} destinations in Sri Lanka with field notes, coordinates, and photo guides.`;
+    rawCanonicalUrl = `${BASE_URL}/?category=${encodeURIComponent(category.toLowerCase())}`;
   } else if (searchTerm) {
-    title = `Search Results for "${searchTerm}" | Sri Lanka Travel Logs`;
-    ogTitle = `Sri Lanka Travel Logs: Results for "${searchTerm}"`;
-    description = `Explore mapped locations, trails, and field notes matching "${searchTerm}" in Sri Lanka on My Journal.`;
+    title = `Search: ${searchTerm}${BRAND_SUFFIX}`;
+    ogTitle = `Search Results for "${searchTerm}"`;
+    description = `Explore mapped locations, trails, and field notes matching "${searchTerm}" on My Journal.`;
   }
 
   // 2. Canonical URL Normalization
@@ -739,12 +733,14 @@ export const updateSEO = (place = null, options = {}) => {
     canonicalUrl = rawCanonicalUrl;
   }
 
-  // 3. Enforce SERP Snippet Safety
-  if (title.length > 65) {
-    const brandIndex = title.indexOf(" | My Journal");
+  // 3. Strict SERP Pixel & Character Truncation (No literal "..." in Document Title)
+  if (title.length > 60) {
+    const brandIndex = title.indexOf(BRAND_SUFFIX);
     if (brandIndex > 0) {
       const coreTitle = title.substring(0, brandIndex);
-      title = `${truncateText(coreTitle, 52)} | My Journal`;
+      const maxCoreLength = 60 - BRAND_SUFFIX.length;
+      const cleanCore = coreTitle.slice(0, maxCoreLength).replace(/\s+\S*$/, "");
+      title = `${cleanCore}${BRAND_SUFFIX}`;
     }
   }
 
@@ -763,9 +759,7 @@ export const updateSEO = (place = null, options = {}) => {
   // 6. Sync Meta & OpenGraph Tags
   const metaTags = {
     "fb:app_id": "966242223397117",
-    robots: isNoIndex
-      ? "noindex, follow"
-      : "index, follow, max-image-preview:large",
+    robots: isNoIndex ? "noindex, follow" : "index, follow, max-image-preview:large",
     description: description,
     "og:title": ogTitle,
     "og:description": description,
