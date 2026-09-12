@@ -687,7 +687,7 @@ export const updateSEO = (place = null, options = {}) => {
       description = `Visual field notes, terrain photos, and high-resolution aerial drone photography of ${placeName}${localityName}, Sri Lanka.`;
       rawCanonicalUrl = `${BASE_URL}/gallery/${slug}`;
     } else {
-      title = `${placeName} ${categoryName} Guide${BRAND_SUFFIX}`;
+      title = `${placeName} (${categoryName}) Guide${BRAND_SUFFIX}`;
       ogTitle = `${placeName} Trail Guide: GPS Maps & Field Notes`;
 
       const rawStory = place.ai_article?.story || place.description;
