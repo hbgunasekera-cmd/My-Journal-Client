@@ -6,13 +6,13 @@ function generateSlug(name) {
   return String(name)
     .toLowerCase()
     .trim()
-    .normalize("NFD")                    // Decompose accented characters
-    .replace(/[\u0300-\u036f]/g, "")    // Strip diacritic mark overlays
-    .replace(/[–—]/g, "-")              // Convert En-dash & Em-dash to standard hyphens
-    .replace(/[^a-z0-9\s-]/g, "")       // Keep only alphanumeric characters, spaces, and hyphens
-    .replace(/\s+/g, "-")               // Replace spaces with single hyphens
-    .replace(/-+/g, "-")                // Collapse multiple hyphens
-    .replace(/^-+|-+$/g, "");           // Strip leading and trailing hyphens
+    .normalize("NFD") // Decompose accented characters
+    .replace(/[\u0300-\u036f]/g, "") // Strip diacritic mark overlays
+    .replace(/[–—]/g, "-") // Convert En-dash & Em-dash to standard hyphens
+    .replace(/[^a-z0-9\s-]/g, "") // Keep only alphanumeric characters, spaces, and hyphens
+    .replace(/\s+/g, "-") // Replace spaces with single hyphens
+    .replace(/-+/g, "-") // Collapse multiple hyphens
+    .replace(/^-+|-+$/g, ""); // Strip leading and trailing hyphens
 }
 
 // Helper to safely escape specific XML characters in slugs to prevent broken sitemaps
@@ -45,8 +45,7 @@ export default async function handler(req, res) {
 
   // 2. Safely load Supabase credentials
   const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
-  const supabaseKey =
-    process.env.SUPABASE_KEY ||
+  const supabaseKey = process.env.SUPABASE_KEY ||
     process.env.VITE_SUPABASE_KEY ||
     process.env.VITE_SUPABASE_ANON_KEY;
 
@@ -109,17 +108,36 @@ export default async function handler(req, res) {
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>${baseUrl}/route-planner</loc>
+    <loc>${baseUrl}/videos</loc>
     <lastmod>${todayIso}</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
   </url>
   <url>
-    <loc>${baseUrl}/suggest-spot</loc>
+    <loc>${baseUrl}/plan</loc>
+    <lastmod>${todayIso}</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+  </url>
+  <url>
+    <loc>${baseUrl}/add</loc>
     <lastmod>${todayIso}</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
-  </url>`;
+  </url>
+  <url>
+    <loc>${baseUrl}/privacy</loc>
+    <lastmod>${todayIso}</lastmod>
+    <changefreq>yearly</changefreq>
+    <priority>0.5</priority>
+  </url>
+  <url>
+    <loc>${baseUrl}/terms</loc>
+    <lastmod>${todayIso}</lastmod>
+    <changefreq>yearly</changefreq>
+    <priority>0.5</priority>
+  </url>
+  `;
 
     // 5. Append dynamic routes based on database records
     if (places.length > 0) {
@@ -165,7 +183,7 @@ export default async function handler(req, res) {
     res.setHeader("Content-Type", "text/xml; charset=utf-8");
     res.setHeader(
       "Cache-Control",
-      "s-maxage=7200, stale-while-revalidate=86400"
+      "s-maxage=7200, stale-while-revalidate=86400",
     );
     return res.status(200).send(xml);
   } catch (err) {
