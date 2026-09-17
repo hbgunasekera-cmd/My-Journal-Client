@@ -100,13 +100,7 @@ export default async function handler(req, res) {
     <lastmod>${todayIso}</lastmod>
     <changefreq>daily</changefreq>
     <priority>1.0</priority>
-  </url>
-  <url>
-    <loc>${baseUrl}/about</loc>
-    <lastmod>${todayIso}</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.8</priority>
-  </url>
+  </url>  
   <url>
     <loc>${baseUrl}/videos</loc>
     <lastmod>${todayIso}</lastmod>
@@ -114,18 +108,24 @@ export default async function handler(req, res) {
     <priority>0.9</priority>
   </url>
   <url>
-    <loc>${baseUrl}/plan</loc>
+    <loc>${baseUrl}/route-planner</loc>
     <lastmod>${todayIso}</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
   </url>
   <url>
-    <loc>${baseUrl}/add</loc>
+    <loc>${baseUrl}/suggest-spot</loc>
     <lastmod>${todayIso}</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
+    <loc>${baseUrl}/about</loc>
+    <lastmod>${todayIso}</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>  
+    <url>
     <loc>${baseUrl}/privacy</loc>
     <lastmod>${todayIso}</lastmod>
     <changefreq>yearly</changefreq>
