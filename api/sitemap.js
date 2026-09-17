@@ -125,7 +125,7 @@ export default async function handler(req, res) {
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>  
-    <url>
+  <url>
     <loc>${baseUrl}/privacy</loc>
     <lastmod>${todayIso}</lastmod>
     <changefreq>yearly</changefreq>
@@ -136,8 +136,7 @@ export default async function handler(req, res) {
     <lastmod>${todayIso}</lastmod>
     <changefreq>yearly</changefreq>
     <priority>0.5</priority>
-  </url>
-  `;
+  </url>`;
 
     // 5. Append dynamic routes based on database records
     if (places.length > 0) {
