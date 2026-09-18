@@ -5745,6 +5745,9 @@ function App() {
                           <div className="p-2 rounded-full group-hover:bg-emerald-50 dark:group-hover:bg-emerald-950/30 transition-colors">
                             <Share2 className="w-4 h-4 text-slate-400 group-hover:text-emerald-500" />
                           </div>
+                          <span className="text-xs font-semibold text-slate-500 group-hover:text-emerald-500 transition-colors">
+                            {place?.share_count || 0}
+                          </span>
                         </button>
                       </div>
                     )}
