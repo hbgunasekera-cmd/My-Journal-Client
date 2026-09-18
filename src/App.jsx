@@ -1447,7 +1447,7 @@ const MapSelectionComponent = React.memo(({ onLocationSelect, initialCoords, onM
 */
 
 export const PhotoGallery = React.memo(
-  ({ photos, onClose, placeName, selectedLocation, onShare }) => {
+  ({ photos, onClose, placeName, selectedLocation, onShare, handleShareEvent }) => {
     const [activeIndex, setActiveIndex] = useState(null);
     const [isSlideshowActive, setIsSlideshowActive] = useState(false);
 
@@ -7255,25 +7255,22 @@ function App() {
 
       {/* --- MEDIA OVERLAYS --- */}
 
-      {/*PHOTO OVERLAY */}
+      {/* PHOTO OVERLAY */}
+      {(() => {
+        const activePlace = places.find((p) => p.id === activeId);
+        if (!activePlace) return null;
 
-      {activeId && (
-        <PhotoGallery
-          photos={
-            places.find(p => p.id === activeId)?.album_photos || []
-          }
-          placeName={
-            places.find(p => p.id === activeId)?.place_name
-          }
-          selectedLocation={
-            places.find(p => p.id === activeId)
-          }
-          onClose={handleClosePhotoGallery}
-          onShare={(e, location) =>
-            handleShare(e, location, true)
-          }
-        />
-      )}
+        return (
+          <PhotoGallery
+            photos={activePlace.album_photos || []}
+            placeName={activePlace.place_name}
+            selectedLocation={activePlace}
+            onClose={handleClosePhotoGallery}
+            onShare={(e, location) => handleShare(e, location, true)}
+            handleShareEvent={handleShareEvent}
+          />
+        );
+      })()}
 
       {/* VIDEO OVERLAY */}
       {activeVideos.length > 0 && (
