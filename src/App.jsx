@@ -1451,7 +1451,7 @@ export const PhotoGallery = React.memo(
     const [activeIndex, setActiveIndex] = useState(null);
     const [isSlideshowActive, setIsSlideshowActive] = useState(false);
 
-    // Two separate refs for scrollable areas in the modal (using external custom hook)
+    // Drag-scroll hooks for scrollable containers
     const gridScrollRef = typeof useDragScroll === 'function' ? useDragScroll() : null;
     const lightboxScrollRef = typeof useDragScroll === 'function' ? useDragScroll() : null;
 
@@ -1743,6 +1743,9 @@ export const PhotoGallery = React.memo(
               type="button"
               onClick={(e) => {
                 e.stopPropagation();
+                if (selectedLocation?.id && typeof handleShareEvent === 'function') {
+                  handleShareEvent(selectedLocation.id, 'gallery');
+                }
                 if (onShare) onShare(e, selectedLocation);
               }}
               aria-label="Share Gallery"
@@ -3679,6 +3682,51 @@ function App() {
           }
         }));
       }
+    }
+  };
+
+  /**
+ * Records a share event for an article or gallery, bypassing owner interactions.
+ * 
+ * @param {string} locationId - The UUID of the location.
+ * @param {string} shareType - 'article' | 'gallery'
+ */
+  const handleShareEvent = async (locationId, shareType = 'article') => {
+    // 1. Owner mode check & Localhost exclusion
+    const host = window.location.hostname;
+    if (host === 'localhost' || host === '127.0.0.1') return;
+
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('mode') === 'owner') {
+      localStorage.setItem('owner_auth_token', 'owner');
+    }
+
+    if (localStorage.getItem('owner_auth_token') === 'owner' || !supabaseClient || !locationId) {
+      return; // Exit silently for owners or missing dependencies
+    }
+
+    try {
+      // 2. Fetch visitor geo-metadata (IP, country, city)
+      const geo = await getInteractionMetadata();
+
+      // 3. Insert the share event payload
+      const { error } = await supabaseClient
+        .from('location_shares')
+        .insert([
+          {
+            location_id: locationId,
+            type: shareType,
+            country: geo.country,
+            city: geo.city,
+            ip_address: geo.ip,
+            // created_at defaults to now()
+          }
+        ]);
+
+      if (error) throw error;
+
+    } catch (err) {
+      console.error(`[Analytics] Failed to log ${shareType} share event:`, err);
     }
   };
 
@@ -5642,17 +5690,29 @@ function App() {
 
                     {place.status !== "pending" && (
                       <div className="flex items-center gap-2 mt-4 pt-4 border-t border-slate-50 dark:border-slate-800/60">
+                        {/* LIKE BUTTON */}
                         <button
-                          onClick={(e) => { e.stopPropagation(); handleLike(place.id); }}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleLike(place.id);
+                          }}
                           className="flex items-center gap-1.5 group outline-none select-none pr-2"
                         >
                           <div className="p-2 rounded-full group-hover:bg-rose-50 dark:group-hover:bg-rose-950/30 transition-colors">
-                            <Heart className={`w-4 h-4 ${likes[place.id] ? "fill-rose-500 text-rose-500" : "text-slate-400"}`} />
+                            <Heart
+                              className={`w-4 h-4 ${likes[place.id] ? "fill-rose-500 text-rose-500" : "text-slate-400"
+                                }`}
+                            />
                           </div>
-                          <span className={`text-[10px] font-black transition-colors ${likes[place.id]?.isUserLiked ? "text-rose-600" : "text-slate-500"}`}>
+                          <span
+                            className={`text-[10px] font-black transition-colors ${likes[place.id]?.isUserLiked ? "text-rose-600" : "text-slate-500"
+                              }`}
+                          >
                             {likes[place.id]?.count || 0}
                           </span>
                         </button>
+
+                        {/* COMMENTS BUTTON */}
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
@@ -5663,11 +5723,24 @@ function App() {
                           <div className="p-2 rounded-full group-hover:bg-indigo-50 dark:group-hover:bg-indigo-950/30 transition-colors">
                             <MessageCircle className="w-4 h-4 text-slate-400" />
                           </div>
-                          <span className="text-[10px] font-bold text-slate-500">{(comments[place.id] || []).length}</span>
+                          <span className="text-[10px] font-bold text-slate-500">
+                            {(comments[place.id] || []).length}
+                          </span>
                         </button>
+
+                        {/* SHARE BUTTON */}
                         <button
-                          onClick={(e) => handleShare(e, place)}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            if (place?.id && typeof handleShareEvent === "function") {
+                              handleShareEvent(place.id, "article");
+                            }
+                            if (typeof handleShare === "function") {
+                              handleShare(e, place);
+                            }
+                          }}
                           className="flex items-center gap-1.5 group outline-none select-none"
+                          aria-label="Share Article"
                         >
                           <div className="p-2 rounded-full group-hover:bg-emerald-50 dark:group-hover:bg-emerald-950/30 transition-colors">
                             <Share2 className="w-4 h-4 text-slate-400 group-hover:text-emerald-500" />
@@ -7180,7 +7253,7 @@ function App() {
       {/* --- MEDIA OVERLAYS --- */}
 
       {/*PHOTO OVERLAY */}
-      {/* PHOTO OVERLAY */}
+
       {activeId && (
         <PhotoGallery
           photos={
