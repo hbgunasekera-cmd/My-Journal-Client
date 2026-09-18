@@ -3132,6 +3132,7 @@ function App() {
   // ============================================================================
   const [isSocialOpen, setIsSocialOpen] = useState(false);
   const [likes, setLikes] = useState({});
+  const [shares, setShares] = useState(0);
   const [comments, setComments] = useState({});
   const [newCommentText, setnewCommentText] = useState('');
 
@@ -3612,16 +3613,26 @@ function App() {
   // ---------------------------------------------------------------------------
   // C. Social Interactions Handlers (Likes & Comments)
   // ---------------------------------------------------------------------------
+
+
   const fetchInteractions = async () => {
     try {
       const meta = await getInteractionMetadata();
-      const userIp = meta.ip || '0.0.0.0';
+      const userIp = meta?.ip || '0.0.0.0';
 
-      const [likesResponse, commentsResponse] = await Promise.all([
+      // Fetch likes, comments, and shares concurrently
+      const [likesResponse, commentsResponse, sharesResponse] = await Promise.all([
         supabaseClient.from('location_likes').select('location_id, ip_address'),
-        supabaseClient.from('location_comments').select('*').order('created_at', { ascending: true })
+        supabaseClient.from('location_comments').select('*').order('created_at', { ascending: true }),
+        supabaseClient.from('location_shares').select('location_id')
       ]);
 
+      // Throw errors if any query fails so they are caught in the catch block
+      if (likesResponse.error) throw likesResponse.error;
+      if (commentsResponse.error) throw commentsResponse.error;
+      if (sharesResponse.error) throw sharesResponse.error;
+
+      // Structure likes count and check if current user IP liked
       const structuredLikes = (likesResponse.data || []).reduce((acc, curr) => {
         const locId = curr.location_id;
         if (!acc[locId]) acc[locId] = { count: 0, isUserLiked: false };
@@ -3630,14 +3641,24 @@ function App() {
         return acc;
       }, {});
 
+      // Group comments by location ID
       const groupedComments = (commentsResponse.data || []).reduce((acc, curr) => {
         if (!acc[curr.location_id]) acc[curr.location_id] = [];
         acc[curr.location_id].push(curr);
         return acc;
       }, {});
 
+      // Count total shares per location ID
+      const structuredShares = (sharesResponse.data || []).reduce((acc, curr) => {
+        const locId = curr.location_id;
+        acc[locId] = (acc[locId] || 0) + 1;
+        return acc;
+      }, {});
+
+      // Update component state safely
       setLikes(structuredLikes);
       setComments(groupedComments);
+      setShares(structuredShares);
     } catch (err) {
       console.error("Interaction Fetch Error:", err);
     }
@@ -5746,9 +5767,10 @@ function App() {
                             <Share2 className="w-4 h-4 text-slate-400 group-hover:text-emerald-500" />
                           </div>
                           <span className="text-xs font-semibold text-slate-500 group-hover:text-emerald-500 transition-colors">
-                            {place?.share_count || 0}
+                            {shares?.[place?.id] || 0}
                           </span>
                         </button>
+
                       </div>
                     )}
 
