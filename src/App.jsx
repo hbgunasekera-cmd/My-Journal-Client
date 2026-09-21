@@ -1330,23 +1330,29 @@ export const RouteWeatherBadge = ({ weatherData, placeId, lat, lng }) => {
 };
 
 
-export const GoogleBottomAd = () => {
+export const GoogleBottomAd = ({
+  adClient = import.meta.env?.VITE_ADSENSE_CLIENT_ID || "ca-pub-XXXXXXXXXXXXXXXX",
+  adSlot = import.meta.env?.VITE_ADSENSE_SLOT_ID || "XXXXXXXXXX"
+}) => {
   const adRef = useRef(null);
   const isMountedRef = useRef(true);
+  const isPushedRef = useRef(false);
 
   useEffect(() => {
     isMountedRef.current = true;
 
     const timer = setTimeout(() => {
       try {
-        // Check component mount status and DOM visibility before initializing AdSense
+        // Verify component mount status, DOM element visibility, and single-push execution before pushing
         if (
           isMountedRef.current &&
+          !isPushedRef.current &&
           adRef.current &&
           adRef.current.offsetParent !== null &&
           typeof window !== 'undefined'
         ) {
           (window.adsbygoogle = window.adsbygoogle || []).push({});
+          isPushedRef.current = true;
         }
       } catch (e) {
         console.error("AdSense Error:", e);
@@ -1364,8 +1370,8 @@ export const GoogleBottomAd = () => {
       <ins
         className="adsbygoogle"
         style={{ display: 'block', width: '100%' }}
-        data-ad-client="ca-pub-XXXXXXXXXXXXXXXX"
-        data-ad-slot="XXXXXXXXXX"
+        data-ad-client={adClient}
+        data-ad-slot={adSlot}
         data-ad-format="auto"
         data-full-width-responsive="true"
         ref={adRef}
@@ -1373,6 +1379,7 @@ export const GoogleBottomAd = () => {
     </div>
   );
 };
+
 
 export const RenderDynamicIcon = ({ iconName, className }) => {
   const IconMap = {
@@ -2348,6 +2355,7 @@ export const VideoGallery = React.memo(({ videos, initialIndex = 0, onClose }) =
   );
 });
 
+
 export const MapComponent = ({
   places = [],
   nearbyAttractions = [],
@@ -2396,18 +2404,20 @@ export const MapComponent = ({
 
   // Helper to standardise line rendering across services
   const renderPolyline = (pathCoords, color = '#ef4444', dashArray = null) => {
-    if (routeLineRef.current) {
+    if (routeLineRef.current && mapInstance.current) {
       mapInstance.current.removeLayer(routeLineRef.current);
     }
-    routeLineRef.current = L.polyline(pathCoords, {
-      color,
-      weight: color === '#ef4444' ? 6 : 4,
-      opacity: 0.9,
-      lineJoin: 'round',
-      ...(dashArray && { dashArray })
-    }).addTo(mapInstance.current);
+    if (mapInstance.current && window.L) {
+      routeLineRef.current = window.L.polyline(pathCoords, {
+        color,
+        weight: color === '#ef4444' ? 6 : 4,
+        opacity: 0.9,
+        lineJoin: 'round',
+        ...(dashArray && { dashArray })
+      }).addTo(mapInstance.current);
 
-    mapInstance.current.fitBounds(routeLineRef.current.getBounds(), { padding: [50, 50] });
+      mapInstance.current.fitBounds(routeLineRef.current.getBounds(), { padding: [50, 50] });
+    }
   };
 
   // Helper to update state metrics
@@ -2425,6 +2435,9 @@ export const MapComponent = ({
 
   // 1. Initialize Map & User Location Marker
   useEffect(() => {
+    const L = window.L;
+    if (!L) return;
+
     if (!mapInstance.current && mapRef.current) {
       mapInstance.current = L.map(mapRef.current, {
         zoomControl: false,
@@ -2434,6 +2447,7 @@ export const MapComponent = ({
       L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}', {
         attribution: 'Tiles &copy; Esri'
       }).addTo(mapInstance.current);
+
       if (mapInstanceRef) mapInstanceRef.current = mapInstance.current;
     }
 
@@ -2441,12 +2455,12 @@ export const MapComponent = ({
       if (!userMarkerRef.current) {
         userMarkerRef.current = L.circleMarker([userCoords.lat, userCoords.lng], {
           radius: 10,
-          fillColor: "#3b82f6",
-          color: "#fff",
+          fillColor: '#3b82f6',
+          color: '#fff',
           weight: 3,
           fillOpacity: 0.9,
           zIndexOffset: 1000
-        }).addTo(mapInstance.current).bindTooltip("You are here");
+        }).addTo(mapInstance.current).bindTooltip('You are here');
       } else {
         userMarkerRef.current.setLatLng([userCoords.lat, userCoords.lng]);
       }
@@ -2455,7 +2469,8 @@ export const MapComponent = ({
 
   // 2. Dynamic Marker Management (Places, Attractions, and Amenities)
   useEffect(() => {
-    if (!mapInstance.current) return;
+    const L = window.L;
+    if (!mapInstance.current || !L) return;
 
     // Normalize Saved Places
     const normalizedPlaces = (places || [])
@@ -2583,7 +2598,7 @@ export const MapComponent = ({
         marker = L.circleMarker([item.lat, item.lng], {
           radius,
           fillColor: markerColor,
-          color: "#ffffff",
+          color: '#ffffff',
           weight: 2,
           fillOpacity: 1,
           pane: 'markerPane'
@@ -2673,13 +2688,13 @@ export const MapComponent = ({
     const destLng = destinationPlace?.longitude ?? destinationPlace?.lng;
 
     if (destLat == null || destLng == null) {
-      console.warn("Invalid destination coordinates for route calculation.");
+      console.warn('Invalid destination coordinates for route calculation.');
       return;
     }
 
     // Final Fallback: Dashed Straight Line
     const renderStraightLineFallback = () => {
-      console.warn("Rendering straight-line fallback.");
+      console.warn('Rendering straight-line fallback.');
       const fallbackCoords = [
         [debouncedUserCoords.lat, debouncedUserCoords.lng],
         ...selectedRoute
@@ -2692,7 +2707,7 @@ export const MapComponent = ({
     // 2. Fallback Service: Google Directions API
     const calculateGoogleDirections = () => {
       if (!window.google || !window.google.maps) {
-        console.warn("Google Maps API unavailable; using straight-line fallback.");
+        console.warn('Google Maps API unavailable; using straight-line fallback.');
         renderStraightLineFallback();
         return;
       }
@@ -2735,7 +2750,7 @@ export const MapComponent = ({
           renderPolyline(pathCoords);
           updateRouteMetrics(distKm, Math.round(totalTimeSecs / 60), pathCoords);
         } else {
-          console.warn("Google Directions Request failed:", status);
+          console.warn('Google Directions Request failed:', status);
           renderStraightLineFallback();
         }
       });
@@ -2772,7 +2787,7 @@ export const MapComponent = ({
         renderPolyline(pathCoords);
         updateRouteMetrics(distKm, durationMins, pathCoords);
       } catch (error) {
-        console.warn("OpenRouteService failed. Falling back to Google Directions API...", error);
+        console.warn('OpenRouteService failed. Falling back to Google Directions API...', error);
         calculateGoogleDirections();
       }
     };
@@ -2788,6 +2803,8 @@ export const MapComponent = ({
 
   return <div ref={mapRef} className="h-full w-full z-0" />;
 };
+
+
 
 export const NewsletterSubscribe = ({ supabaseClient }) => {
   const [email, setEmail] = useState('');
