@@ -2356,6 +2356,12 @@ export const VideoGallery = React.memo(({ videos, initialIndex = 0, onClose }) =
 });
 
 
+/**
+ * ============================================================
+ * MAP COMPONENT
+ * ============================================================
+ */
+
 export const MapComponent = ({
   places = [],
   nearbyAttractions = [],
@@ -3166,13 +3172,19 @@ function App() {
   // 26. EXTERNAL METRIC UTILITIES (WEATHER, MAP POIs)
   // ============================================================================
   const [weatherData, setWeatherData] = useState({});
-  const [activeId, setActiveId] = useState(null);
-  const [activeVideos, setActiveVideos] = useState([]);
   const [nearbyAttractions, setNearbyAttractions] = useState([]);
   const [qrUrl, setQrUrl] = useState(null);
   const fetchedWeatherKeys = useRef(new Set());
+
+  // ============================================================================
+  // 27. VIDEO LIBRARY & MEDIA HUB STATE
+  // ============================================================================
+
   const [videoLibrary, setVideoLibrary] = useState([]);
+  const [activeId, setActiveId] = useState(null);
+  const [activeVideos, setActiveVideos] = useState([]);
   const [isVideosLoading, setIsVideosLoading] = useState(false);
+  const [isVideoHubOpen, setIsVideoHubOpen] = useState(false);
 
   const fetchVideoLibrary = useCallback(async () => {
     if (!supabaseClient) return [];
@@ -3216,7 +3228,7 @@ function App() {
   }, []);
 
   // ============================================================================
-  // 27. PERFORMANCE OPTIMIZATION & DEBOUNCED / DERIVED STATE
+  // 28. PERFORMANCE OPTIMIZATION & DEBOUNCED / DERIVED STATE
   // ============================================================================
   const debouncedSearch = useDebounce(searchTerm, 300);
   const debouncedPlannerSearch = useDebounce(plannerSearch, 300);
@@ -3454,7 +3466,7 @@ function App() {
 
 
   // ============================================================================
-  // 28. EVENT HANDLERS & BUSINESS LOGIC
+  // 29. EVENT HANDLERS & BUSINESS LOGIC
   // ============================================================================
 
   // ---------------------------------------------------------------------------
@@ -3804,7 +3816,7 @@ function App() {
   };
 
   // ===========================================================================
-  // 29. Map, Route Planner & External Service Handlers
+  // 30. Map, Route Planner & External Service Handlers
   // ===========================================================================
 
   // ---------------------------------------------------------------------------
@@ -4715,7 +4727,7 @@ function App() {
   };
 
   // ============================================================================
-  // 30. LIFECYCLE EFFECTS (API calls, Observer, Maps, Theme)
+  // 31. LIFECYCLE EFFECTS (API calls, Observer, Maps, Theme)
   // ============================================================================
 
   useEffect(() => {
@@ -4907,7 +4919,7 @@ function App() {
 
 
   // =======================================================================
-  // 31. VISITATION LOGGING (ARTICLE & GALLERY)
+  // 32. VISITATION LOGGING (ARTICLE & GALLERY)
   // =======================================================================
   useEffect(() => {
     if (isArticleOpen && viewingArticle?.place_name) {
@@ -4933,7 +4945,7 @@ function App() {
   }, [isArticleOpen, viewingArticle, activeId, places]);
 
   // =======================================================================
-  // 32. INITIAL ROUTE & DEEP-LINKING HANDLER
+  // 33. INITIAL ROUTE & DEEP-LINKING HANDLER
   // =======================================================================
 
   useEffect(() => {
@@ -4973,7 +4985,7 @@ function App() {
   }, [places, setActiveId]);
 
   // =======================================================================
-  // 33. MASTER DYNAMIC SEO & META TAG SYNCHRONIZER
+  // 34. MASTER DYNAMIC SEO & META TAG SYNCHRONIZER
   // =======================================================================
   useEffect(() => {
     // Wait if deep-link processing is actively pending
@@ -4997,7 +5009,7 @@ function App() {
   }, [activeId, viewingArticle, isArticleOpen, places, filterTag, debouncedSearch]);
 
   // =======================================================================
-  // 34. PAGINATION RESET ON FILTER CHANGE
+  // 35. PAGINATION RESET ON FILTER CHANGE
   // =======================================================================
   useEffect(() => {
     setVisibleCount(20);
@@ -5219,7 +5231,7 @@ function App() {
   }, []);
 
   // ============================================================================
-  // 35. INTERNAL UI COMPONENTS (Overlays, Skeletons, Disclaimers)
+  // 36. INTERNAL UI COMPONENTS (Overlays, Skeletons, Disclaimers)
   // ============================================================================
 
   const ArticleSkeleton = () => (
@@ -5318,7 +5330,7 @@ function App() {
   };
 
   // ============================================================================
-  // 36. MAIN RENDER STARTS
+  // 37. MAIN RENDER STARTS
   // ============================================================================
 
   return (
@@ -7502,7 +7514,7 @@ function App() {
   );
 
   // ============================================================================
-  // 37.MAIN RENDER ENDS
+  // 38.MAIN RENDER ENDS
   // ===========================================================================
 
 
