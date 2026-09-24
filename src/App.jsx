@@ -2362,6 +2362,7 @@ export const VideoGallery = React.memo(({ videos, initialIndex = 0, onClose }) =
  * ============================================================
  */
 
+
 export const MapComponent = ({
   places = [],
   nearbyAttractions = [],
@@ -2375,7 +2376,17 @@ export const MapComponent = ({
   setRouteData,
   mapInstanceRef,
   handleOpenArticle,
-  isNearbySearchEnabled = false
+
+  // -------------------------------------------------------------
+  // SEARCH TOGGLES
+  // -------------------------------------------------------------
+  // Nearby Places engine ONLY:
+  // Controls nearby attractions, fuel, restaurants and lodgings.
+  isNearbySearchEnabled = false,
+
+  // Location Search → Google Maps Places ONLY:
+  // Controls whether Google Places are included in Location Search.
+  includeGooglePlaces = false
 }) => {
   const mapRef = useRef(null);
   const mapInstance = useRef(null);
@@ -2384,6 +2395,10 @@ export const MapComponent = ({
 
   // Active Polyline Ref
   const routeLineRef = useRef(null);
+
+  // Search States
+  const [searchTerm, setSearchTerm] = useState('');
+  const [searchResults, setSearchResults] = useState([]);
 
   // OpenRouteService API Key from environment variables
   const ORS_KEY = import.meta.env.VITE_ORS_KEY;
@@ -2400,6 +2415,7 @@ export const MapComponent = ({
       attraction: '#06b6d4',
       Location: '#64748b'
     };
+
     return categoryColors[category] || '#64748b';
   };
 
@@ -2409,10 +2425,15 @@ export const MapComponent = ({
   };
 
   // Helper to standardise line rendering across services
-  const renderPolyline = (pathCoords, color = '#ef4444', dashArray = null) => {
+  const renderPolyline = (
+    pathCoords,
+    color = '#ef4444',
+    dashArray = null
+  ) => {
     if (routeLineRef.current && mapInstance.current) {
       mapInstance.current.removeLayer(routeLineRef.current);
     }
+
     if (mapInstance.current && window.L) {
       routeLineRef.current = window.L.polyline(pathCoords, {
         color,
@@ -2422,13 +2443,23 @@ export const MapComponent = ({
         ...(dashArray && { dashArray })
       }).addTo(mapInstance.current);
 
-      mapInstance.current.fitBounds(routeLineRef.current.getBounds(), { padding: [50, 50] });
+      mapInstance.current.fitBounds(
+        routeLineRef.current.getBounds(),
+        { padding: [50, 50] }
+      );
     }
   };
 
   // Helper to update state metrics
-  const updateRouteMetrics = (distKm, durationMins, pathCoords = []) => {
-    if (setRouteDistance) setRouteDistance(distKm);
+  const updateRouteMetrics = (
+    distKm,
+    durationMins,
+    pathCoords = []
+  ) => {
+    if (setRouteDistance) {
+      setRouteDistance(distKm);
+    }
+
     if (setRouteData) {
       setRouteData({
         active: true,
@@ -2439,59 +2470,249 @@ export const MapComponent = ({
     }
   };
 
+  // -------------------------------------------------------------
+  // Location Search Handler
+  //
+  // IMPORTANT:
+  // Location Search Google Maps integration is controlled ONLY
+  // by includeGooglePlaces / "+ Maps".
+  //
+  // It is deliberately NOT controlled by
+  // isNearbySearchEnabled.
+  // -------------------------------------------------------------
+  const handleLocationSearch = useCallback(
+    async (query, includeGoogle) => {
+      if (!query || query.trim() === '') {
+        setSearchResults([]);
+        return;
+      }
+
+      const normalizedQuery = query.trim().toLowerCase();
+
+      // -----------------------------------------------------------
+      // 1. ALWAYS search the local My Journal database
+      // -----------------------------------------------------------
+      const localResults = (places || []).filter(place =>
+        (place.place_name || place.name || '')
+          .toLowerCase()
+          .includes(normalizedQuery) ||
+        (place.locality || '')
+          .toLowerCase()
+          .includes(normalizedQuery)
+      );
+
+      // -----------------------------------------------------------
+      // 2. "+ Maps" OFF
+      //
+      // Return ONLY local/My Journal database results.
+      // -----------------------------------------------------------
+      if (!includeGoogle) {
+        setSearchResults(localResults);
+        return;
+      }
+
+      // -----------------------------------------------------------
+      // 3. "+ Maps" ON
+      //
+      // Search Google Maps Places in addition to local results.
+      // -----------------------------------------------------------
+      try {
+        if (
+          window.google?.maps?.places
+        ) {
+          const autocompleteService =
+            new window.google.maps.places.AutocompleteService();
+
+          autocompleteService.getPlacePredictions(
+            {
+              input: query.trim(),
+              componentRestrictions: {
+                country: 'lk'
+              }
+            },
+            (predictions, status) => {
+              if (
+                status ===
+                window.google.maps.places.PlacesServiceStatus.OK &&
+                predictions
+              ) {
+                const googlePlacesMapped =
+                  predictions.map(p => ({
+                    id: p.place_id,
+
+                    place_name:
+                      p.structured_formatting?.main_text ||
+                      p.description,
+
+                    locality:
+                      p.structured_formatting?.secondary_text ||
+                      '',
+
+                    isGooglePlace: true,
+
+                    description: p.description
+                  }));
+
+                setSearchResults([
+                  ...localResults,
+                  ...googlePlacesMapped
+                ]);
+              } else {
+                setSearchResults(localResults);
+              }
+            }
+          );
+        } else {
+          // Google Maps API unavailable:
+          // gracefully fall back to local database results.
+          setSearchResults(localResults);
+        }
+      } catch (error) {
+        console.error(
+          'Google Places location search error:',
+          error
+        );
+
+        setSearchResults(localResults);
+      }
+    },
+    [places]
+  );
+
+  // -------------------------------------------------------------
+  // Search Input / "+ Maps" Toggle Change Trigger
+  //
+  // IMPORTANT:
+  // Changing Nearby Places state does NOT trigger Location Search.
+  // Changing "+ Maps" DOES trigger Location Search.
+  // -------------------------------------------------------------
+  useEffect(() => {
+    if (searchTerm) {
+      handleLocationSearch(
+        searchTerm,
+        includeGooglePlaces
+      );
+    } else {
+      setSearchResults([]);
+    }
+  }, [
+    searchTerm,
+    includeGooglePlaces,
+    handleLocationSearch
+  ]);
+
+  // -------------------------------------------------------------
   // 1. Initialize Map & User Location Marker
+  // -------------------------------------------------------------
   useEffect(() => {
     const L = window.L;
+
     if (!L) return;
 
     if (!mapInstance.current && mapRef.current) {
       mapInstance.current = L.map(mapRef.current, {
         zoomControl: false,
         attributionControl: true,
-      }).setView([userCoords?.lat || 7.0777, userCoords?.lng || 79.8924], 10);
+      }).setView(
+        [
+          userCoords?.lat || 7.0777,
+          userCoords?.lng || 79.8924
+        ],
+        10
+      );
 
-      L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}', {
-        attribution: 'Tiles &copy; Esri'
-      }).addTo(mapInstance.current);
+      L.tileLayer(
+        'https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}',
+        {
+          attribution: 'Tiles &copy; Esri'
+        }
+      ).addTo(mapInstance.current);
 
-      if (mapInstanceRef) mapInstanceRef.current = mapInstance.current;
+      if (mapInstanceRef) {
+        mapInstanceRef.current = mapInstance.current;
+      }
     }
 
-    if (mapInstance.current && userCoords?.lat && userCoords?.lng) {
+    if (
+      mapInstance.current &&
+      userCoords?.lat &&
+      userCoords?.lng
+    ) {
       if (!userMarkerRef.current) {
-        userMarkerRef.current = L.circleMarker([userCoords.lat, userCoords.lng], {
-          radius: 10,
-          fillColor: '#3b82f6',
-          color: '#fff',
-          weight: 3,
-          fillOpacity: 0.9,
-          zIndexOffset: 1000
-        }).addTo(mapInstance.current).bindTooltip('You are here');
+        userMarkerRef.current = L.circleMarker(
+          [
+            userCoords.lat,
+            userCoords.lng
+          ],
+          {
+            radius: 10,
+            fillColor: '#3b82f6',
+            color: '#fff',
+            weight: 3,
+            fillOpacity: 0.9,
+            zIndexOffset: 1000
+          }
+        )
+          .addTo(mapInstance.current)
+          .bindTooltip('You are here');
       } else {
-        userMarkerRef.current.setLatLng([userCoords.lat, userCoords.lng]);
+        userMarkerRef.current.setLatLng([
+          userCoords.lat,
+          userCoords.lng
+        ]);
       }
     }
   }, [userCoords, mapInstanceRef]);
 
-  // 2. Dynamic Marker Management (Places, Attractions, and Amenities)
+  // -------------------------------------------------------------
+  // 2. Dynamic Marker Management
+  //
+  // Nearby Places remain controlled ONLY by
+  // isNearbySearchEnabled.
+  //
+  // "+ Maps" has NO effect on this section.
+  // -------------------------------------------------------------
   useEffect(() => {
     const L = window.L;
+
     if (!mapInstance.current || !L) return;
 
+    // -----------------------------------------------------------
     // Normalize Saved Places
+    // -----------------------------------------------------------
     const normalizedPlaces = (places || [])
-      .filter(p => !p.isNearby || ['gas_station', 'restaurant', 'lodging', 'Gas Station', 'Restaurant', 'Lodging'].includes(p.category))
+      .filter(
+        p =>
+          !p.isNearby ||
+          [
+            'gas_station',
+            'restaurant',
+            'lodging',
+            'Gas Station',
+            'Restaurant',
+            'Lodging'
+          ].includes(p.category)
+      )
       .map(p => {
         let mappedCategory = p.category || 'Location';
         let registryPrefix = 'place';
 
-        if (p.category === 'Gas Station' || p.category === 'gas_station') {
+        if (
+          p.category === 'Gas Station' ||
+          p.category === 'gas_station'
+        ) {
           mappedCategory = 'gas_station';
           registryPrefix = 'gas';
-        } else if (p.category === 'Restaurant' || p.category === 'restaurant') {
+        } else if (
+          p.category === 'Restaurant' ||
+          p.category === 'restaurant'
+        ) {
           mappedCategory = 'restaurant';
           registryPrefix = 'rest';
-        } else if (p.category === 'Lodging' || p.category === 'lodging') {
+        } else if (
+          p.category === 'Lodging' ||
+          p.category === 'lodging'
+        ) {
           mappedCategory = 'lodging';
           registryPrefix = 'hotel';
         }
@@ -2501,50 +2722,87 @@ export const MapComponent = ({
           category: mappedCategory,
           lat: p.latitude ?? p.lat,
           lng: p.longitude ?? p.lng,
-          title: p.place_name || p.name || 'Location',
-          registryKey: `${registryPrefix}-${p.id}`,
+          title:
+            p.place_name ||
+            p.name ||
+            'Location',
+          registryKey:
+            `${registryPrefix}-${p.id}`,
           isSavedPlace: true
         };
       });
 
-    // Conditionally Normalize Nearby Items ONLY when search toggle is active
-    const normalizedAttractions = isNearbySearchEnabled ? (nearbyAttractions || []).map(a => ({
-      ...a,
-      category: 'attraction',
-      lat: a.lat,
-      lng: a.lng,
-      title: a.name || 'Attraction',
-      registryKey: `attr-${a.id}`,
-    })) : [];
+    // -----------------------------------------------------------
+    // Nearby Attractions
+    //
+    // CONTROLLED ONLY BY isNearbySearchEnabled
+    // -----------------------------------------------------------
+    const normalizedAttractions =
+      isNearbySearchEnabled
+        ? (nearbyAttractions || []).map(a => ({
+          ...a,
+          category: 'attraction',
+          lat: a.lat,
+          lng: a.lng,
+          title: a.name || 'Attraction',
+          registryKey: `attr-${a.id}`,
+        }))
+        : [];
 
-    const normalizedGas = isNearbySearchEnabled ? (routeAmenities?.gas_stations || []).map(g => ({
-      ...g,
-      category: 'gas_station',
-      lat: g.lat,
-      lng: g.lng,
-      title: g.name || 'Fuel Station',
-      registryKey: `gas-${g.id}`,
-    })) : [];
+    // -----------------------------------------------------------
+    // Nearby Gas Stations
+    //
+    // CONTROLLED ONLY BY isNearbySearchEnabled
+    // -----------------------------------------------------------
+    const normalizedGas =
+      isNearbySearchEnabled
+        ? (routeAmenities?.gas_stations || []).map(g => ({
+          ...g,
+          category: 'gas_station',
+          lat: g.lat,
+          lng: g.lng,
+          title: g.name || 'Fuel Station',
+          registryKey: `gas-${g.id}`,
+        }))
+        : [];
 
-    const normalizedRestaurants = isNearbySearchEnabled ? (routeAmenities?.restaurants || []).map(r => ({
-      ...r,
-      category: 'restaurant',
-      lat: r.lat,
-      lng: r.lng,
-      title: r.name || 'Restaurant',
-      registryKey: `rest-${r.id}`,
-    })) : [];
+    // -----------------------------------------------------------
+    // Nearby Restaurants
+    //
+    // CONTROLLED ONLY BY isNearbySearchEnabled
+    // -----------------------------------------------------------
+    const normalizedRestaurants =
+      isNearbySearchEnabled
+        ? (routeAmenities?.restaurants || []).map(r => ({
+          ...r,
+          category: 'restaurant',
+          lat: r.lat,
+          lng: r.lng,
+          title: r.name || 'Restaurant',
+          registryKey: `rest-${r.id}`,
+        }))
+        : [];
 
-    const normalizedLodgings = isNearbySearchEnabled ? (routeAmenities?.lodgings || []).map(h => ({
-      ...h,
-      category: 'lodging',
-      lat: h.lat,
-      lng: h.lng,
-      title: h.name || 'Hotel/Lodging',
-      registryKey: `hotel-${h.id}`,
-    })) : [];
+    // -----------------------------------------------------------
+    // Nearby Lodgings
+    //
+    // CONTROLLED ONLY BY isNearbySearchEnabled
+    // -----------------------------------------------------------
+    const normalizedLodgings =
+      isNearbySearchEnabled
+        ? (routeAmenities?.lodgings || []).map(h => ({
+          ...h,
+          category: 'lodging',
+          lat: h.lat,
+          lng: h.lng,
+          title: h.name || 'Hotel/Lodging',
+          registryKey: `hotel-${h.id}`,
+        }))
+        : [];
 
+    // -----------------------------------------------------------
     // Combine all active layers
+    // -----------------------------------------------------------
     const allItems = [
       ...normalizedPlaces,
       ...normalizedAttractions,
@@ -2553,24 +2811,47 @@ export const MapComponent = ({
       ...normalizedLodgings
     ];
 
-    const currentKeys = new Set(allItems.map(item => item.registryKey));
+    const currentKeys = new Set(
+      allItems.map(item => item.registryKey)
+    );
 
-    // Cleanup markers removed when toggle turns OFF or state updates
-    Object.keys(markerRegistryRef.current).forEach(key => {
+    // -----------------------------------------------------------
+    // Cleanup markers removed when toggle turns OFF
+    // or state updates
+    // -----------------------------------------------------------
+    Object.keys(
+      markerRegistryRef.current
+    ).forEach(key => {
       if (!currentKeys.has(key)) {
-        mapInstance.current.removeLayer(markerRegistryRef.current[key]);
+        mapInstance.current.removeLayer(
+          markerRegistryRef.current[key]
+        );
+
         delete markerRegistryRef.current[key];
       }
     });
 
+    // -----------------------------------------------------------
     // Render & Update Active Markers
+    // -----------------------------------------------------------
     allItems.forEach(item => {
-      if (item.lat == null || item.lng == null) return;
+      if (
+        item.lat == null ||
+        item.lng == null
+      ) {
+        return;
+      }
 
-      const isSelected = selectedRoute.some(p => p.id === item.id);
-      const isHovered = hoveredPlaceId === item.id;
+      const isSelected =
+        selectedRoute.some(
+          p => p.id === item.id
+        );
 
-      let markerColor = getCategoryHex(item.category);
+      const isHovered =
+        hoveredPlaceId === item.id;
+
+      let markerColor =
+        getCategoryHex(item.category);
 
       if (item.status === 'pending') {
         markerColor = '#f97316';
@@ -2584,83 +2865,178 @@ export const MapComponent = ({
         markerColor = '#10b981';
       }
 
-      const radius = (isSelected || isHovered) ? 9 : 6;
+      const radius =
+        (isSelected || isHovered)
+          ? 9
+          : 6;
+
       const slug = getSlug(item);
 
-      const isPublished = item.status === 'done';
-      const placeUrl = isPublished ? `/place/${slug}` : null;
+      const isPublished =
+        item.status === 'done';
+
+      const placeUrl =
+        isPublished
+          ? `/place/${slug}`
+          : null;
 
       const popupContent = `
         <div class="map-popup-node">
-          <a ${isPublished ? `href="${placeUrl}"` : `href="javascript:void(0);"`} class="font-bold text-slate-800 hover:text-indigo-600 transition-colors">
+          <a
+            ${isPublished
+          ? `href="${placeUrl}"`
+          : `href="javascript:void(0);"`
+        }
+            class="font-bold text-slate-800 hover:text-indigo-600 transition-colors"
+          >
             ${item.title}
           </a>
         </div>
       `;
 
-      let marker = markerRegistryRef.current[item.registryKey];
+      let marker =
+        markerRegistryRef.current[
+        item.registryKey
+        ];
 
       if (!marker) {
-        marker = L.circleMarker([item.lat, item.lng], {
-          radius,
+        marker = L.circleMarker(
+          [
+            item.lat,
+            item.lng
+          ],
+          {
+            radius,
+            fillColor: markerColor,
+            color: '#ffffff',
+            weight: 2,
+            fillOpacity: 1,
+            pane: 'markerPane'
+          }
+        );
+
+        if (item.isSavedPlace) {
+          marker.bindPopup(
+            popupContent
+          );
+        } else {
+          marker.bindTooltip(
+            item.title
+          );
+        }
+
+        marker.addTo(
+          mapInstance.current
+        );
+
+        markerRegistryRef.current[
+          item.registryKey
+        ] = marker;
+      } else {
+        marker.setStyle({
           fillColor: markerColor,
-          color: '#ffffff',
-          weight: 2,
-          fillOpacity: 1,
-          pane: 'markerPane'
+          radius
         });
 
         if (item.isSavedPlace) {
-          marker.bindPopup(popupContent);
+          marker.setPopupContent(
+            popupContent
+          );
         } else {
-          marker.bindTooltip(item.title);
-        }
-
-        marker.addTo(mapInstance.current);
-        markerRegistryRef.current[item.registryKey] = marker;
-      } else {
-        marker.setStyle({ fillColor: markerColor, radius });
-        if (item.isSavedPlace) {
-          marker.setPopupContent(popupContent);
-        } else {
-          marker.setTooltipContent(item.title);
+          marker.setTooltipContent(
+            item.title
+          );
         }
       }
 
+      // ---------------------------------------------------------
       // Refresh Click Handlers
+      // ---------------------------------------------------------
       marker.off('click');
-      marker.on('click', () => {
-        if (setHoveredPlaceId) setHoveredPlaceId(item.id);
 
-        // Fetch nearby attractions on click STRICTLY when toggle is enabled
-        if (item.isSavedPlace && fetchAttractions && isNearbySearchEnabled) {
-          fetchAttractions(item.lat, item.lng);
+      marker.on('click', () => {
+        if (setHoveredPlaceId) {
+          setHoveredPlaceId(item.id);
         }
 
-        if (typeof handleOpenArticle === 'function') {
+        // -------------------------------------------------------
+        // Nearby Places action
+        //
+        // STRICTLY controlled by isNearbySearchEnabled.
+        // "+ Maps" does NOT affect this.
+        // -------------------------------------------------------
+        if (
+          item.isSavedPlace &&
+          fetchAttractions &&
+          isNearbySearchEnabled
+        ) {
+          fetchAttractions(
+            item.lat,
+            item.lng
+          );
+        }
+
+        if (
+          typeof handleOpenArticle ===
+          'function'
+        ) {
           handleOpenArticle(item);
-        } else if (isPublished && placeUrl) {
-          window.history.pushState({ placeId: item.id }, '', placeUrl);
+        } else if (
+          isPublished &&
+          placeUrl
+        ) {
+          window.history.pushState(
+            { placeId: item.id },
+            '',
+            placeUrl
+          );
         }
       });
 
+      // ---------------------------------------------------------
       // Intercept Popup Links for SPA Navigation
+      // ---------------------------------------------------------
       if (item.isSavedPlace) {
         marker.off('popupopen');
-        marker.on('popupopen', (e) => {
-          const popupNode = e.popup.getElement();
-          const anchor = popupNode?.querySelector('a');
-          if (anchor) {
-            anchor.onclick = (evt) => {
-              evt.preventDefault();
-              if (typeof handleOpenArticle === 'function') {
-                handleOpenArticle(item);
-              } else if (isPublished && placeUrl) {
-                window.history.pushState({ placeId: item.id }, '', placeUrl);
-              }
-            };
+
+        marker.on(
+          'popupopen',
+          (e) => {
+            const popupNode =
+              e.popup.getElement();
+
+            const anchor =
+              popupNode?.querySelector(
+                'a'
+              );
+
+            if (anchor) {
+              anchor.onclick = (
+                evt
+              ) => {
+                evt.preventDefault();
+
+                if (
+                  typeof handleOpenArticle ===
+                  'function'
+                ) {
+                  handleOpenArticle(
+                    item
+                  );
+                } else if (
+                  isPublished &&
+                  placeUrl
+                ) {
+                  window.history.pushState(
+                    { placeId: item.id },
+                    '',
+                    placeUrl
+                  );
+                }
+              };
+            }
           }
-        });
+        );
       }
     });
   }, [
@@ -2672,143 +3048,369 @@ export const MapComponent = ({
     fetchAttractions,
     setHoveredPlaceId,
     handleOpenArticle,
+
+    // Nearby Places dependency ONLY
     isNearbySearchEnabled
   ]);
 
-  // 3. Routing Engine (Tiered Strategy: OpenRouteService -> Google Directions API -> Polyline Fallback)
+  // -------------------------------------------------------------
+  // 3. Routing Engine
+  //
+  // Tiered Strategy:
+  // OpenRouteService → Google Directions API
+  // → Straight-line fallback
+  //
+  // This remains independent of both search toggles.
+  // -------------------------------------------------------------
   useEffect(() => {
-    if (!mapInstance.current || !debouncedUserCoords) return;
+    if (
+      !mapInstance.current ||
+      !debouncedUserCoords
+    ) {
+      return;
+    }
 
     if (selectedRoute.length === 0) {
       if (routeLineRef.current) {
-        mapInstance.current.removeLayer(routeLineRef.current);
+        mapInstance.current.removeLayer(
+          routeLineRef.current
+        );
+
         routeLineRef.current = null;
       }
-      if (setRouteDistance) setRouteDistance(0);
-      if (setRouteData) setRouteData(null);
+
+      if (setRouteDistance) {
+        setRouteDistance(0);
+      }
+
+      if (setRouteData) {
+        setRouteData(null);
+      }
+
       return;
     }
 
-    const destinationPlace = selectedRoute[selectedRoute.length - 1];
-    const destLat = destinationPlace?.latitude ?? destinationPlace?.lat;
-    const destLng = destinationPlace?.longitude ?? destinationPlace?.lng;
-
-    if (destLat == null || destLng == null) {
-      console.warn('Invalid destination coordinates for route calculation.');
-      return;
-    }
-
-    // Final Fallback: Dashed Straight Line
-    const renderStraightLineFallback = () => {
-      console.warn('Rendering straight-line fallback.');
-      const fallbackCoords = [
-        [debouncedUserCoords.lat, debouncedUserCoords.lng],
-        ...selectedRoute
-          .map(p => [p.latitude ?? p.lat, p.longitude ?? p.lng])
-          .filter(([lat, lng]) => lat != null && lng != null)
+    const destinationPlace =
+      selectedRoute[
+      selectedRoute.length - 1
       ];
-      renderPolyline(fallbackCoords, '#6366f1', '8, 8');
-    };
 
+    const destLat =
+      destinationPlace?.latitude ??
+      destinationPlace?.lat;
+
+    const destLng =
+      destinationPlace?.longitude ??
+      destinationPlace?.lng;
+
+    if (
+      destLat == null ||
+      destLng == null
+    ) {
+      console.warn(
+        'Invalid destination coordinates for route calculation.'
+      );
+
+      return;
+    }
+
+    // -----------------------------------------------------------
+    // Final Fallback: Dashed Straight Line
+    // -----------------------------------------------------------
+    const renderStraightLineFallback =
+      () => {
+        console.warn(
+          'Rendering straight-line fallback.'
+        );
+
+        const fallbackCoords = [
+          [
+            debouncedUserCoords.lat,
+            debouncedUserCoords.lng
+          ],
+          ...selectedRoute
+            .map(p => [
+              p.latitude ?? p.lat,
+              p.longitude ?? p.lng
+            ])
+            .filter(
+              ([lat, lng]) =>
+                lat != null &&
+                lng != null
+            )
+        ];
+
+        renderPolyline(
+          fallbackCoords,
+          '#6366f1',
+          '8, 8'
+        );
+      };
+
+    // -----------------------------------------------------------
     // 2. Fallback Service: Google Directions API
-    const calculateGoogleDirections = () => {
-      if (!window.google || !window.google.maps) {
-        console.warn('Google Maps API unavailable; using straight-line fallback.');
-        renderStraightLineFallback();
-        return;
-      }
+    // -----------------------------------------------------------
+    const calculateGoogleDirections =
+      () => {
+        if (
+          !window.google ||
+          !window.google.maps
+        ) {
+          console.warn(
+            'Google Maps API unavailable; using straight-line fallback.'
+          );
 
-      const directionsService = new window.google.maps.DirectionsService();
-      const origin = new window.google.maps.LatLng(debouncedUserCoords.lat, debouncedUserCoords.lng);
-      const destination = new window.google.maps.LatLng(destLat, destLng);
-
-      const waypoints = selectedRoute.slice(0, -1).reduce((acc, p) => {
-        const lat = p.latitude ?? p.lat;
-        const lng = p.longitude ?? p.lng;
-        if (lat != null && lng != null) {
-          acc.push({
-            location: new window.google.maps.LatLng(lat, lng),
-            stopover: true
-          });
-        }
-        return acc;
-      }, []);
-
-      directionsService.route({
-        origin,
-        destination,
-        waypoints,
-        optimizeWaypoints: false,
-        travelMode: window.google.maps.TravelMode.DRIVING
-      }, (response, status) => {
-        if (status === 'OK' && response?.routes?.[0]) {
-          const route = response.routes[0];
-          const pathCoords = route.overview_path.map(p => [p.lat(), p.lng()]);
-
-          let totalDistMeters = 0;
-          let totalTimeSecs = 0;
-          route.legs.forEach(leg => {
-            totalDistMeters += leg.distance.value;
-            totalTimeSecs += leg.duration.value;
-          });
-
-          const distKm = (totalDistMeters / 1000).toFixed(1);
-          renderPolyline(pathCoords);
-          updateRouteMetrics(distKm, Math.round(totalTimeSecs / 60), pathCoords);
-        } else {
-          console.warn('Google Directions Request failed:', status);
           renderStraightLineFallback();
+          return;
         }
-      });
-    };
 
-    // 1. Primary Service: OpenRouteService (Free)
-    const calculateORS = async () => {
-      try {
-        const coordsList = [[debouncedUserCoords.lng, debouncedUserCoords.lat]];
-        selectedRoute.forEach(p => {
-          const lat = p.latitude ?? p.lat;
-          const lng = p.longitude ?? p.lng;
-          if (lat != null && lng != null) coordsList.push([lng, lat]);
-        });
+        const directionsService =
+          new window.google.maps.DirectionsService();
 
-        const response = await fetch('https://api.openrouteservice.org/v2/directions/driving-car/geojson', {
-          method: 'POST',
-          headers: {
-            'Authorization': ORS_KEY,
-            'Content-Type': 'application/json'
+        const origin =
+          new window.google.maps.LatLng(
+            debouncedUserCoords.lat,
+            debouncedUserCoords.lng
+          );
+
+        const destination =
+          new window.google.maps.LatLng(
+            destLat,
+            destLng
+          );
+
+        const waypoints =
+          selectedRoute
+            .slice(0, -1)
+            .reduce(
+              (acc, p) => {
+                const lat =
+                  p.latitude ?? p.lat;
+
+                const lng =
+                  p.longitude ?? p.lng;
+
+                if (
+                  lat != null &&
+                  lng != null
+                ) {
+                  acc.push({
+                    location:
+                      new window.google.maps.LatLng(
+                        lat,
+                        lng
+                      ),
+                    stopover: true
+                  });
+                }
+
+                return acc;
+              },
+              []
+            );
+
+        directionsService.route(
+          {
+            origin,
+            destination,
+            waypoints,
+            optimizeWaypoints: false,
+            travelMode:
+              window.google.maps
+                .TravelMode.DRIVING
           },
-          body: JSON.stringify({ coordinates: coordsList })
-        });
+          (
+            response,
+            status
+          ) => {
+            if (
+              status === 'OK' &&
+              response?.routes?.[0]
+            ) {
+              const route =
+                response.routes[0];
 
-        if (!response.ok) throw new Error(`ORS HTTP Error: ${response.status}`);
+              const pathCoords =
+                route.overview_path.map(
+                  p => [
+                    p.lat(),
+                    p.lng()
+                  ]
+                );
 
-        const data = await response.json();
-        const route = data.features[0];
-        const pathCoords = route.geometry.coordinates.map(coord => [coord[1], coord[0]]);
+              let totalDistMeters = 0;
+              let totalTimeSecs = 0;
 
-        const distKm = (route.properties.summary.distance / 1000).toFixed(1);
-        const durationMins = Math.round(route.properties.summary.duration / 60);
+              route.legs.forEach(
+                leg => {
+                  totalDistMeters +=
+                    leg.distance.value;
 
-        renderPolyline(pathCoords);
-        updateRouteMetrics(distKm, durationMins, pathCoords);
-      } catch (error) {
-        console.warn('OpenRouteService failed. Falling back to Google Directions API...', error);
-        calculateGoogleDirections();
-      }
-    };
+                  totalTimeSecs +=
+                    leg.duration.value;
+                }
+              );
 
-    // Trigger primary service if key exists; otherwise jump to secondary fallback
+              const distKm =
+                (
+                  totalDistMeters /
+                  1000
+                ).toFixed(1);
+
+              renderPolyline(
+                pathCoords
+              );
+
+              updateRouteMetrics(
+                distKm,
+                Math.round(
+                  totalTimeSecs /
+                  60
+                ),
+                pathCoords
+              );
+            } else {
+              console.warn(
+                'Google Directions Request failed:',
+                status
+              );
+
+              renderStraightLineFallback();
+            }
+          }
+        );
+      };
+
+    // -----------------------------------------------------------
+    // 1. Primary Service: OpenRouteService (Free)
+    // -----------------------------------------------------------
+    const calculateORS =
+      async () => {
+        try {
+          const coordsList = [
+            [
+              debouncedUserCoords.lng,
+              debouncedUserCoords.lat
+            ]
+          ];
+
+          selectedRoute.forEach(
+            p => {
+              const lat =
+                p.latitude ?? p.lat;
+
+              const lng =
+                p.longitude ?? p.lng;
+
+              if (
+                lat != null &&
+                lng != null
+              ) {
+                coordsList.push([
+                  lng,
+                  lat
+                ]);
+              }
+            }
+          );
+
+          const response =
+            await fetch(
+              'https://api.openrouteservice.org/v2/directions/driving-car/geojson',
+              {
+                method: 'POST',
+                headers: {
+                  'Authorization':
+                    ORS_KEY,
+                  'Content-Type':
+                    'application/json'
+                },
+                body: JSON.stringify({
+                  coordinates:
+                    coordsList
+                })
+              }
+            );
+
+          if (!response.ok) {
+            throw new Error(
+              `ORS HTTP Error: ${response.status}`
+            );
+          }
+
+          const data =
+            await response.json();
+
+          const route =
+            data.features[0];
+
+          const pathCoords =
+            route.geometry.coordinates.map(
+              coord => [
+                coord[1],
+                coord[0]
+              ]
+            );
+
+          const distKm =
+            (
+              route.properties
+                .summary.distance /
+              1000
+            ).toFixed(1);
+
+          const durationMins =
+            Math.round(
+              route.properties
+                .summary.duration /
+              60
+            );
+
+          renderPolyline(
+            pathCoords
+          );
+
+          updateRouteMetrics(
+            distKm,
+            durationMins,
+            pathCoords
+          );
+        } catch (error) {
+          console.warn(
+            'OpenRouteService failed. Falling back to Google Directions API...',
+            error
+          );
+
+          calculateGoogleDirections();
+        }
+      };
+
+    // -----------------------------------------------------------
+    // Trigger primary service if key exists;
+    // otherwise jump to secondary fallback
+    // -----------------------------------------------------------
     if (ORS_KEY) {
       calculateORS();
     } else {
       calculateGoogleDirections();
     }
+  }, [
+    selectedRoute,
+    debouncedUserCoords,
+    setRouteData,
+    setRouteDistance,
+    ORS_KEY
+  ]);
 
-  }, [selectedRoute, debouncedUserCoords, setRouteData, setRouteDistance, ORS_KEY]);
-
-  return <div ref={mapRef} className="h-full w-full z-0" />;
+  return (
+    <div
+      ref={mapRef}
+      className="h-full w-full z-0"
+    />
+  );
 };
+
+
 
 
 
@@ -3115,6 +3717,10 @@ function App() {
   const [enRouteAttractions, setEnRouteAttractions] = useState([]);
   const [isCalculatingSuggestions, setIsCalculatingSuggestions] = useState(false);
   const [isNearbySearchEnabled, setIsNearbySearchEnabled] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [includeGooglePlaces, setIncludeGooglePlaces] = useState(false);
+  const [searchResults, setSearchResults] = useState([]);
+  const [isSearching, setIsSearching] = useState(false);
 
   // Data states for the markers
   const [routeAmenities, setRouteAmenities] = useState({
@@ -3132,6 +3738,8 @@ function App() {
       default: return cat;
     }
   };
+
+
 
   // ============================================================================
   // 23. CONTENT CREATION & NEW LOCATION FORM STATE
@@ -4208,84 +4816,169 @@ function App() {
 
 
   // ---------------------------------------------------------------------------
-  // 3. Effects & Autocomplete Initialization
+  // 3. Effects & Autocomplete Initialization [ LOCATION SEARCH GOOGLE MAPS GATE]
   // ---------------------------------------------------------------------------
+
   useEffect(() => {
     let placeChangedListener = null;
 
+    const destroyPlannerAutocomplete = () => {
+      if (placeChangedListener) {
+        try {
+          placeChangedListener.remove?.();
+        } catch (e) {
+          // Safe cleanup
+        }
+        placeChangedListener = null;
+      }
+
+      if (autocompleteRef.current) {
+        try {
+          if (window.google?.maps?.event) {
+            window.google.maps.event.clearInstanceListeners(
+              autocompleteRef.current
+            );
+          }
+        } catch (e) {
+          // Safe cleanup
+        }
+
+        autocompleteRef.current = null;
+      }
+    };
+
     const initPlannerAutocomplete = async () => {
-      // 1. Guard clause: Ensure script and DOM element exist
+      // -------------------------------------------------------------
+      // HARD GATE:
+      // Google Maps Places Autocomplete belongs ONLY to the
+      // Location Search "+ Maps" toggle.
+      //
+      // This is intentionally NOT tied to nearby-search state.
+      // -------------------------------------------------------------
       if (
-        !window.google ||
-        !window.google.maps ||
+        !isPlannerOpen ||
+        !includeGooglePlaces ||
+        !window.google?.maps ||
         !searchInputRef.current ||
         !(searchInputRef.current instanceof HTMLInputElement)
       ) {
+        destroyPlannerAutocomplete();
         return;
       }
 
-      // 2. Prevent duplicate instances on the same input
+      // Prevent duplicate instances
       if (autocompleteRef.current) {
         return;
       }
 
       try {
-        const { Autocomplete } = await window.google.maps.importLibrary("places");
+        const { Autocomplete } =
+          await window.google.maps.importLibrary("places");
 
-        autocompleteRef.current = new Autocomplete(searchInputRef.current, {
-          fields: ["place_id", "geometry", "name", "formatted_address"],
-        });
+        // Re-check after async library loading.
+        // The user may have switched the toggle OFF while
+        // Google Places was loading.
+        if (
+          !isPlannerOpen ||
+          !includeGooglePlaces ||
+          !searchInputRef.current
+        ) {
+          return;
+        }
 
-        // 3. Store the listener so we can clean it up later
-        placeChangedListener = autocompleteRef.current.addListener("place_changed", () => {
-          const place = autocompleteRef.current.getPlace();
-
-          if (place.geometry) {
-            const lat = place.geometry.location.lat();
-            const lng = place.geometry.location.lng();
-
-            const newWaypoint = {
-              id: crypto.randomUUID(), // 4. Prevents duplicate React keys if same place is added twice
-              place_id: place.place_id,
-              place_name: place.name,
-              lat: lat,
-              lng: lng,
-              latitude: lat,
-              longitude: lng,
-            };
-
-            setSelectedRoute(prev => [...prev, newWaypoint]);
-
-            if (searchInputRef.current) {
-              searchInputRef.current.value = '';
+        autocompleteRef.current = new Autocomplete(
+          searchInputRef.current,
+          {
+            fields: [
+              "place_id",
+              "geometry",
+              "name",
+              "formatted_address"
+            ],
+            componentRestrictions: {
+              country: "lk"
             }
-
-            setPlannerSearch('');
           }
-        });
+        );
+
+        placeChangedListener =
+          autocompleteRef.current.addListener(
+            "place_changed",
+            () => {
+              // Ignore stale Google callbacks if the toggle
+              // was switched OFF before the callback fired.
+              if (!includeGooglePlaces) {
+                return;
+              }
+
+              const place =
+                autocompleteRef.current?.getPlace();
+
+              if (!place?.geometry) {
+                return;
+              }
+
+              const lat =
+                place.geometry.location.lat();
+
+              const lng =
+                place.geometry.location.lng();
+
+              const newWaypoint = {
+                id: crypto.randomUUID(),
+                place_id: place.place_id,
+                place_name: place.name,
+                lat,
+                lng,
+                latitude: lat,
+                longitude: lng,
+              };
+
+              setSelectedRoute(prev => [
+                ...prev,
+                newWaypoint
+              ]);
+
+              if (searchInputRef.current) {
+                searchInputRef.current.value = "";
+              }
+
+              setPlannerSearch("");
+            }
+          );
+
       } catch (error) {
-        console.error("Failed to initialize Google Places Autocomplete:", error);
+        console.error(
+          "Failed to initialize Google Places Autocomplete:",
+          error
+        );
+
+        destroyPlannerAutocomplete();
       }
     };
 
-    if (isPlannerOpen) {
+    // -------------------------------------------------------------
+    // Toggle / Planner State
+    // -------------------------------------------------------------
+    if (isPlannerOpen && includeGooglePlaces) {
       initPlannerAutocomplete();
+    } else {
+      // IMPORTANT:
+      // Turning "+ Maps" OFF immediately destroys the existing
+      // Google Autocomplete instance.
+      destroyPlannerAutocomplete();
     }
 
-    // 5. Cleanup Function
     return () => {
-      // Remove the event listener to prevent duplicate triggers
-      if (placeChangedListener) {
-        placeChangedListener.remove();
-      }
-
-      // If the planner is closed and the input unmounts, clear the ref 
-      // so it knows to re-initialize next time it opens.
-      if (!isPlannerOpen) {
-        autocompleteRef.current = null;
-      }
+      destroyPlannerAutocomplete();
     };
-  }, [isPlannerOpen]);
+
+  }, [
+    isPlannerOpen,
+    includeGooglePlaces,
+    setSelectedRoute,
+    setPlannerSearch
+  ]);
 
   // ---------------------------------------------------------------------------
   // 4. Route Planning & Management Handlers
@@ -6802,7 +7495,6 @@ function App() {
             {/* LEFT SIDE: MAP ENGINE (Full Screen on Mobile) */}
             <div className="absolute inset-0 md:relative md:inset-auto md:h-full md:w-[60%] bg-slate-100 dark:bg-slate-950 z-0 overflow-hidden">
               <MapComponent
-                // Places feed dynamically based on planner state
                 places={isPlannerOpen ? plannerFilteredPlaces : filteredPlaces}
                 nearbyAttractions={nearbyAttractions}
                 routeAmenities={routeAmenities}
@@ -6810,13 +7502,16 @@ function App() {
                 selectedRoute={selectedRoute}
                 hoveredPlaceId={hoveredPlaceId}
                 setHoveredPlaceId={setHoveredPlaceId}
-                // Spatial data fetching and route state handlers
                 fetchAttractions={fetchRoutePlaceData}
                 setRouteDistance={setRouteDistance}
                 setRouteData={setRouteData}
-                // Toggle gatekeeper state for nearby searches & amenities
+
+                // Nearby Places engine ONLY
                 isNearbySearchEnabled={isNearbySearchEnabled}
-                // Component references & navigation callbacks
+
+                // Location Search → Google Maps Places ONLY
+                includeGooglePlaces={includeGooglePlaces}
+
                 mapInstanceRef={mapRef}
                 routeLineRef={routeLineRef}
                 handleOpenArticle={handleOpenArticle}
@@ -6909,19 +7604,59 @@ function App() {
                   </div>
                 </div>
 
-                {/* Unified Search Bar (Google Places Autocomplete Input) */}
-                <div className={`relative transition-opacity duration-300 ${!isPlannerExpanded ? 'opacity-0 md:opacity-100 pointer-events-none md:pointer-events-auto' : 'opacity-100'}`}>
-                  <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-                  <input
-                    id="planner-autocomplete-input"
-                    ref={searchInputRef}
-                    type="text"
-                    value={plannerSearch}
-                    onChange={(e) => setPlannerSearch(e.target.value)}
-                    placeholder="Search database or global places..."
-                    autoComplete="off"
-                    className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-xl py-2.5 pl-11 pr-4 text-[11px] font-bold uppercase tracking-widest text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-indigo-500/10 outline-none transition-all"
-                  />
+                {/* Unified Search Bar with Scope Toggle */}
+                <div className={`relative mt-3 transition-opacity duration-300 ${!isPlannerExpanded ? 'opacity-0 md:opacity-100 pointer-events-none md:pointer-events-auto' : 'opacity-100'}`}>
+                  <div className="relative flex items-center bg-slate-50 dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-xl focus-within:ring-2 focus-within:ring-indigo-500/20 transition-all">
+                    <Search className="w-4 h-4 text-slate-400 ml-3.5 shrink-0" />
+
+                    <input
+                      id="planner-autocomplete-input"
+                      ref={searchInputRef}
+                      type="text"
+                      value={plannerSearch}
+                      onChange={(e) => setPlannerSearch(e.target.value)}
+                      placeholder={
+                        includeGooglePlaces
+                          ? "Search Location (Global)"
+                          : "Search Location (Bucket List)"
+                      }
+                      autoComplete="off"
+                      className="w-full bg-transparent py-2.5 px-3 text-[11px] font-bold uppercase tracking-widest text-slate-800 dark:text-slate-100 placeholder:text-slate-400 outline-none"
+                    />
+
+                    {/* Google Places Toggle Switch */}
+                    <div className="flex items-center gap-1.5 border-l border-slate-200 dark:border-slate-700 pl-2.5 pr-2 shrink-0">
+                      <span className="text-[9px] font-extrabold uppercase tracking-wider text-slate-400 select-none hidden sm:inline">
+                        + Maps
+                      </span>
+                      <button
+                        type="button"
+                        role="switch"
+                        aria-checked={includeGooglePlaces}
+                        onClick={() => setIncludeGooglePlaces(!includeGooglePlaces)}
+                        className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${includeGooglePlaces ? 'bg-indigo-600' : 'bg-slate-300 dark:bg-slate-600'
+                          }`}
+                        title={includeGooglePlaces ? "Search Scope: Bucket List + Google Places" : "Search Scope: Bucket List Only"}
+                      >
+                        <span
+                          className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow-sm ring-0 transition duration-200 ease-in-out ${includeGooglePlaces ? 'translate-x-4' : 'translate-x-0'
+                            }`}
+                        />
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Dynamic Search Scope Label */}
+                  <div className="flex items-center justify-between mt-1 px-1">
+                    <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">
+                      Scope: {includeGooglePlaces ? 'Bucket List + Google Maps Places' : 'Bucket List Only'}
+                    </span>
+                    {isSearching && (
+                      <span className="text-[9px] font-bold text-indigo-500 uppercase tracking-widest animate-pulse">
+                        Searching...
+                      </span>
+                    )}
+                  </div>
                 </div>
               </div>
 
