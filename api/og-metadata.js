@@ -4,7 +4,7 @@ function generateSlug(name) {
   return String(name)
     .toLowerCase()
     .trim()
-    .normalize("NFD")                    // Decompose accented characters
+    .normalize("NFD")                   // Decompose accented characters
     .replace(/[\u0300-\u036f]/g, "")    // Strip diacritic mark overlays
     .replace(/[–—]/g, "-")              // Convert En-dash & Em-dash to standard hyphens
     .replace(/[^a-z0-9\s-]/g, "")       // Keep only alphanumeric characters, spaces, and hyphens
@@ -48,6 +48,18 @@ export default async function handler(req, res) {
   const cleanSlug = generateSlug(decodedName) || rawSlug;
   const requestUrl = `${baseUrl}/${routeType}/${cleanSlug}`;
 
+  // =======================================================================
+  // ACTION 1: 301 Redirect for Mixed-Case / Un-normalized URLs
+  // =======================================================================
+  // If a bot accesses "Place/Diyanagala Viewpoint", rawSlug won't match cleanSlug.
+  // We instantly issue a 301 redirect to "/place/diyanagala-viewpoint" before doing DB work.
+  if (rawSlug && rawSlug !== cleanSlug) {
+    res.setHeader("Location", requestUrl);
+    // Tell CDNs and bots to cache this permanent redirect
+    res.setHeader("Cache-Control", "s-maxage=31536000, immutable");
+    return res.status(301).end();
+  }
+
   // 2. Set Baseline SEO Defaults
   let title = decodedName
     ? `${decodedName} | My Journal`
@@ -69,6 +81,7 @@ export default async function handler(req, res) {
 
     if (SUPABASE_URL && SUPABASE_KEY && (rawSlug || decodedName)) {
       // Synchronized status filtering with sitemap logic & fallback name matching
+      // ilike safely handles case-insensitive lookups for the newly lowercase decodedName
       const statusFilter = "status=in.(done,Completed,Visited)";
       const matchFilter = `or=(slug.eq.${encodeURIComponent(rawSlug)},place_name.ilike.${encodeURIComponent(decodedName)})`;
       const queryUrl = `${SUPABASE_URL}/rest/v1/travel_bucket_list?${statusFilter}&${matchFilter}&select=place_name,cover_photo_url,ai_article&limit=1`;
@@ -131,12 +144,17 @@ export default async function handler(req, res) {
       ? `<meta name="robots" content="noindex, follow" />`
       : `<meta name="robots" content="index, follow, max-image-preview:large" />`;
 
+    // =======================================================================
+    // ACTION 2: Canonical Tags Implemented
+    // =======================================================================
     // Build complete Open Graph, Twitter, and Canonical meta tags block
     const metaBlock = `
       <!-- Dynamic SEO & Social Sharing Tags -->
       <title>${safeTitle}</title>
       <meta name="description" content="${safeDescription}" />
       ${robotsTag}
+      
+      <!-- Canonical correctly enforcing the normalized requestUrl -->
       <link rel="canonical" href="${safeRequestUrl}" />
 
       <!-- Open Graph / Facebook / WhatsApp -->
