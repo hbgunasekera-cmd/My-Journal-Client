@@ -896,25 +896,32 @@ export const logVisit = async (path = null) => {
   const utmSource = (urlParams.get('utm_source') || '').toLowerCase();
   const rawPath = path || window.location.pathname;
 
+  // Ensure a leading slash and uniform lowercasing for route checking
+  const trimmedPath = (rawPath || '').trim();
+  const normalizedPath = trimmedPath.startsWith('/') ? trimmedPath : `/${trimmedPath}`;
+  const lowerPath = normalizedPath.toLowerCase();
+
   let loggingPath = rawPath;
-  if (rawPath === '/' || rawPath === '' || rawPath === 'Main Page') {
+
+  if (lowerPath === '/' || lowerPath === '/main page' || lowerPath === '') {
     loggingPath = 'Main Page';
-  } else if (rawPath === 'Video Gallery' || rawPath.startsWith('/videos') || rawPath.startsWith('/video-gallery')) {
+  } else if (lowerPath === '/video gallery' || lowerPath.startsWith('/videos') || lowerPath.startsWith('/video-gallery')) {
     loggingPath = 'Video Gallery';
-  } else if (rawPath === 'Add Function' || rawPath === '/add') {
+  } else if (lowerPath === '/add function' || lowerPath === '/add') {
     loggingPath = 'Add Function';
-  } else if (rawPath === 'Plan Function' || rawPath === '/plan') {
+  } else if (lowerPath === '/plan function' || lowerPath === '/plan') {
     loggingPath = 'Plan Function';
-  } else if (rawPath.startsWith('/place/')) {
-    const slug = rawPath.replace('/place/', '').split('?')[0].replace(/\/$/, '');
-    loggingPath = `Place/${safeDecode(slug).toLowerCase().trim().replace(/-/g, ' ')}`;
-  } else if (rawPath.startsWith('/gallery/')) {
-    const slug = rawPath.replace('/gallery/', '').split('?')[0].replace(/\/$/, '');
-    loggingPath = `Gallery/${safeDecode(slug).toLowerCase().trim().replace(/-/g, ' ')}`;
-  } else if (rawPath.startsWith('/')) {
-    loggingPath = safeDecode(rawPath.split('?')[0]).toLowerCase().replace(/^\/+|\/+$/g, '');
+  } else if (lowerPath.startsWith('/place/')) {
+    const slug = normalizedPath.slice(7).split('?')[0].replace(/\/$/, '');
+    const formattedSlug = safeDecode(slug).toLowerCase().trim().replace(/['’]/g, '').replace(/-/g, ' ');
+    loggingPath = `Place/${formattedSlug}`;
+  } else if (lowerPath.startsWith('/gallery/')) {
+    const slug = normalizedPath.slice(9).split('?')[0].replace(/\/$/, '');
+    const formattedSlug = safeDecode(slug).toLowerCase().trim().replace(/['’]/g, '').replace(/-/g, ' ');
+    loggingPath = `Gallery/${formattedSlug}`;
+  } else if (normalizedPath.startsWith('/')) {
+    loggingPath = safeDecode(normalizedPath.split('?')[0]).toLowerCase().replace(/^\/+|\/+$/g, '');
   } else {
-    // Retains explicitly passed custom labels (e.g., custom display names)
     loggingPath = rawPath;
   }
 
@@ -1505,6 +1512,7 @@ export const PhotoGallery = React.memo(
             : encodeURIComponent(rawName.toLowerCase());
         const galleryPath = `/gallery/${gallerySlug}`;
 
+        // Dynamic URL update (Triggers automated page-watcher/analytics without manual log calls)
         if (window.location.pathname !== galleryPath) {
           window.history.pushState(
             {
@@ -1605,7 +1613,7 @@ export const PhotoGallery = React.memo(
 
     /*
      * ============================================================
-     * PINTEREST
+     * PINTEREST INTEGRATION
      * ============================================================
      */
     const handlePinterestSave = (e, imageUrl, locationData) => {
@@ -1719,7 +1727,7 @@ export const PhotoGallery = React.memo(
 
     /*
      * ============================================================
-     * SAFETY
+     * SAFETY CHECK
      * ============================================================
      */
     if (!photos || photos.length === 0) {
@@ -1908,7 +1916,7 @@ export const PhotoGallery = React.memo(
             {/* NEXT */}
             <button
               type="button"
-              className="absolute right-4 top-1/2 -translate-y-1/2 w-14 h-14 flex items-center justify-center bg-white/5 hover:bg-white/20 text-white rounded-full transition-all z-[12000]"
+              className="absolute right-4 top-1/2 -translate-y-1/2 w-14 h-14 flex items-center justify-center bg-white/5 hover:bg-white/20 text-white rounded-all transition-all z-[12000]"
               onClick={(e) => {
                 nextImage(e);
                 setIsSlideshowActive(false);
