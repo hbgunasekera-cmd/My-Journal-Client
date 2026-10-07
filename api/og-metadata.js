@@ -4,13 +4,13 @@ function generateSlug(name) {
   return String(name)
     .toLowerCase()
     .trim()
-    .normalize("NFD")                   // Decompose accented characters
-    .replace(/[\u0300-\u036f]/g, "")    // Strip diacritic mark overlays
-    .replace(/[–—]/g, "-")              // Convert En-dash & Em-dash to standard hyphens
-    .replace(/[^a-z0-9\s-]/g, "")       // Keep only alphanumeric characters, spaces, and hyphens
-    .replace(/\s+/g, "-")               // Replace spaces with single hyphens
-    .replace(/-+/g, "-")                // Collapse multiple hyphens
-    .replace(/^-+|-+$/g, "");           // Strip leading and trailing hyphens
+    .normalize("NFD") // Decompose accented characters
+    .replace(/[\u0300-\u036f]/g, "") // Strip diacritic mark overlays
+    .replace(/[–—]/g, "-") // Convert En-dash & Em-dash to standard hyphens
+    .replace(/[^a-z0-9\s-]/g, "") // Keep only alphanumeric characters, spaces, and hyphens
+    .replace(/\s+/g, "-") // Replace spaces with single hyphens
+    .replace(/-+/g, "-") // Collapse multiple hyphens
+    .replace(/^-+|-+$/g, ""); // Strip leading and trailing hyphens
 }
 
 // Helper function to sanitize text for safe HTML attribute and tag insertion
@@ -42,10 +42,11 @@ export default async function handler(req, res) {
     "https://www.myjournalview.com"
   ).replace(/\/$/, "");
 
-  const routeType = type || "place";
-  
+  // Force routeType to be strictly lowercase ("place" or "gallery")
+  const routeType = (type || "place").toLowerCase();
+
   // Clean the slug using the uniform slugification utility
-  const cleanSlug = generateSlug(decodedName) || rawSlug;
+  const cleanSlug = generateSlug(decodedName) || generateSlug(rawSlug);
   const requestUrl = `${baseUrl}/${routeType}/${cleanSlug}`;
 
   // =======================================================================
@@ -72,19 +73,22 @@ export default async function handler(req, res) {
 
   // 3. Fetch Location Data from Supabase
   try {
-    const SUPABASE_URL =
-      process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
-    const SUPABASE_KEY =
-      process.env.SUPABASE_KEY ||
+    const SUPABASE_URL = process.env.SUPABASE_URL ||
+      process.env.VITE_SUPABASE_URL;
+    const SUPABASE_KEY = process.env.SUPABASE_KEY ||
       process.env.VITE_SUPABASE_KEY ||
       process.env.VITE_SUPABASE_ANON_KEY;
 
     if (SUPABASE_URL && SUPABASE_KEY && (rawSlug || decodedName)) {
-      // Synchronized status filtering with sitemap logic & fallback name matching
-      // ilike safely handles case-insensitive lookups for the newly lowercase decodedName
+      // Synchronized status filtering with case-insensitive ilike slug lookups
       const statusFilter = "status=in.(done,Completed,Visited)";
-      const matchFilter = `or=(slug.eq.${encodeURIComponent(rawSlug)},place_name.ilike.${encodeURIComponent(decodedName)})`;
-      const queryUrl = `${SUPABASE_URL}/rest/v1/travel_bucket_list?${statusFilter}&${matchFilter}&select=place_name,cover_photo_url,ai_article&limit=1`;
+      const matchFilter = `or=(slug.ilike.${
+        encodeURIComponent(cleanSlug)
+      },slug.ilike.${encodeURIComponent(rawSlug)},place_name.ilike.${
+        encodeURIComponent(decodedName)
+      })`;
+      const queryUrl =
+        `${SUPABASE_URL}/rest/v1/travel_bucket_list?${statusFilter}&${matchFilter}&select=place_name,cover_photo_url,ai_article&limit=1`;
 
       const response = await fetch(queryUrl, {
         headers: {
@@ -100,14 +104,13 @@ export default async function handler(req, res) {
         if (rows && rows.length > 0) {
           const place = rows[0];
 
-          title =
-            routeType === "gallery"
-              ? `${place.place_name} Gallery | My Journal`
-              : `${place.place_name} | My Journal`;
+          title = routeType === "gallery"
+            ? `${place.place_name} Gallery | My Journal`
+            : `${place.place_name} | My Journal`;
 
           if (place.ai_article?.story) {
-            description =
-              place.ai_article.story.substring(0, 155).trim() + "...";
+            description = place.ai_article.story.substring(0, 155).trim() +
+              "...";
           }
 
           if (place.cover_photo_url) {
@@ -202,9 +205,9 @@ export default async function handler(req, res) {
     res.setHeader("Content-Type", "text/html; charset=utf-8");
     res.setHeader(
       "Cache-Control",
-      "s-maxage=3600, stale-while-revalidate=86400"
+      "s-maxage=3600, stale-while-revalidate=86400",
     );
-    
+
     // Return 404 status header if database record doesn't exist, otherwise 200
     return res.status(isNotFound ? 404 : 200).send(html);
   } catch (error) {

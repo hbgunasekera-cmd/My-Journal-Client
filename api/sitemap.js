@@ -141,8 +141,8 @@ export default async function handler(req, res) {
     // 5. Append dynamic routes based on database records
     if (places.length > 0) {
       places.forEach((place) => {
-        // Prioritize database 'slug' column over dynamic generateSlug fallback
-        const locationSlug = place.slug || generateSlug(place.place_name);
+        // Pass place.slug or place.place_name through generateSlug to guarantee lowercasing & normalization
+        const locationSlug = generateSlug(place.slug || place.place_name);
 
         if (locationSlug) {
           const cleanSlug = escapeXml(locationSlug);

@@ -679,10 +679,12 @@ export const updateSEO = (place = null, options = {}) => {
     const placeName = place.place_name.trim();
     const categoryName = place.category || "Attraction";
     const localityName = place.locality ? `, ${place.locality}` : "";
+
+    // Normalize using place.slug first, falling back to place_name, piped through generateSlug
     const slug =
       typeof generateSlug === "function"
-        ? generateSlug(placeName)
-        : encodeURIComponent(placeName.toLowerCase());
+        ? generateSlug(place.slug || placeName)
+        : encodeURIComponent((place.slug || placeName).toLowerCase());
 
     if (isGallery) {
       title = `${placeName} Photos (${categoryName})${BRAND_SUFFIX}`;
@@ -1504,8 +1506,8 @@ export const PhotoGallery = React.memo(
       const locationObj =
         selectedLocation || (placeName ? { place_name: placeName } : null);
 
-      if (locationObj?.place_name) {
-        const rawName = String(locationObj.place_name);
+      if (locationObj?.place_name || locationObj?.slug) {
+        const rawName = String(locationObj.slug || locationObj.place_name);
         const gallerySlug =
           typeof generateSlug === 'function'
             ? generateSlug(rawName)
@@ -1621,13 +1623,14 @@ export const PhotoGallery = React.memo(
 
       const locationName =
         locationData?.place_name || placeName || 'New Discovery';
+      const rawSlugOrName = locationData?.slug || locationName;
       const rawCategory = locationData?.category || 'Location';
       const baseUrl = 'https://www.myjournalview.com';
 
       const formattedLocation =
         typeof generateSlug === 'function'
-          ? generateSlug(locationName)
-          : encodeURIComponent(locationName.toLowerCase());
+          ? generateSlug(rawSlugOrName)
+          : encodeURIComponent(String(rawSlugOrName).toLowerCase());
 
       const sourceUrl = `${baseUrl}/gallery/${formattedLocation}?utm_source=pinterest_save_btn`;
 
