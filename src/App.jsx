@@ -6728,13 +6728,13 @@ function App() {
 
                 {/* Privacy Policy Route */}
                 <a
-                  href="/?view=privacy"
+                  href="/privacy"
                   className="text-[10px] font-black text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200 uppercase tracking-widest transition-colors"
                   onClick={(e) => {
                     e.preventDefault();
                     setLegalView('privacy');
                     setIsPrivacyOpen(true);
-                    window.history.pushState({}, '', '/?view=privacy');
+                    window.history.pushState({}, '', '/privacy');
                   }}
                 >
                   {t('legal.privacy_title')}
@@ -6742,13 +6742,13 @@ function App() {
 
                 {/* Terms of Service Route */}
                 <a
-                  href="/?view=terms"
+                  href="/terms"
                   className="text-[10px] font-black text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200 uppercase tracking-widest transition-colors"
                   onClick={(e) => {
                     e.preventDefault();
                     setLegalView('terms');
                     setIsPrivacyOpen(true);
-                    window.history.pushState({}, '', '/?view=terms');
+                    window.history.pushState({}, '', '/terms');
                   }}
                 >
                   {t('legal.terms_title')}
@@ -6756,13 +6756,13 @@ function App() {
 
                 {/* Ad-Engine Trackable About Summary Route */}
                 <a
-                  href="/?view=about"
+                  href="/about"
                   className="text-[10px] font-black text-indigo-600 hover:text-indigo-800 dark:text-indigo-400 dark:hover:text-indigo-300 uppercase tracking-widest transition-colors"
                   onClick={(e) => {
                     e.preventDefault();
                     setLegalView('about');
                     setIsPrivacyOpen(true);
-                    window.history.pushState({}, '', '/?view=about');
+                    window.history.pushState({}, '', '/about');
                   }}
                 >
                   {t('footer.about')}
@@ -6779,6 +6779,35 @@ function App() {
                 >
                   {t('footer.contact_support')}
                 </a>
+              </div>
+
+              {/* Social & Community Links */}
+              <div className="flex flex-wrap justify-center items-center gap-x-2 gap-y-1.5 text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed px-4">
+                <a href="https://web.facebook.com/profile.php?id=61571059524746" target="_blank" rel="noopener noreferrer" className="hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors">Facebook</a>
+                <span className="text-slate-300 dark:text-slate-700">|</span>
+                <a href="https://www.youtube.com/@myjournalview" target="_blank" rel="noopener noreferrer" className="hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors">YouTube</a>
+                <span className="text-slate-300 dark:text-slate-700">|</span>
+                <a href="https://www.tiktok.com/@myjournalview" target="_blank" rel="noopener noreferrer" className="hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors">TikTok</a>
+                <span className="text-slate-300 dark:text-slate-700">|</span>
+                <a href="https://www.instagram.com/myjournalview" target="_blank" rel="noopener noreferrer" className="hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors">Instagram</a>
+                <span className="text-slate-300 dark:text-slate-700">|</span>
+                <a href="https://www.pinterest.com/myjournalview" target="_blank" rel="noopener noreferrer" className="hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors">Pinterest</a>
+                <span className="text-slate-300 dark:text-slate-700">|</span>
+                <a href="https://www.threads.net/@myjournalview" target="_blank" rel="noopener noreferrer" className="hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors">Threads</a>
+                <span className="text-slate-300 dark:text-slate-700">|</span>
+                <a href="https://mastodon.social/@myjournal" target="_blank" rel="me noopener noreferrer" className="hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors">Mastodon</a>
+                <span className="text-slate-300 dark:text-slate-700">|</span>
+                <a href="https://bsky.app/profile/myjournalview.com" target="_blank" rel="noopener noreferrer" className="hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors">Bluesky</a>
+                <span className="text-slate-300 dark:text-slate-700">|</span>
+                <a href="https://flipboard.com/@MyJournalView" target="_blank" rel="noopener noreferrer" className="hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors">Flipboard</a>
+                <span className="text-slate-300 dark:text-slate-700">|</span>
+                <a href="https://x.com/MyJournalView" target="_blank" rel="noopener noreferrer" className="hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors">Twitter</a>
+                <span className="text-slate-300 dark:text-slate-700">|</span>
+                <a href="https://unsplash.com/@myjournalview" target="_blank" rel="noopener noreferrer" className="hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors">Unsplash</a>
+                <span className="text-slate-300 dark:text-slate-700">|</span>
+                <a href="https://discord.gg/gV3ez5sHe" target="_blank" rel="noopener noreferrer" className="hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors">Discord</a>
+                <span className="text-slate-300 dark:text-slate-700">|</span>
+                <a href="https://surf.social/feed/surf%2Fcustom%2F01krgmm2q431csk9w5550n1b9k" target="_blank" rel="noopener noreferrer" className="hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors">Surf</a>
               </div>
 
               {/* Branding & Digital Rights Footer Metadata */}

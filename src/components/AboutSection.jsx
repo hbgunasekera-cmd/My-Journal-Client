@@ -20,6 +20,7 @@ const AboutSection = () => {
   const titleStyle = { fontSize: '20px', fontWeight: '700', color: '#0f172a', margin: '0 0 8px 0' };
   const subHeadingStyle = { fontSize: '18px', fontWeight: '700', color: '#0f172a', margin: '0 0 12px 0' };
   const sectionStyle = { marginBottom: '40px' };
+  const linkStyle = { color: '#3b82f6', textDecoration: 'none' };
 
   return (
     <div style={containerStyle}>
@@ -67,14 +68,43 @@ const AboutSection = () => {
         </article>
       </main>
 
-      <footer style={{ marginTop: '60px', paddingTop: '24px', borderTop: '1px solid #e2e8f0', textAlign: 'center', fontSize: '13px', color: '#64748b' }}>
-        <p style={{ margin: '0 0 8px 0' }}>© 2026 My Journal • Hasitha Gunasekera. All Rights Reserved.</p>
-        <p style={{ margin: '0' }}>
-          <a href="/?view=privacy" style={{ color: '#3b82f6', textDecoration: 'none' }}>Privacy Policy</a> |
-          {' '}
-          <a href="/?view=terms" style={{ color: '#3b82f6', textDecoration: 'none' }}>Terms of Service</a> |
-          {' '}
-          <a rel="me" href="https://mastodon.social/@myjournal" style={{ color: '#3b82f6', textDecoration: 'none' }}>Mastodon</a>
+      <footer
+        style={{
+          marginTop: '60px',
+          paddingTop: '24px',
+          paddingBottom: '24px',
+          borderTop: '1px solid #e2e8f0',
+          textAlign: 'center',
+          fontSize: '13px',
+          color: '#64748b'
+        }}
+      >
+        <p style={{ margin: '0 0 10px 0' }}>
+          © 2026 My Journal • Hasitha Gunasekera. All Rights Reserved.
+        </p>
+
+        {/* Site Pages */}
+        <p style={{ margin: '0 0 10px 0' }}>
+          <a href="/about" style={linkStyle}>About</a> |{' '}
+          <a href="/privacy" style={linkStyle}>Privacy Policy</a> |{' '}
+          <a href="/terms" style={linkStyle}>Terms of Service</a>
+        </p>
+
+        {/* Social & Community Links */}
+        <p style={{ margin: '0', lineHeight: '1.8' }}>
+          <a href="https://web.facebook.com/profile.php?id=61571059524746" style={linkStyle} target="_blank" rel="noopener noreferrer">Facebook</a> |{' '}
+          <a href="https://www.youtube.com/@myjournalview" style={linkStyle} target="_blank" rel="noopener noreferrer">YouTube</a> |{' '}
+          <a href="https://www.tiktok.com/@myjournalview" style={linkStyle} target="_blank" rel="noopener noreferrer">TikTok</a> |{' '}
+          <a href="https://www.instagram.com/myjournalview" style={linkStyle} target="_blank" rel="noopener noreferrer">Instagram</a> |{' '}
+          <a href="https://www.pinterest.com/myjournalview" style={linkStyle} target="_blank" rel="noopener noreferrer">Pinterest</a> |{' '}
+          <a href="https://www.threads.net/@myjournalview" style={linkStyle} target="_blank" rel="noopener noreferrer">Threads</a> |{' '}
+          <a href="https://mastodon.social/@myjournal" style={linkStyle} target="_blank" rel="me noopener noreferrer">Mastodon</a> |{' '}
+          <a href="https://bsky.app/profile/myjournalview.com" style={linkStyle} target="_blank" rel="noopener noreferrer">Bluesky</a> |{' '}
+          <a href="https://flipboard.com/@MyJournalView" style={linkStyle} target="_blank" rel="noopener noreferrer">Flipboard</a> |{' '}
+          <a href="https://x.com/MyJournalView" style={linkStyle} target="_blank" rel="noopener noreferrer">Twitter</a> |{' '}
+          <a href="https://unsplash.com/@myjournalview" style={linkStyle} target="_blank" rel="noopener noreferrer">Unsplash</a> |{' '}
+          <a href="https://discord.gg/gV3ez5sHe" style={linkStyle} target="_blank" rel="noopener noreferrer">Discord</a> |{' '}
+          <a href="https://surf.social/feed/surf%2Fcustom%2F01krgmm2q431csk9w5550n1b9k" style={linkStyle} target="_blank" rel="noopener noreferrer">Surf</a>
         </p>
       </footer>
     </div>
