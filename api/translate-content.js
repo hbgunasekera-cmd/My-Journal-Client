@@ -161,9 +161,11 @@ export default async function handler(req, res) {
     return res.status(429).json({ error: "Translation limit reached. Try again shortly." });
   }
 
-  const apiKey = process.env.ARTICLE_KEY;
+  const apiKey = process.env.ARTICLE_KEY || process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY;
   if (!apiKey) {
-    return res.status(503).json({ error: "Translation service is not configured." });
+    return res.status(503).json({
+      error: "Translation service is not configured. Set ARTICLE_KEY, GEMINI_API_KEY, or GOOGLE_API_KEY in the server environment.",
+    });
   }
 
   const body = req.body || {};
