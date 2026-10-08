@@ -73,6 +73,10 @@ function parseDate(value) {
     return Number.isNaN(date.getTime()) ? null : date;
 }
 
+function isMissingColumnError(error) {
+    return error?.code === "42703" || error?.code === "PGRST204";
+}
+
 function getHttpUrl(value, fallback) {
     try {
         const url = new URL(String(value));
@@ -180,6 +184,8 @@ export default async function handler(req, res) {
 
         let videos = [];
         let page = 0;
+        let videoColumns = "id,url,title,description,custom_thumbnail_url,upload_date,published_at,created_at,is_active";
+        const coreVideoColumns = "id,url,title,custom_thumbnail_url,is_active";
 
         const pageSize = 1000;
         let fetchMore = true;
@@ -194,33 +200,46 @@ export default async function handler(req, res) {
                 error,
             } = await supabase
                 .from("hub_videos")
-                .select(`
-          id,
-          url,
-          title,
-          description,
-          custom_thumbnail_url,
-          upload_date,
-          published_at,
-          created_at,
-          is_active
-        `)
+                .select(videoColumns)
                 .eq("is_active", true)
                 .order("id", { ascending: true })
                 .range(from, to);
 
-            if (error) {
-                throw error;
+            let pageData = data;
+            let pageError = error;
+
+            // Description and date columns are optional in hub_videos. Retry with
+            // the fields used by the app if this deployment's schema omits them.
+            if (pageError && isMissingColumnError(pageError) && videoColumns !== coreVideoColumns) {
+                console.warn(
+                    "Video sitemap is using core hub_videos columns because optional metadata columns are unavailable.",
+                    pageError.message,
+                );
+                videoColumns = coreVideoColumns;
+
+                const fallbackResult = await supabase
+                    .from("hub_videos")
+                    .select(videoColumns)
+                    .eq("is_active", true)
+                    .order("id", { ascending: true })
+                    .range(from, to);
+
+                pageData = fallbackResult.data;
+                pageError = fallbackResult.error;
+            }
+
+            if (pageError) {
+                throw pageError;
             }
 
             if (
-                data &&
-                data.length > 0
+                pageData &&
+                pageData.length > 0
             ) {
-                videos = videos.concat(data);
+                videos = videos.concat(pageData);
 
                 if (
-                    data.length <
+                    pageData.length <
                         pageSize
                 ) {
                     fetchMore = false;
