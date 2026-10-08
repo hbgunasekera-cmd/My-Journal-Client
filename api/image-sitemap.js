@@ -202,10 +202,7 @@ export default async function handler(req, res) {
         // -------------------------------------------------------------------
 
         let xml = `<?xml version="1.0" encoding="UTF-8"?>
-
-<urlset
-  xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
-  xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">`;
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">`;
 
         // -------------------------------------------------------------------
         // 5. Add images
@@ -268,7 +265,6 @@ export default async function handler(req, res) {
             }
 
             xml += `
-
   <url>
     <loc>${escapeXml(pageUrl)}</loc>
     ${lastModTag}`;
@@ -287,10 +283,17 @@ export default async function handler(req, res) {
                     index,
                 );
 
-                xml += `
+                // Convert relative image paths to absolute URLs (required by Google)
+                let absoluteImageUrl = imageUrl;
+                try {
+                    absoluteImageUrl = new URL(imageUrl, baseUrl).href;
+                } catch {
+                    // Fallback to raw string if parsing fails
+                }
 
+                xml += `
     <image:image>
-      <image:loc>${escapeXml(imageUrl)}</image:loc>
+      <image:loc>${escapeXml(absoluteImageUrl)}</image:loc>
       <image:title>${escapeXml(title)}</image:title>
       <image:caption>${escapeXml(caption)}</image:caption>
     </image:image>`;
@@ -313,7 +316,7 @@ export default async function handler(req, res) {
 
         res.setHeader(
             "Content-Type",
-            "application/xml; charset=utf-8",
+            "text/xml; charset=utf-8",
         );
 
         res.setHeader(

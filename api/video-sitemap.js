@@ -192,7 +192,6 @@ export default async function handler(req, res) {
 
         while (fetchMore) {
             const from = page * pageSize;
-
             const to = from + pageSize - 1;
 
             const {
@@ -232,16 +231,10 @@ export default async function handler(req, res) {
                 throw pageError;
             }
 
-            if (
-                pageData &&
-                pageData.length > 0
-            ) {
+            if (pageData && pageData.length > 0) {
                 videos = videos.concat(pageData);
 
-                if (
-                    pageData.length <
-                        pageSize
-                ) {
+                if (pageData.length < pageSize) {
                     fetchMore = false;
                 } else {
                     page++;
@@ -256,10 +249,7 @@ export default async function handler(req, res) {
         // -------------------------------------------------------------------
 
         let xml = `<?xml version="1.0" encoding="UTF-8"?>
-
-<urlset
-  xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
-  xmlns:video="http://www.google.com/schemas/sitemap-video/1.1">`;
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:video="http://www.google.com/schemas/sitemap-video/1.1">`;
 
         // -------------------------------------------------------------------
         // 5. Add videos
@@ -306,42 +296,22 @@ export default async function handler(req, res) {
             const parsedPublicationDate = parseDate(publicationDate);
 
             xml += `
-
   <url>
     <loc>${escapeXml(watchPageUrl)}</loc>
-
     <video:video>
-
-      <video:thumbnail_loc>
-        ${escapeXml(thumbnail)}
-      </video:thumbnail_loc>
-
-      <video:title>
-        ${escapeXml(title)}
-      </video:title>
-
-      <video:description>
-        ${escapeXml(description)}
-      </video:description>
-
-      <video:player_loc>
-        https://www.youtube.com/embed/${escapeXml(youtubeId)}
-      </video:player_loc>`;
+      <video:thumbnail_loc>${escapeXml(thumbnail)}</video:thumbnail_loc>
+      <video:title>${escapeXml(title)}</video:title>
+      <video:description>${escapeXml(description)}</video:description>
+      <video:player_loc>https://www.youtube.com/embed/${escapeXml(youtubeId)}</video:player_loc>`;
 
             if (parsedPublicationDate) {
                 xml += `
-
-      <video:publication_date>
-        ${parsedPublicationDate.toISOString()}
-      </video:publication_date>`;
+      <video:publication_date>${parsedPublicationDate.toISOString()}</video:publication_date>`;
             }
 
             xml += `
-
       <video:family_friendly>yes</video:family_friendly>
-
     </video:video>
-
   </url>`;
         });
 
@@ -358,7 +328,7 @@ export default async function handler(req, res) {
 
         res.setHeader(
             "Content-Type",
-            "application/xml; charset=utf-8",
+            "text/xml; charset=utf-8",
         );
 
         res.setHeader(
