@@ -164,7 +164,7 @@ export default async function handler(req, res) {
   const apiKey = process.env.ARTICLE_KEY;
   if (!apiKey) {
     return res.status(503).json({
-      error: "Translation service is not configured. Set ARTICLE_KEY in the server environment.",
+      error: "Translation Key Not Configured",
     });
   }
 
@@ -223,7 +223,7 @@ export default async function handler(req, res) {
       console.warn(`Translation model ${modelName} failed:`, error.message);
       if (isBrowserReferrerRestrictedKey(error)) {
         return res.status(503).json({
-          error: "The Gemini API key is restricted to browser referrers. This translation endpoint runs server-side; use a Gemini key restricted to the Generative Language API and update ARTICLE_KEY.",
+          error: "Translation Error",
         });
       }
     }
