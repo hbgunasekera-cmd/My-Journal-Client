@@ -69,10 +69,8 @@ function localTranslationApi() {
 // Keep ARTICLE_KEY in the Node dev-server process; never expose it through import.meta.env.
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '');
-  for (const keyName of ['ARTICLE_KEY', 'GEMINI_API_KEY', 'GOOGLE_API_KEY']) {
-    if (!process.env[keyName] && env[keyName]) {
-      process.env[keyName] = env[keyName];
-    }
+  if (!process.env.ARTICLE_KEY && env.ARTICLE_KEY) {
+    process.env.ARTICLE_KEY = env.ARTICLE_KEY;
   }
 
   return {
