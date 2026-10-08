@@ -467,7 +467,8 @@ const getLocalizedValue = (item, baseKey, currentLanguage = "en") => {
   const lang = currentLanguage.split("-")[0].toLowerCase();
   if (lang === "en") return item[baseKey] || "";
   const localizedKey = `${baseKey}_${lang}`;
-  return item[localizedKey] || item[baseKey] || "";
+  const legacyLang = lang === "id" ? "in" : lang === "ko" ? "kr" : null;
+  return item[localizedKey] || (legacyLang && item[`${baseKey}_${legacyLang}`]) || item[baseKey] || "";
 };
 
 const getSafeHttpUrl = (value) => {
@@ -3780,8 +3781,8 @@ export const calculateMealAndStayMilestones = (routeData) => {
 
 const SUPPORTED_LANGUAGES = {
   'ar': 'Arabic', 'de': 'German', 'en': 'English', 'es': 'Spanish',
-  'fr': 'French', 'he': 'Hebrew', 'hi': 'Hindi', 'in': 'Indonesian', 'it': 'Italian',
-  'ja': 'Japanese', 'kr': 'Korean', 'nl': 'Dutch', 'pl': 'Polish',
+  'fr': 'French', 'he': 'Hebrew', 'hi': 'Hindi', 'id': 'Indonesian', 'it': 'Italian',
+  'ja': 'Japanese', 'ko': 'Korean', 'nl': 'Dutch', 'pl': 'Polish',
   'pt': 'Portuguese', 'ru': 'Russian', 'si': 'Sinhala', 'sr': 'Serbian',
   'sv': 'Swedish', 'th': 'Thai', 'tr': 'Turkish', 'uk': 'Ukrainian', 'zh': 'Chinese'
 };
@@ -3799,13 +3800,8 @@ export const translateContentService = async (ai_article, targetLangCode, articl
     return ai_article;
   }
 
-  const sourceFields = JSON.stringify({
-    seo_intro: ai_article.seo_intro || "",
-    story: ai_article.story || "",
-    history: ai_article.history || "",
-    why_visit_summary: ai_article.why_visit?.summary || "",
-  });
-  const cacheKey = "v5:" + baseLang + ":" + String(articleId || "article") + ":" + sourceFields;
+  const sourceFields = JSON.stringify(ai_article);
+  const cacheKey = "v6:" + baseLang + ":" + String(articleId || "article") + ":" + sourceFields;
 
   // 2. Cache hit check
   if (translationCache.has(cacheKey)) {
@@ -3818,10 +3814,11 @@ export const translateContentService = async (ai_article, targetLangCode, articl
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ article: ai_article, targetLangCode: baseLang }),
     });
-    if (!response.ok) throw new Error(`Translation service returned ${response.status}.`);
-
-    const payload = await response.json();
-    if (!payload.translation || typeof payload.translation !== "object") {
+    const payload = await response.json().catch(() => null);
+    if (!response.ok) {
+      throw new Error(payload?.error || `Translation service returned ${response.status}.`);
+    }
+    if (!payload?.translation || typeof payload.translation !== "object") {
       throw new Error("Translation service returned an invalid response.");
     }
 
@@ -10560,8 +10557,10 @@ function App() {
   }, [isArticleOpen, activeId, isPlannerOpen, isAddOpen]);
 
   useEffect(() => {
-    if (i18n.language !== 'en') i18n.changeLanguage('en');
-  }, [i18n]);
+    const language = (i18n.resolvedLanguage || i18n.language || 'en').split('-')[0].toLowerCase();
+    document.documentElement.lang = language;
+    document.documentElement.dir = ['ar', 'he'].includes(language) ? 'rtl' : 'ltr';
+  }, [i18n, i18n.language, i18n.resolvedLanguage]);
 
   useEffect(() => {
     let isCurrent = true;
@@ -10585,9 +10584,9 @@ function App() {
           toast.success("Translation complete!", { id: activeToastId });
           activeToastId = null;
         }
-      } catch {
+      } catch (error) {
         if (isCurrent) {
-          toast.error("Translation failed. Showing original.", { id: activeToastId });
+          toast.error(error.message || "Translation failed. Showing original.", { id: activeToastId });
           setTranslatedContent(null);
           activeToastId = null;
         }
@@ -11205,7 +11204,7 @@ function App() {
               <Globe className="absolute left-2.5 w-3.5 h-3.5 text-slate-400 pointer-events-none" />
               <select
                 onChange={changeLanguage}
-                defaultValue={i18n.language}
+                value={(i18n.resolvedLanguage || i18n.language || 'en').split('-')[0]}
                 className="bg-slate-50 text-slate-700 border border-slate-200 rounded-xl pl-8 pr-7 py-2 text-[10px] font-black uppercase appearance-none focus:outline-none focus:border-indigo-500 shadow-sm cursor-pointer transition-all w-full"
               >
                 <option value="en">EN</option>
@@ -11216,10 +11215,10 @@ function App() {
                 <option value="fr">FR</option>
                 <option value="he">HE</option>
                 <option value="hi">HI</option>
-                <option value="in">IN</option>
+                <option value="id">ID</option>
                 <option value="it">IT</option>
                 <option value="ja">JA</option>
-                <option value="kr">KO</option>
+                <option value="ko">KO</option>
                 <option value="nl">NL</option>
                 <option value="pl">PL</option>
                 <option value="pt">PT</option>
@@ -12040,6 +12039,9 @@ function App() {
           }
         }
 
+        // Render translated article values throughout every section of the journal.
+        article = { ...article, ...(translatedContent || {}) };
+
         // ================================================================
         // 2. ARTICLE CONTENT + TRANSLATION-AWARE PROSE FIELDS
         // ================================================================
@@ -12278,11 +12280,11 @@ function App() {
                         <section className="bg-slate-50 dark:bg-slate-800/40 rounded-3xl p-6 border border-slate-100 dark:border-slate-800">
                           <h3 className="text-sm font-black uppercase tracking-widest text-slate-900 dark:text-white mb-4 flex items-center gap-2">
                             <Zap className="w-4 h-4 text-amber-500" />
-                            Quick Facts
+                            {t('article.technical_specs')}
                           </h3>
                           <div className="grid grid-cols-2 sm:grid-cols-3 gap-y-4 gap-x-6 text-xs">
-                            <div><span className="block text-slate-400 font-bold mb-1">Elevation</span><span className="font-semibold">{article.quick_facts.elevation_m}m</span></div>
-                            <div><span className="block text-slate-400 font-bold mb-1">Difficulty</span><span className="font-semibold">{article.quick_facts.difficulty}</span></div>
+                            <div><span className="block text-slate-400 font-bold mb-1">{t('article.elevation')}</span><span className="font-semibold">{article.quick_facts.elevation_m}m</span></div>
+                            <div><span className="block text-slate-400 font-bold mb-1">{t('article.difficulty')}</span><span className="font-semibold">{article.quick_facts.difficulty}</span></div>
                             <div><span className="block text-slate-400 font-bold mb-1">Time Req</span><span className="font-semibold">{article.quick_facts.time_required}</span></div>
                             <div><span className="block text-slate-400 font-bold mb-1">Vehicle Access</span><span className="font-semibold">{article.quick_facts.vehicle_access}</span></div>
                             <div><span className="block text-slate-400 font-bold mb-1">Moto Friendly</span><span className="font-semibold">{article.quick_facts.motorcycle_friendly}</span></div>
@@ -12295,7 +12297,7 @@ function App() {
                       {(article.why_visit || translatedContent?.why_visit) && (
                         <section>
                           <h3 className="text-sm font-black uppercase tracking-widest text-slate-900 dark:text-white mb-3">
-                            Why Visit?
+                            {t('article.expedition_highlights')}
                           </h3>
                           <p className="text-slate-600 dark:text-slate-300 text-sm leading-relaxed mb-4">
                             {whyVisitSummary}
@@ -12423,7 +12425,7 @@ function App() {
                       {/* HISTORY & HERITAGE */}
                       {historyText && (
                         <section className="mt-8 border-t border-slate-100 dark:border-slate-800 pt-6">
-                          <h4 className="text-[9px] font-black uppercase tracking-[0.2em] text-slate-400 dark:text-slate-500 mb-2">History & Heritage</h4>
+                          <h4 className="text-[9px] font-black uppercase tracking-[0.2em] text-slate-400 dark:text-slate-500 mb-2">{t('article.history_heritage')}</h4>
                           <p className="text-xs text-slate-600 dark:text-slate-300 font-medium leading-relaxed">{historyText}</p>
                         </section>
                       )}
@@ -12501,7 +12503,7 @@ function App() {
                   {/* FAQ SECTION */}
                   {faqs.length > 0 && (
                     <section className="mt-8 border-t border-slate-100 dark:border-slate-800 pt-6">
-                      <h3 className="text-lg font-black text-slate-900 dark:text-white mb-4">Frequently Asked Questions</h3>
+                      <h3 className="text-lg font-black text-slate-900 dark:text-white mb-4">{t('article.faq_title')}</h3>
                       <div className="space-y-4">
                         {faqs.map((faq, index) => (
                           <div key={index} className="bg-slate-50 dark:bg-slate-800/30 p-4 rounded-2xl border border-slate-100 dark:border-slate-800/60">

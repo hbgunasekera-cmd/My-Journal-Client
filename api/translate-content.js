@@ -10,7 +10,7 @@ const responseCache = new Map();
 
 const SUPPORTED_LANGUAGES = {
   ar: "Arabic", de: "German", es: "Spanish", fr: "French", he: "Hebrew",
-  hi: "Hindi", in: "Indonesian", it: "Italian", ja: "Japanese", kr: "Korean",
+  hi: "Hindi", id: "Indonesian", it: "Italian", ja: "Japanese", ko: "Korean",
   nl: "Dutch", pl: "Polish", pt: "Portuguese", ru: "Russian", si: "Sinhala",
   sr: "Serbian", sv: "Swedish", th: "Thai", tr: "Turkish", uk: "Ukrainian",
   zh: "Chinese",
@@ -30,7 +30,7 @@ function isSameOriginRequest(req) {
   try {
     const expected = new URL(process.env.SITE_URL || "https://www.myjournalview.com").origin;
     const host = req.headers["x-forwarded-host"] || req.headers.host;
-    const protocol = req.headers["x-forwarded-proto"] || "https";
+    const protocol = req.headers["x-forwarded-proto"] || (req.socket?.encrypted ? "https" : "http");
     const requestOrigin = host ? `${protocol}://${host}` : "";
     return origin === expected || origin === requestOrigin;
   } catch {
@@ -59,42 +59,85 @@ function allowRequest(ip) {
   return true;
 }
 
+const TRANSLATABLE_ROOT_FIELDS = new Set([
+  "title", "seo_intro", "story", "history", "why_visit", "quick_facts",
+  "photography_notes", "drone_notes", "route_report", "wish_i_knew",
+  "behind_the_shot", "faqs", "faq", "faq_list", "about",
+]);
+const PRESERVED_VALUE_KEYS = new Set([
+  "id", "slug", "place_name", "locality", "region", "location", "starting_point",
+  "coordinates", "latitude", "longitude", "lat", "lng", "url", "image_url",
+  "cover_photo_url", "device", "camera", "model", "captured_time", "elevation_m",
+  "distance_km",
+]);
+
+function selectTranslatableText(value, key = "") {
+  if (PRESERVED_VALUE_KEYS.has(key)) return undefined;
+  if (typeof value === "string") return value.trim() ? value : undefined;
+  if (Array.isArray(value)) {
+    return value.map((item) => selectTranslatableText(item)).map((item) => item ?? null);
+  }
+  if (!value || typeof value !== "object") return undefined;
+
+  const selected = {};
+  for (const [childKey, childValue] of Object.entries(value)) {
+    const child = selectTranslatableText(childValue, childKey);
+    if (child !== undefined) selected[childKey] = child;
+  }
+  return Object.keys(selected).length ? selected : undefined;
+}
+
 function extractTranslatableFields(article) {
   const fields = {};
-  for (const key of ["seo_intro", "story", "history"]) {
-    if (typeof article[key] === "string" && article[key].trim()) fields[key] = article[key];
-  }
-  if (typeof article.why_visit?.summary === "string" && article.why_visit.summary.trim()) {
-    fields.why_visit = { summary: article.why_visit.summary };
+  for (const key of TRANSLATABLE_ROOT_FIELDS) {
+    if (Object.hasOwn(article, key)) {
+      const selected = selectTranslatableText(article[key], key);
+      if (selected !== undefined) fields[key] = selected;
+    }
   }
   return fields;
 }
 
+function mergeProjectedValue(original, selected, translated) {
+  if (selected === null || selected === undefined) return original;
+  if (typeof selected === "string") {
+    return typeof translated === "string" && translated.trim() ? translated : original;
+  }
+  if (Array.isArray(selected)) {
+    if (!Array.isArray(original)) return original;
+    return original.map((item, index) =>
+      mergeProjectedValue(item, selected[index], Array.isArray(translated) ? translated[index] : undefined),
+    );
+  }
+  if (typeof selected === "object") {
+    if (!original || typeof original !== "object" || Array.isArray(original)) return original;
+    const merged = { ...original };
+    for (const [key, child] of Object.entries(selected)) {
+      merged[key] = mergeProjectedValue(original[key], child, translated?.[key]);
+    }
+    return merged;
+  }
+  return original;
+}
+
 function mergeTranslatedFields(article, fields, translated) {
   const result = { ...article };
-  for (const key of ["seo_intro", "story", "history"]) {
-    if (typeof fields[key] === "string") {
-      result[key] = typeof translated[key] === "string" ? translated[key] : fields[key];
-    }
-  }
-  if (fields.why_visit) {
-    result.why_visit = {
-      ...(article.why_visit && typeof article.why_visit === "object" ? article.why_visit : {}),
-      summary: typeof translated.why_visit?.summary === "string"
-        ? translated.why_visit.summary
-        : fields.why_visit.summary,
-    };
+  for (const [key, selected] of Object.entries(fields)) {
+    result[key] = mergeProjectedValue(article[key], selected, translated?.[key]);
   }
   return result;
 }
 
-function pickTranslatedFields(fields, merged) {
+function pickTranslatedFields(fields, translated) {
   const picked = {};
-  for (const key of ["seo_intro", "story", "history"]) {
-    if (typeof fields[key] === "string") picked[key] = merged[key];
+  for (const [key, selected] of Object.entries(fields)) {
+    picked[key] = mergeProjectedValue(selected, selected, translated?.[key]);
   }
-  if (fields.why_visit) picked.why_visit = { summary: merged.why_visit?.summary };
   return picked;
+}
+
+function isBrowserReferrerRestrictedKey(error) {
+  return String(error?.message || "").includes("API_KEY_HTTP_REFERRER_BLOCKED");
 }
 
 export default async function handler(req, res) {
@@ -125,7 +168,8 @@ export default async function handler(req, res) {
 
   const body = req.body || {};
   const article = body.article;
-  const targetLangCode = String(body.targetLangCode || "").split("-")[0].toLowerCase();
+  const requestedLangCode = String(body.targetLangCode || "").split("-")[0].toLowerCase();
+  const targetLangCode = requestedLangCode === "in" ? "id" : requestedLangCode === "kr" ? "ko" : requestedLangCode;
   if (!article || typeof article !== "object" || Array.isArray(article)) {
     return res.status(400).json({ error: "A valid article object is required." });
   }
@@ -169,13 +213,17 @@ export default async function handler(req, res) {
         throw new Error("Model response was not an object.");
       }
       const merged = mergeTranslatedFields(article, fields, translated);
-      const translatedFields = pickTranslatedFields(fields, merged);
       const translation = { ...merged, language: targetLangCode };
-      responseCache.set(cacheKey, translatedFields);
+      responseCache.set(cacheKey, pickTranslatedFields(fields, translated));
       if (responseCache.size > 500) responseCache.delete(responseCache.keys().next().value);
       return res.status(200).json({ translation });
     } catch (error) {
       console.warn(`Translation model ${modelName} failed:`, error.message);
+      if (isBrowserReferrerRestrictedKey(error)) {
+        return res.status(503).json({
+          error: "The Gemini API key is restricted to browser referrers. This translation endpoint runs server-side; use a Gemini key restricted to the Generative Language API and update ARTICLE_KEY.",
+        });
+      }
     }
   }
 
