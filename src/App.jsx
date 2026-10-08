@@ -3550,7 +3550,7 @@ export const logVisit = async (path = null) => {
       .replace(/['’]/g, '')
       .replace(/-/g, ' ');
 
-    loggingPath = `Place/${formattedSlug}`;
+    loggingPath = `place/${formattedSlug}`;
 
     // Photo gallery
   } else if (
@@ -3567,7 +3567,7 @@ export const logVisit = async (path = null) => {
       .replace(/['’]/g, '')
       .replace(/-/g, ' ');
 
-    loggingPath = `Gallery/${formattedSlug}`;
+    loggingPath = `gallery/${formattedSlug}`;
 
     // Generic route
   } else if (
