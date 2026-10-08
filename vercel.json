@@ -5,7 +5,7 @@
       "headers": [
         {
           "key": "Content-Security-Policy",
-          "value": "frame-src 'self' https://www.youtube.com https://www.youtube-nocookie.com https://*.doubleclick.net https://*.google.com https://*.google https://*.googlesyndication.com https://vercel.live; frame-ancestors 'self';"
+          "value": "frame-src 'self' https://www.youtube.com https://www.youtube-nocookie.com https://*.doubleclick.net https://*.google.com https://*.google https://*.googlesyndication.com https://vercel.live; frame-ancestors 'none';"
         },
         {
           "key": "X-Content-Type-Options",
@@ -22,20 +22,32 @@
       ]
     }
   ],
-  "redirects": [
-    {
-      "source": "/old-path-example",
-      "destination": "/new-path-example",
-      "permanent": true
-    }
-  ],
   "rewrites": [
     {
       "source": "/sitemap.xml",
       "destination": "/api/sitemap"
     },
     {
-      "source": "/:type(place|Place|gallery|Gallery)/:slug",
+      "source": "/image-sitemap.xml",
+      "destination": "/api/image-sitemap"
+    },
+    {
+      "source": "/video-sitemap.xml",
+      "destination": "/api/video-sitemap"
+    },
+    {
+      "source": "/:type([vV]ideos)",
+      "has": [
+        {
+          "type": "header",
+          "key": "user-agent",
+          "value": "(?i).*(bot|crawler|spider|twitterbot|facebookexternalhit|whatsapp|telegram|pinterest|linkedin|slack|discord|yandex|baidu|duckduck|applebot|bingbot|google-inspectiontool|gptbot|perplexity|claudebot|cohere|bytespider|mediapartners-google).*"
+        }
+      ],
+      "destination": "/api/og-metadata?type=video-gallery"
+    },
+    {
+      "source": "/:type((?:[pP]lace|[gG]allery|[vV]ideos))/:slug",
       "has": [
         {
           "type": "header",

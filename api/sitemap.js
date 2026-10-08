@@ -16,8 +16,21 @@ function generateSlug(name) {
 }
 
 // Helper to safely escape specific XML characters in slugs to prevent broken sitemaps
+function stripInvalidXmlCharacters(value) {
+  return Array.from(String(value ?? ""))
+    .filter((character) => {
+      const codePoint = character.codePointAt(0);
+      return codePoint === 0x09 || codePoint === 0x0a || codePoint === 0x0d ||
+        (codePoint >= 0x20 && codePoint <= 0xd7ff) ||
+        (codePoint >= 0xe000 && codePoint <= 0xfffd) ||
+        (codePoint >= 0x10000 && codePoint <= 0x10ffff);
+    })
+    .join("");
+}
+
 function escapeXml(unsafe) {
-  return String(unsafe).replace(/[<>&'"]/g, function (c) {
+  return stripInvalidXmlCharacters(unsafe)
+    .replace(/[<>&'"]/g, function (c) {
     switch (c) {
       case "<":
         return "&lt;";
@@ -35,13 +48,32 @@ function escapeXml(unsafe) {
   });
 }
 
+function formatDateOnly(value) {
+  if (!value) return "";
+  const date = new Date(value);
+  return Number.isNaN(date.getTime())
+    ? ""
+    : date.toISOString().slice(0, 10);
+}
+
 export default async function handler(req, res) {
-  // 1. Fixed Base URL setup using environment variables to mitigate Host Header Injection
-  const baseUrl = (
-    process.env.NEXT_PUBLIC_SITE_URL ||
-    process.env.SITE_URL ||
-    "https://www.myjournalview.com"
-  ).replace(/\/$/, "");
+  if (req.method !== "GET") {
+    res.setHeader("Allow", "GET");
+    return res.status(405).end("Method Not Allowed");
+  }
+
+  let baseUrl;
+  try {
+    const parsedSiteUrl = new URL(
+      process.env.NEXT_PUBLIC_SITE_URL ||
+      process.env.SITE_URL ||
+      "https://www.myjournalview.com",
+    );
+    if (!["https:", "http:"].includes(parsedSiteUrl.protocol)) throw new Error("Invalid site URL");
+    baseUrl = parsedSiteUrl.origin;
+  } catch {
+    return res.status(500).end("Sitemap configuration error.");
+  }
 
   // 2. Safely load Supabase credentials
   const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
@@ -51,14 +83,14 @@ export default async function handler(req, res) {
 
   if (!supabaseUrl || !supabaseKey) {
     res.setHeader("Content-Type", "text/plain");
-    return res
-      .status(500)
-      .send("Error: Missing Supabase environment variables in Vercel.");
+    res.setHeader("Cache-Control", "no-store");
+    return res.status(503).send("Sitemap service is temporarily unavailable.");
   }
 
-  const supabase = createClient(supabaseUrl, supabaseKey);
+  const xmlBaseUrl = escapeXml(baseUrl);
 
   try {
+    const supabase = createClient(supabaseUrl, supabaseKey);
     // 3. Paginated query execution to bypass Supabase PostgREST 1,000-row default response cap
     let places = [];
     let page = 0;
@@ -74,6 +106,7 @@ export default async function handler(req, res) {
         .from("travel_bucket_list")
         .select("slug, place_name, album_photos, created_at")
         .in("status", ["done", "Completed", "Visited"])
+        .order("id", { ascending: true })
         .range(from, to);
 
       if (error) throw error;
@@ -90,50 +123,41 @@ export default async function handler(req, res) {
       }
     }
 
-    const todayIso = new Date().toISOString().split("T")[0];
-
     // 4. Construct the baseline XML Sitemap structure
     let xml = `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
-    <loc>${baseUrl}/</loc>
-    <lastmod>${todayIso}</lastmod>
+    <loc>${xmlBaseUrl}/</loc>
     <changefreq>daily</changefreq>
     <priority>1.0</priority>
   </url>  
   <url>
-    <loc>${baseUrl}/videos</loc>
-    <lastmod>${todayIso}</lastmod>
+    <loc>${xmlBaseUrl}/videos</loc>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
   </url>
   <url>
-    <loc>${baseUrl}/route-planner</loc>
-    <lastmod>${todayIso}</lastmod>
+    <loc>${xmlBaseUrl}/route-planner</loc>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
   </url>
   <url>
-    <loc>${baseUrl}/suggest-spot</loc>
-    <lastmod>${todayIso}</lastmod>
+    <loc>${xmlBaseUrl}/suggest-spot</loc>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>${baseUrl}/about</loc>
-    <lastmod>${todayIso}</lastmod>
+    <loc>${xmlBaseUrl}/about</loc>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>  
   <url>
-    <loc>${baseUrl}/privacy</loc>
-    <lastmod>${todayIso}</lastmod>
+    <loc>${xmlBaseUrl}/privacy</loc>
     <changefreq>yearly</changefreq>
     <priority>0.5</priority>
   </url>
   <url>
-    <loc>${baseUrl}/terms</loc>
-    <lastmod>${todayIso}</lastmod>
+    <loc>${xmlBaseUrl}/terms</loc>
     <changefreq>yearly</changefreq>
     <priority>0.5</priority>
   </url>`;
@@ -148,25 +172,26 @@ export default async function handler(req, res) {
           const cleanSlug = escapeXml(locationSlug);
 
           // Use created_at or fallback to today
-          const lastMod = place.created_at
-            ? new Date(place.created_at).toISOString().split("T")[0]
-            : todayIso;
+          const lastMod = formatDateOnly(place.created_at);
+          const lastModTag = lastMod
+            ? `\n    <lastmod>${lastMod}</lastmod>`
+            : "";
 
           // Place Route
           xml += `
   <url>
-    <loc>${baseUrl}/place/${cleanSlug}</loc>
-    <lastmod>${lastMod}</lastmod>
+    <loc>${xmlBaseUrl}/place/${cleanSlug}</loc>
+    ${lastModTag}
     <changefreq>monthly</changefreq>
     <priority>0.9</priority>
   </url>`;
 
           // Gallery Route
-          if (place.album_photos && place.album_photos.length > 0) {
+          if (Array.isArray(place.album_photos) && place.album_photos.length > 0) {
             xml += `
   <url>
-    <loc>${baseUrl}/gallery/${cleanSlug}</loc>
-    <lastmod>${lastMod}</lastmod>
+    <loc>${xmlBaseUrl}/gallery/${cleanSlug}</loc>
+    ${lastModTag}
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>`;
@@ -188,6 +213,6 @@ export default async function handler(req, res) {
   } catch (err) {
     console.error("Sitemap Generation Error:", err);
     res.setHeader("Content-Type", "text/plain");
-    return res.status(500).send(`Database Error: ${err.message}`);
+    return res.status(500).send("Sitemap generation failed.");
   }
 }

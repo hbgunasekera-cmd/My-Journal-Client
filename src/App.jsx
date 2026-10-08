@@ -8,7 +8,6 @@ import React, {
   useRef,
   useCallback,
   Suspense,
-  lazy
 } from 'react';
 import { createRoot } from 'react-dom/client';
 
@@ -16,7 +15,6 @@ import { createRoot } from 'react-dom/client';
 // 2. THIRD-PARTY LIBRARIES & UTILITIES
 // =======================================================================
 import { createClient } from '@supabase/supabase-js';
-import { GoogleGenerativeAI } from '@google/generative-ai';
 import { QRCodeSVG } from 'qrcode.react';
 import { useTranslation } from 'react-i18next';
 import toast, { Toaster } from 'react-hot-toast';
@@ -61,7 +59,6 @@ import {
   MapPin,
   MessageCircle,
   Minus,
-  Moon,
   Navigation,
   Pause,
   Play,
@@ -102,7 +99,6 @@ const CONFIG = {
 };
 
 const { URL: SUPABASE_URL, KEY: SUPABASE_KEY } = CONFIG.SUPABASE;
-const { WEATHER: WEATHER_KEY, ORS: ORS_KEY } = CONFIG.API_KEYS;
 
 if (!SUPABASE_URL || !SUPABASE_KEY) {
   console.warn(
@@ -364,7 +360,6 @@ export function useDragScroll() {
     };
 
     const endDrag = (e) => {
-      const state = dragState.current;
       if (element?.hasPointerCapture?.(e.pointerId)) {
         element.releasePointerCapture(e.pointerId);
       }
@@ -425,378 +420,2912 @@ export const calculateDistance = (lat1, lon1, lat2, lon2) => {
 };
 
 // =======================================================================
-// 11. STRING & URL FORMATTING HELPERS
+// 11. STRING, URL & AUTOMATIC MEDIA SEO HELPERS
 // =======================================================================
 
 /**
- * Sanitizes location names by stripping non-standard special characters
+ * Sanitizes location names for display/SEO text normalization only.
+ *
+ * This does not modify the underlying database value.
  */
 export const auditLocationName = (name) => {
   if (!name) return "Unnamed Location";
-  return String(name).replace(/[^a-zA-Z0-9\s\-'\.]/g, '').trim();
+
+  return String(name)
+    .replace(/[^a-zA-Z0-9\s\-'.]/g, "")
+    .trim();
 };
 
 /**
- * Generates URL-friendly slugs with diacritic stripping and normalization
+ * Generates deterministic URL-safe slugs.
  */
 export const generateSlug = (name) => {
-  if (!name) return '';
+  if (!name) return "";
+
   return String(name)
     .toLowerCase()
     .trim()
-    .normalize('NFD')                   // Strip accents/diacritics for backend parity
-    .replace(/[\u0300-\u036f]/g, '')    // Remove diacritic marks
-    .replace(/[–—]/g, '-')              // Convert En-dash & Em-dash to standard hyphens
-    .replace(/[^a-z0-9\s-]/g, '')       // Keep only alphanumeric characters, spaces, and hyphens
-    .replace(/\s+/g, '-')               // Replace spaces with single hyphens
-    .replace(/-+/g, '-')                // Collapse multiple hyphens
-    .replace(/^-+|-+$/g, '');           // Strip leading and trailing hyphens
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[–—]/g, "-")
+    .replace(/[^a-z0-9\s-]/g, "")
+    .replace(/\s+/g, "-")
+    .replace(/-+/g, "-")
+    .replace(/^-+|-+$/g, "");
 };
+
+const safeDecodeURIComponent = (value) => {
+  try {
+    return decodeURIComponent(value);
+  } catch {
+    return value;
+  }
+};
+
+const getLocalizedValue = (item, baseKey, currentLanguage = "en") => {
+  if (!item) return "";
+  const lang = currentLanguage.split("-")[0].toLowerCase();
+  if (lang === "en") return item[baseKey] || "";
+  const localizedKey = `${baseKey}_${lang}`;
+  return item[localizedKey] || item[baseKey] || "";
+};
+
+const getSafeHttpUrl = (value) => {
+  try {
+    const url = new URL(String(value || ""));
+    return ["http:", "https:"].includes(url.protocol) ? url.href : null;
+  } catch {
+    return null;
+  }
+};
+
+const getInitialAppRouteState = () => {
+  const initialState = {
+    isPrivacyOpen: false,
+    legalView: "privacy",
+    isPlannerOpen: false,
+    isAddOpen: false,
+  };
+  if (typeof window === "undefined") return initialState;
+
+  const url = new URL(window.location.href);
+  const path = url.pathname.toLowerCase().replace(/\/+$/, "") || "/";
+  const view = url.searchParams.get("view");
+  const legalView = ["privacy", "terms", "about"].find(
+    (candidate) => view === candidate || path === "/" + candidate,
+  );
+
+  if (legalView) {
+    return { ...initialState, isPrivacyOpen: true, legalView };
+  }
+  if (view === "route_planner" || path === "/route-planner" || path === "/plan") {
+    return { ...initialState, isPlannerOpen: true };
+  }
+  if (view === "suggest_spot" || path === "/suggest-spot" || path === "/add") {
+    return { ...initialState, isAddOpen: true };
+  }
+  return initialState;
+};
+
+const escapeHtml = (value) =>
+  String(value ?? "").replace(/[&<>"']/g, (character) => ({
+    "&": "&amp;",
+    "<": "&lt;",
+    ">": "&gt;",
+    "\"": "&quot;",
+    "'": "&#39;",
+  })[character]);
 
 /**
- * Optimizes image URLs for Google User Content and Supabase Storage
+ * Optimizes supported external image URLs.
+ *
+ * The original database URL is never changed.
  */
-export const getOptimizedUrl = (url, width = 1000, quality = 70) => {
-  if (!url) return '';
-  if (url.includes('googleusercontent.com')) {
-    const baseUrl = url.split('=')[0].split('?')[0];
-    return `${baseUrl}=w${width}-rw`;
-  }
-  if (url.includes('supabase.co')) {
-    return `${url}?width=${width}&quality=${quality}&format=webp`;
-  }
-  return url;
-};
-
-/**
- * Helper to truncate text cleanly on full word boundaries to prevent broken SERP snippets
- */
-export const truncateText = (text, maxLength = 155) => {
-  if (!text || text.length <= maxLength) return text || '';
-  const trimmed = text.substring(0, maxLength);
-  const lastSpace = trimmed.lastIndexOf(' ');
-  return (lastSpace > 0 ? trimmed.substring(0, lastSpace) : trimmed) + '...';
-};
-
-// =======================================================================
-// 12. CONSOLIDATED SEO & SCHEMA MANAGERS
-// =======================================================================
-
-export const injectJSONLDSchema = (
-  place,
-  canonicalUrl,
-  isGallery = false,
-  photos = []
+export const getOptimizedUrl = (
+  url,
+  width = 1000,
+  quality = 70
 ) => {
-  let schemaScript = document.getElementById("json-ld-schema");
+  if (!url) return "";
 
-  if (!schemaScript) {
-    schemaScript = document.createElement("script");
-    schemaScript.id = "json-ld-schema";
-    schemaScript.setAttribute("type", "application/ld+json");
-    document.head.appendChild(schemaScript);
+  const value = String(url).trim();
+
+  if (!value) {
+    return "";
   }
 
-  const BASE_URL = "https://www.myjournalview.com";
+  const safeWidth = Number.isFinite(Number(width))
+    ? Math.max(1, Math.min(2500, Math.round(Number(width))))
+    : 1000;
+  const safeQuality = Number.isFinite(Number(quality))
+    ? Math.max(20, Math.min(100, Math.round(Number(quality))))
+    : 70;
+  if (value.startsWith("/")) return value;
 
-  // Default website schema informing crawlers of videos, photos, articles, and guides
-  if (!place || typeof place !== "object" || !place.place_name) {
-    const defaultSchema = {
-      "@context": "https://schema.org",
-      "@type": "WebSite",
-      name: "My Journal",
-      url: canonicalUrl || BASE_URL,
-      description:
-        "Explore remote Sri Lankan trails, hidden waterfalls, video journals, photo galleries, travel articles, and backcountry coordinates.",
-      abstract:
-        "විදිමු , රැකගමු අනාගතය වෙනුවෙන්. Live with care, preserve with love — for the future yet to come.",
-      sameAs: [
-        "https://www.youtube.com/@myjournalview"
-      ]
-    };
-    schemaScript.textContent = JSON.stringify(defaultSchema).replace(
-      /</g,
-      "\\u003c"
-    );
-    return;
+  let parsedUrl;
+  try {
+    parsedUrl = new URL(value);
+  } catch {
+    return "";
+  }
+  if (!["http:", "https:"].includes(parsedUrl.protocol)) return "";
+  const host = parsedUrl.hostname.toLowerCase();
+
+  // ---------------------------------------------------------------------
+  // Google User Content / Google Photos
+  // ---------------------------------------------------------------------
+
+  if (host === "googleusercontent.com" || host.endsWith(".googleusercontent.com")) {
+    const baseUrl = value
+      .split("=")[0]
+      .split("?")[0];
+
+    return `${baseUrl}=w${safeWidth}-rw`;
   }
 
-  // Handle structured JSONB objects and legacy string entries
-  const article =
-    typeof place.ai_article === "object" && place.ai_article !== null
-      ? place.ai_article
-      : {};
-  const legacyStory =
-    typeof place.ai_article === "string" ? place.ai_article : null;
-  const metrics = article.metrics || {};
-  const about = article.about || {};
+  // ---------------------------------------------------------------------
+  // Supabase Storage
+  // ---------------------------------------------------------------------
 
-  const placeDescription =
-    about.overview ||
-    article.story ||
-    legacyStory ||
-    place.description ||
-    `Explore ${place.place_name} in ${place.locality || "Sri Lanka"}.`;
+  if (host.endsWith(".supabase.co")) {
+    if (import.meta.env.VITE_SUPABASE_IMAGE_TRANSFORMATIONS !== "true") {
+      return value;
+    }
 
-  let schemaData;
-
-  if (isGallery) {
-    const photosList =
-      Array.isArray(photos) && photos.length > 0
-        ? photos
-        : Array.isArray(place.photos)
-          ? place.photos
-          : [];
-
-    const galleryDescription = `High-resolution photo gallery and aerial drone perspectives of ${place.place_name
-      }, a ${place.category || "location"} in ${place.locality || "Sri Lanka"
-      }. Dedicated visual field notes and landscape photography.`;
-
-    schemaData = {
-      "@context": "https://schema.org",
-      "@type": "ImageGallery",
-      name: `${place.place_name} High-Resolution Photo Gallery & Aerial Perspectives`,
-      description: galleryDescription,
-      url: canonicalUrl,
-      primaryImageOfPage:
-        place.cover_photo_url || `${BASE_URL}/my-journal-logo.png`,
-      image: photosList.map((url, idx) => ({
-        "@type": "ImageObject",
-        url:
-          typeof getOptimizedUrl === "function"
-            ? getOptimizedUrl(url, 1200, 85)
-            : url,
-        contentUrl: url,
-        name: `${place.place_name} - Photo ${idx + 1}`,
-        caption: `${place.place_name} visual record ${idx + 1} (${place.locality || "Sri Lanka"
-          })`,
-        description: `High-resolution photograph capturing the landscape, terrain features, and aerial view at ${place.place_name}.`,
-      })),
-    };
-  } else {
-    schemaData = {
-      "@context": "https://schema.org",
-      "@type": "TouristAttraction",
-      name: place.place_name,
-      description: placeDescription,
-      url: canonicalUrl,
-      image: place.cover_photo_url || `${BASE_URL}/my-journal-logo.png`,
-      location: {
-        "@type": "Place",
-        name: place.locality || "Sri Lanka",
-        address: {
-          "@type": "PostalAddress",
-          addressCountry: "LK",
-        },
-        geo:
-          place.latitude && place.longitude
-            ? {
-              "@type": "GeoCoordinates",
-              latitude: place.latitude,
-              longitude: place.longitude,
-            }
-            : undefined,
-        elevation: metrics.elevation_m ? `${metrics.elevation_m} m` : undefined,
-      },
-      additionalProperty: [
-        metrics.difficulty_level && {
-          "@type": "PropertyValue",
-          name: "Trail Difficulty",
-          value: metrics.difficulty_level,
-        },
-        metrics.trek_distance_km && {
-          "@type": "PropertyValue",
-          name: "Trek Distance",
-          value: `${metrics.trek_distance_km} km`,
-        },
-        metrics.estimated_time_mins && {
-          "@type": "PropertyValue",
-          name: "Estimated Time",
-          value: `${metrics.estimated_time_mins} mins`,
-        },
-      ].filter(Boolean),
-    };
+    const publicObjectPrefix = "/storage/v1/object/public/";
+    const publicRenderPrefix = "/storage/v1/render/image/public/";
+    if (parsedUrl.pathname.includes(publicObjectPrefix)) {
+      parsedUrl.pathname = parsedUrl.pathname.replace(publicObjectPrefix, publicRenderPrefix);
+    }
+    if (parsedUrl.pathname.includes(publicRenderPrefix)) {
+      parsedUrl.searchParams.set("width", String(safeWidth));
+      parsedUrl.searchParams.set("quality", String(safeQuality));
+      parsedUrl.searchParams.set("format", "webp");
+      return parsedUrl.toString();
+    }
   }
 
-  // Prevent XSS script tag escape breakout by escaping '<'
-  schemaScript.textContent = JSON.stringify(schemaData).replace(
-    /</g,
-    "\\u003c"
+  return parsedUrl.toString();
+};
+
+/**
+ * Truncates text on a word boundary.
+ */
+export const truncateText = (
+  text,
+  maxLength = 155
+) => {
+  if (!text) {
+    return "";
+  }
+
+  const value = String(text).trim();
+
+  if (value.length <= maxLength) {
+    return value;
+  }
+
+  const trimmed = value.substring(
+    0,
+    maxLength
+  );
+
+  const lastSpace =
+    trimmed.lastIndexOf(" ");
+
+  return (
+    lastSpace > 0
+      ? trimmed.substring(0, lastSpace)
+      : trimmed
+  ) + "...";
+};
+
+// =======================================================================
+// 11A. GENERIC SEO TEXT HELPERS
+// =======================================================================
+
+/**
+ * Conservatively cleans dynamically generated SEO text.
+ */
+export const seoCleanText = (
+  value,
+  fallback = ""
+) => {
+  if (
+    value === null ||
+    value === undefined ||
+    value === ""
+  ) {
+    return fallback;
+  }
+
+  const cleaned = String(value)
+    .replace(/\s+/g, " ")
+    .replace(/[<>]/g, "")
+    .trim();
+
+  return cleaned || fallback;
+};
+
+/**
+ * Safely obtains the public place name.
+ */
+export const getMediaSEOPlaceName = (
+  place = {}
+) => {
+  return seoCleanText(
+    place?.place_name ||
+    place?.name ||
+    place?.title,
+    "Sri Lanka Backcountry Location"
   );
 };
 
 /**
- * Consolidated SEO Manager for 'My Journal'
- * Updates dynamic meta tags, OpenGraph tags, canonical URLs, and structured data
+ * Safely obtains category/type.
  */
-export const updateSEO = (place = null, options = {}) => {
+export const getMediaSEOCategory = (
+  place = {}
+) => {
+  return seoCleanText(
+    place?.category ||
+    place?.type,
+    "natural attraction"
+  );
+};
+
+/**
+ * Safely obtains locality.
+ *
+ * No geographic fallback is supplied here because callers that emit
+ * structured geographic metadata must distinguish an actual source value
+ * from a generic Sri Lanka-wide context.
+ */
+export const getMediaSEOLocality = (
+  place = {}
+) => {
+  return seoCleanText(
+    place?.locality ||
+    place?.district ||
+    place?.province
+  );
+};
+
+/**
+ * Safely obtains canonical place slug.
+ *
+ * Existing DB slug is preferred.
+ * Otherwise a deterministic slug is generated.
+ */
+export const getMediaSEOPlaceSlug = (
+  place = {}
+) => {
+  const existingSlug = seoCleanText(
+    place?.slug
+  );
+
+  if (existingSlug) {
+    return generateSlug(existingSlug);
+  }
+
+  return generateSlug(
+    getMediaSEOPlaceName(place)
+  );
+};
+
+/**
+ * Safely converts an arbitrary date value into ISO format.
+ *
+ * Invalid dates are discarded rather than invented.
+ */
+export const normalizeISODate = (
+  value
+) => {
+  if (!value) {
+    return undefined;
+  }
+
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return undefined;
+  }
+
+  return date.toISOString();
+};
+
+/**
+ * Converts common duration formats to Schema.org ISO 8601 duration.
+ *
+ * Supported:
+ * - PT5M23S
+ * - 323 seconds
+ * - "323"
+ * - HH:MM:SS
+ * - MM:SS
+ *
+ * Invalid values are discarded.
+ */
+export const normalizeVideoDuration = (
+  value
+) => {
+  if (
+    value === null ||
+    value === undefined ||
+    value === ""
+  ) {
+    return undefined;
+  }
+
+  // ---------------------------------------------------------------------
+  // Already ISO 8601 duration.
+  // ---------------------------------------------------------------------
+
+  if (
+    typeof value === "string" &&
+    /^PT(?=.+)(?:\d+H)?(?:\d+M)?(?:\d+(?:\.\d+)?S)?$/i.test(
+      value.trim()
+    )
+  ) {
+    return value.trim();
+  }
+
+  // ---------------------------------------------------------------------
+  // Numeric seconds.
+  // ---------------------------------------------------------------------
+
+  if (
+    typeof value === "number" &&
+    Number.isFinite(value) &&
+    value >= 0
+  ) {
+    const totalSeconds =
+      Math.round(value);
+
+    const hours =
+      Math.floor(totalSeconds / 3600);
+
+    const minutes =
+      Math.floor(
+        (totalSeconds % 3600) / 60
+      );
+
+    const seconds =
+      totalSeconds % 60;
+
+    let result = "PT";
+
+    if (hours > 0) {
+      result += `${hours}H`;
+    }
+
+    if (minutes > 0) {
+      result += `${minutes}M`;
+    }
+
+    if (
+      seconds > 0 ||
+      result === "PT"
+    ) {
+      result += `${seconds}S`;
+    }
+
+    return result;
+  }
+
+  const text = String(value).trim();
+
+  // ---------------------------------------------------------------------
+  // Numeric string.
+  // ---------------------------------------------------------------------
+
+  if (/^\d+(?:\.\d+)?$/.test(text)) {
+    return normalizeVideoDuration(
+      Number(text)
+    );
+  }
+
+  // ---------------------------------------------------------------------
+  // HH:MM:SS or MM:SS.
+  // ---------------------------------------------------------------------
+
+  const match = text.match(
+    /^(?:(\d{1,2}):)?(\d{1,3}):(\d{2})$/
+  );
+
+  if (match) {
+    const hours =
+      Number(match[1] || 0);
+
+    const minutes =
+      Number(match[2] || 0);
+
+    const seconds =
+      Number(match[3] || 0);
+
+    if (
+      minutes >= 60 ||
+      seconds >= 60
+    ) {
+      return undefined;
+    }
+
+    let result = "PT";
+
+    if (hours > 0) {
+      result += `${hours}H`;
+    }
+
+    if (minutes > 0) {
+      result += `${minutes}M`;
+    }
+
+    if (
+      seconds > 0 ||
+      result === "PT"
+    ) {
+      result += `${seconds}S`;
+    }
+
+    return result;
+  }
+
+  return undefined;
+};
+
+// =======================================================================
+// 11B. AUTOMATIC IMAGE SEO
+// =======================================================================
+
+/**
+ * Generates image SEO metadata directly from:
+ *
+ *     album_photos[]
+ *          +
+ *     existing place record
+ *          +
+ *     image index
+ *
+ * No image SEO database row is required.
+ */
+export const buildAutomaticImageSEO = (
+  imageUrl,
+  index = 0,
+  place = {},
+  options = {}
+) => {
+  if (!imageUrl) {
+    return null;
+  }
+
+  const placeName =
+    getMediaSEOPlaceName(place);
+
+  const category =
+    getMediaSEOCategory(place);
+
+  const locality =
+    getMediaSEOLocality(place);
+
+  const placeSlug =
+    getMediaSEOPlaceSlug(place);
+
+  const imageNumber =
+    Number(index || 0) + 1;
+
+  // ---------------------------------------------------------------------
+  // Existing article / AI metadata
+  // ---------------------------------------------------------------------
+
+  const article =
+    typeof place?.ai_article === "object" &&
+      place.ai_article !== null
+      ? place.ai_article
+      : {};
+
+  const metrics =
+    article?.metrics &&
+      typeof article.metrics === "object"
+      ? article.metrics
+      : {};
+
+  // ---------------------------------------------------------------------
+  // Optional existing image metadata
+  // ---------------------------------------------------------------------
+
+  const suppliedTitle =
+    options?.title ||
+    options?.imageTitle ||
+    null;
+
+  const suppliedAlt =
+    options?.alt ||
+    options?.altText ||
+    null;
+
+  const suppliedCaption =
+    options?.caption ||
+    null;
+
+  const suppliedDescription =
+    options?.description ||
+    null;
+
+  // ---------------------------------------------------------------------
+  // Automatic title
+  // ---------------------------------------------------------------------
+
+  const title = seoCleanText(
+    suppliedTitle ||
+    `${placeName} ${category} landscape photo ${imageNumber}`,
+    `${placeName} landscape photo ${imageNumber}`
+  );
+
+  // ---------------------------------------------------------------------
+  // Automatic alt
+  // ---------------------------------------------------------------------
+
+  const alt = seoCleanText(
+    suppliedAlt ||
+    `${placeName}, ${category}, ${locality || "Sri Lanka"
+    }, Sri Lanka - landscape photo ${imageNumber}`,
+    `${placeName}, Sri Lanka - photo ${imageNumber}`
+  );
+
+  // ---------------------------------------------------------------------
+  // Automatic caption
+  // ---------------------------------------------------------------------
+
+  const caption = seoCleanText(
+    suppliedCaption ||
+    `${placeName} in ${locality || "Sri Lanka"
+    }, Sri Lanka. Field photograph ${imageNumber} documenting the surrounding ${category.toLowerCase()} landscape.`,
+    `${placeName} field photograph ${imageNumber}`
+  );
+
+  // ---------------------------------------------------------------------
+  // Optional elevation context
+  // ---------------------------------------------------------------------
+
+  const elevation =
+    metrics?.elevation_m !== undefined &&
+      metrics?.elevation_m !== null &&
+      metrics?.elevation_m !== ""
+      ? metrics.elevation_m
+      : undefined;
+
+  const elevationText =
+    elevation !== undefined
+      ? ` Elevation is approximately ${elevation} metres.`
+      : "";
+
+  // ---------------------------------------------------------------------
+  // Automatic description
+  // ---------------------------------------------------------------------
+
+  const description = seoCleanText(
+    suppliedDescription ||
+    `${caption}${elevationText} This image is part of the My Journal visual field archive for ${placeName}.`,
+    caption
+  );
+
+  // ---------------------------------------------------------------------
+  // Optimized image URL
+  // ---------------------------------------------------------------------
+
+  const optimizedUrl =
+    getOptimizedUrl(
+      imageUrl,
+      1200,
+      82
+    );
+
+  // ---------------------------------------------------------------------
+  // Crawlable gallery URL
+  // ---------------------------------------------------------------------
+
+  const pageUrl =
+    `https://www.myjournalview.com/gallery/${placeSlug}`;
+
+  return {
+    url: imageUrl,
+    contentUrl: imageUrl,
+    optimizedUrl,
+    title,
+    name: title,
+    alt,
+    caption,
+    description,
+    index: imageNumber,
+    placeName,
+    category,
+    locality,
+    slug: placeSlug,
+    pageUrl,
+    latitude:
+      place?.latitude ?? undefined,
+    longitude:
+      place?.longitude ?? undefined,
+    elevation
+  };
+};
+
+// =======================================================================
+// 11C. AUTOMATIC IMAGE COLLECTION SEO
+// =======================================================================
+
+/**
+ * Generates SEO metadata for an entire album_photos[] collection.
+ *
+ * Used by:
+ * - ImageGallery JSON-LD
+ * - gallery rendering
+ * - image sitemap generation
+ * - automatic image metadata
+ */
+export const buildAutomaticImageCollectionSEO = (
+  photos = [],
+  place = {}
+) => {
+  if (!Array.isArray(photos)) {
+    return [];
+  }
+
+  const uniquePhotos = [
+    ...new Set(
+      photos
+        .filter(Boolean)
+        .map((photo) => {
+          if (typeof photo === "string") {
+            return photo;
+          }
+
+          return (
+            photo?.url ||
+            photo?.src ||
+            photo?.image_url ||
+            ""
+          );
+        })
+        .filter(Boolean)
+    )
+  ];
+
+  return uniquePhotos
+    .map((url, index) =>
+      buildAutomaticImageSEO(
+        url,
+        index,
+        place
+      )
+    )
+    .filter(Boolean);
+};
+
+// =======================================================================
+// 11D. YOUTUBE URL / ID HELPERS
+// =======================================================================
+
+/**
+ * Extracts a valid YouTube video ID.
+ *
+ * Supported:
+ * - youtube.com/watch?v=ID
+ * - youtu.be/ID
+ * - youtube.com/embed/ID
+ * - youtube.com/shorts/ID
+ * - youtube.com/live/ID
+ * - youtube.com/v/ID
+ * - youtube-nocookie.com/embed/ID
+ * - raw 11-character YouTube IDs
+ */
+export const getYouTubeId = (
+  url
+) => {
+  if (!url) {
+    return null;
+  }
+
+  const value =
+    String(url).trim();
+
+  if (!value) {
+    return null;
+  }
+
+  // ---------------------------------------------------------------------
+  // Raw 11-character YouTube ID.
+  // ---------------------------------------------------------------------
+
+  if (
+    /^[A-Za-z0-9_-]{11}$/.test(
+      value
+    )
+  ) {
+    return value;
+  }
+
+  // ---------------------------------------------------------------------
+  // Structured URL parsing.
+  // ---------------------------------------------------------------------
+
+  try {
+    const parsed = new URL(
+      value.includes("://")
+        ? value
+        : `https://${value}`
+    );
+
+    const host =
+      parsed.hostname
+        .toLowerCase()
+        .replace(/^www\./, "");
+
+    // -------------------------------------------------------------------
+    // youtu.be/<ID>
+    // -------------------------------------------------------------------
+
+    if (host === "youtu.be") {
+      const id =
+        parsed.pathname
+          .split("/")
+          .filter(Boolean)[0];
+
+      return /^[A-Za-z0-9_-]{11}$/.test(
+        id || ""
+      )
+        ? id
+        : null;
+    }
+
+    // -------------------------------------------------------------------
+    // youtube.com variants.
+    // -------------------------------------------------------------------
+
+    if (
+      host === "youtube.com" ||
+      host === "m.youtube.com" ||
+      host === "youtube-nocookie.com"
+    ) {
+      const pathParts =
+        parsed.pathname
+          .split("/")
+          .filter(Boolean);
+
+      // /watch?v=<ID>
+      const queryId =
+        parsed.searchParams.get("v");
+
+      if (queryId) {
+        return /^[A-Za-z0-9_-]{11}$/.test(
+          queryId
+        )
+          ? queryId
+          : null;
+      }
+
+      // /embed/<ID>
+      // /shorts/<ID>
+      // /live/<ID>
+      // /v/<ID>
+      const type =
+        pathParts[0]?.toLowerCase();
+
+      if (
+        [
+          "embed",
+          "shorts",
+          "live",
+          "v"
+        ].includes(type)
+      ) {
+        const id =
+          pathParts[1];
+
+        return /^[A-Za-z0-9_-]{11}$/.test(
+          id || ""
+        )
+          ? id
+          : null;
+      }
+    }
+  } catch {
+    // Fall through to defensive parsing.
+  }
+
+  return null;
+};
+
+/**
+ * Builds a privacy-enhanced YouTube embed URL.
+ *
+ * Accepts either a raw ID or a YouTube URL.
+ */
+export const buildYouTubeEmbedUrl = (
+  videoIdOrUrl,
+  options = {}
+) => {
+  const youtubeId =
+    getYouTubeId(
+      videoIdOrUrl
+    );
+
+  if (!youtubeId) {
+    return null;
+  }
+
+  const params =
+    new URLSearchParams();
+
+  params.set(
+    "rel",
+    "0"
+  );
+
+  if (options?.autoplay) {
+    params.set(
+      "autoplay",
+      "1"
+    );
+  }
+
+  if (options?.mute) {
+    params.set(
+      "mute",
+      "1"
+    );
+  }
+
+  if (options?.controls === false) {
+    params.set(
+      "controls",
+      "0"
+    );
+  }
+
+  return (
+    `https://www.youtube-nocookie.com/embed/${youtubeId}?${params.toString()}`
+  );
+};
+
+// =======================================================================
+// 11E. AUTOMATIC VIDEO SEO
+// =======================================================================
+
+/**
+ * Generates SEO metadata directly from an existing hub_videos record.
+ *
+ * No separate video SEO table is required.
+ *
+ * If a DB slug exists, it is preserved.
+ * If no DB slug exists, an ID suffix is appended to prevent duplicate
+ * titles from producing duplicate crawlable URLs.
+ */
+export const buildAutomaticVideoSEO = (
+  video = {},
+  index = 0
+) => {
+  const rawTitle = seoCleanText(
+    video?.title ||
+    video?.name ||
+    (video?.id
+      ? `Sri Lanka Backcountry Video ${video.id}`
+      : `Sri Lanka Backcountry Video ${Number(index) + 1}`),
+    `Sri Lanka Backcountry Video ${Number(index) + 1}`
+  );
+
+  // ---------------------------------------------------------------------
+  // Stable video slug.
+  // ---------------------------------------------------------------------
+
+  const baseVideoSlug =
+    generateSlug(rawTitle) ||
+    `video-${Number(index) + 1}`;
+
+  const videoSlug =
+    generateSlug(video?.id)
+      ? `${baseVideoSlug}--${generateSlug(video.id)}`
+      : baseVideoSlug;
+
+
+  // ---------------------------------------------------------------------
+  // YouTube ID.
+  // ---------------------------------------------------------------------
+
+  const youtubeId =
+    video?.youtubeId ||
+    getYouTubeId(video?.url);
+
+  // ---------------------------------------------------------------------
+  // Thumbnail.
+  // ---------------------------------------------------------------------
+
+  const defaultThumbnail = youtubeId
+    ? `https://img.youtube.com/vi/${youtubeId}/hqdefault.jpg`
+    : "https://www.myjournalview.com/default-video-placeholder.jpg";
+  const candidateThumbnail = video?.custom_thumbnail_url || video?.thumbnail_url;
+  let thumbnailUrl = defaultThumbnail;
+  try {
+    const parsedThumbnail = new URL(candidateThumbnail);
+    if (["http:", "https:"].includes(parsedThumbnail.protocol)) {
+      thumbnailUrl = parsedThumbnail.href;
+    }
+  } catch {
+    // Use the provider thumbnail when a custom URL is invalid.
+  }
+
+  // ---------------------------------------------------------------------
+  // Upload/publication date.
+  // ---------------------------------------------------------------------
+
+  const uploadDate =
+    normalizeISODate(
+      video?.upload_date ||
+      video?.published_at ||
+      video?.created_at
+    );
+
+  // ---------------------------------------------------------------------
+  // Duration.
+  // ---------------------------------------------------------------------
+
+  const duration =
+    normalizeVideoDuration(
+      video?.duration_iso ??
+      video?.duration
+    );
+
+  // ---------------------------------------------------------------------
+  // Description.
+  // ---------------------------------------------------------------------
+
+  const description =
+    seoCleanText(
+      video?.description ||
+      video?.meta_description ||
+      `Watch ${rawTitle}. A My Journal visual field recording documenting Sri Lanka's backcountry landscapes, trails, terrain and natural attractions.`,
+      `Watch ${rawTitle} from My Journal's Sri Lanka backcountry video archive.`
+    );
+
+  // ---------------------------------------------------------------------
+  // SEO title.
+  // ---------------------------------------------------------------------
+
+  const seoTitle =
+    /sri\s+lanka/i.test(rawTitle)
+      ? rawTitle
+      : `${rawTitle} | Sri Lanka Backcountry`;
+
+  // ---------------------------------------------------------------------
+  // Privacy-enhanced YouTube embed.
+  // ---------------------------------------------------------------------
+
+  const embedUrl =
+    video?.embedUrl ||
+    (
+      youtubeId
+        ? buildYouTubeEmbedUrl(
+          youtubeId
+        )
+        : null
+    );
+
+  // ---------------------------------------------------------------------
+  // Individual crawlable video page.
+  // ---------------------------------------------------------------------
+
+  const watchUrl =
+    `https://www.myjournalview.com/videos/${videoSlug}`;
+
+  // ---------------------------------------------------------------------
+  // Geographic metadata.
+  //
+  // IMPORTANT:
+  // Do not default this to "Sri Lanka". A generic country fallback is
+  // appropriate for prose but not for schema.about geographic facts.
+  // ---------------------------------------------------------------------
+
+  const locality =
+    seoCleanText(
+      video?.locality ||
+      video?.district ||
+      video?.province
+    );
+
+  const district =
+    seoCleanText(
+      video?.district
+    );
+
+  const province =
+    seoCleanText(
+      video?.province
+    );
+
+  return {
+    ...video,
+
+    seoTitle,
+
+    title:
+      rawTitle,
+
+    slug:
+      videoSlug,
+
+    seoDescription:
+      description,
+
+    thumbnailUrl,
+
+    uploadDate,
+
+    duration,
+
+    youtubeId,
+
+    embedUrl,
+
+    watchUrl,
+
+    channelUrl:
+      "https://www.youtube.com/@myjournalview",
+
+    latitude:
+      video?.latitude ??
+      undefined,
+
+    longitude:
+      video?.longitude ??
+      undefined,
+
+    locality,
+
+    district,
+
+    province
+  };
+};
+
+// =======================================================================
+// 11F. AUTOMATIC VIDEO COLLECTION SEO
+// =======================================================================
+
+/**
+ * Generates runtime SEO records for active video records.
+ *
+ * Duplicate crawlable URLs are removed.
+ */
+export const buildAutomaticVideoCollectionSEO = (
+  videos = []
+) => {
+  if (!Array.isArray(videos)) {
+    return [];
+  }
+
+  const seenUrls =
+    new Set();
+
+  return videos
+    .filter(
+      (video) =>
+        video &&
+        (
+          video.url ||
+          video.youtubeId ||
+          video.embedUrl
+        )
+    )
+    .map(
+      (video, index) =>
+        buildAutomaticVideoSEO(
+          video,
+          index
+        )
+    )
+    .filter((video) => {
+      if (!video?.watchUrl) {
+        return false;
+      }
+
+      if (
+        seenUrls.has(
+          video.watchUrl
+        )
+      ) {
+        return false;
+      }
+
+      seenUrls.add(
+        video.watchUrl
+      );
+
+      return true;
+    });
+};
+
+// =======================================================================
+// 11G. AUTOMATIC VIDEOOBJECT JSON-LD
+// =======================================================================
+
+/**
+ * Creates a Schema.org VideoObject from an existing hub_videos record.
+ *
+ * Only supplied or safely derived facts are emitted.
+ *
+ * Geographic metadata is included only when the source record provides
+ * an actual locality or valid coordinates.
+ */
+export const buildVideoObjectSchema = (
+  video = {},
+  index = 0
+) => {
+  const seo =
+    buildAutomaticVideoSEO(
+      video,
+      index
+    );
+
+  const schema = {
+    "@context":
+      "https://schema.org",
+
+    "@type":
+      "VideoObject",
+
+    "@id":
+      `${seo.watchUrl}#video`,
+
+    name:
+      seo.seoTitle ||
+      seo.title ||
+      "My Journal Video",
+
+    description:
+      seo.seoDescription ||
+      "Sri Lanka backcountry video from My Journal.",
+
+    thumbnailUrl:
+      seo.thumbnailUrl,
+
+    url:
+      seo.watchUrl,
+
+    ...(seo.embedUrl
+      ? {
+        embedUrl:
+          seo.embedUrl
+      }
+      : {}),
+
+    ...(seo.uploadDate
+      ? {
+        uploadDate:
+          seo.uploadDate
+      }
+      : {}),
+
+    publisher: {
+      "@type":
+        "Organization",
+
+      name:
+        "My Journal",
+
+      url:
+        "https://www.myjournalview.com",
+
+      logo: {
+        "@type":
+          "ImageObject",
+
+        url:
+          "https://www.myjournalview.com/my-journal-logo.png"
+      }
+    },
+
+    creator: {
+      "@type":
+        "Organization",
+
+      name:
+        "My Journal",
+
+      url:
+        "https://www.myjournalview.com"
+    },
+
+    inLanguage:
+      "en",
+
+    isFamilyFriendly:
+      true
+  };
+
+  // ---------------------------------------------------------------------
+  // Duration.
+  // ---------------------------------------------------------------------
+
+  if (seo.duration) {
+    schema.duration =
+      seo.duration;
+  }
+
+  // ---------------------------------------------------------------------
+  // Geographic information.
+  // ---------------------------------------------------------------------
+
+  const latitude =
+    Number(seo.latitude);
+
+  const longitude =
+    Number(seo.longitude);
+
+  const hasCoordinates =
+    Number.isFinite(latitude) &&
+    Number.isFinite(longitude);
+
+  const locality =
+    typeof seo.locality === "string" &&
+      seo.locality.trim()
+      ? seo.locality.trim()
+      : null;
+
+  const district =
+    typeof seo.district === "string" &&
+      seo.district.trim()
+      ? seo.district.trim()
+      : null;
+
+  const province =
+    typeof seo.province === "string" &&
+      seo.province.trim()
+      ? seo.province.trim()
+      : null;
+
+  const placeName =
+    locality ||
+    district ||
+    province;
+
+  /**
+   * Only emit schema.about when there is an actual geographic fact
+   * associated with the video.
+   *
+   * Do NOT fall back to "Sri Lanka" here because that would imply that
+   * Sri Lanka itself is the video's specific geographic subject.
+   */
+  if (
+    placeName ||
+    hasCoordinates
+  ) {
+    schema.about = {
+      "@type":
+        "Place",
+
+      ...(placeName
+        ? {
+          name:
+            placeName
+        }
+        : {}),
+
+      ...(hasCoordinates
+        ? {
+          geo: {
+            "@type":
+              "GeoCoordinates",
+
+            latitude,
+
+            longitude
+          }
+        }
+        : {})
+    };
+  }
+
+  return schema;
+};
+
+// =======================================================================
+// 11H. AUTOMATIC VIDEO COLLECTION JSON-LD
+// =======================================================================
+
+/**
+ * Creates CollectionPage + ItemList structured data for /videos.
+ *
+ * Schema.org does not require a non-standard "VideoGallery" type.
+ * CollectionPage + ItemList + VideoObject is the safer structure.
+ */
+export const buildVideoCollectionSchema = (
+  videos = [],
+  canonicalUrl =
+    "https://www.myjournalview.com/videos"
+) => {
+  const automaticVideos =
+    buildAutomaticVideoCollectionSEO(
+      videos
+    );
+
+  const itemListElement =
+    automaticVideos.map(
+      (video, index) => ({
+        "@type":
+          "ListItem",
+
+        position:
+          index + 1,
+
+        url:
+          video.watchUrl,
+
+        item:
+          buildVideoObjectSchema(
+            video,
+            index
+          )
+      })
+    );
+
+  return {
+    "@context":
+      "https://schema.org",
+
+    "@type":
+      "CollectionPage",
+
+    "@id":
+      `${canonicalUrl}#video-gallery`,
+
+    url:
+      canonicalUrl,
+
+    name:
+      "Sri Lanka Backcountry Video Journal | My Journal",
+
+    description:
+      "Watch aerial drone perspectives, backcountry video journals, terrain footage, trails, waterfalls and natural landscapes across Sri Lanka.",
+
+    isPartOf: {
+      "@type":
+        "WebSite",
+
+      "@id":
+        "https://www.myjournalview.com/#website",
+
+      name:
+        "My Journal",
+
+      url:
+        "https://www.myjournalview.com"
+    },
+
+    mainEntity: {
+      "@type":
+        "ItemList",
+
+      "@id":
+        `${canonicalUrl}#video-list`,
+
+      numberOfItems:
+        itemListElement.length,
+
+      itemListElement
+    }
+  };
+};
+
+// =======================================================================
+// 11I. AUTOMATIC MEDIA SITEMAP URL HELPERS
+// =======================================================================
+
+/**
+ * Canonical gallery URL for a place.
+ *
+ * Used by the server-side image sitemap.
+ */
+export const getAutomaticGallerySEOUrl = (
+  place = {}
+) => {
+  return (
+    `https://www.myjournalview.com/gallery/` +
+    getMediaSEOPlaceSlug(place)
+  );
+};
+
+/**
+ * Canonical video URL for a video.
+ *
+ * Uses exactly the same slug logic as buildAutomaticVideoSEO().
+ */
+export const getAutomaticVideoSEOUrl = (
+  video = {},
+  index = 0
+) => {
+  return buildAutomaticVideoSEO(
+    video,
+    index
+  ).watchUrl;
+};
+// =======================================================================
+// 12. CONSOLIDATED SEO & SCHEMA MANAGERS
+// =======================================================================
+
+/**
+ * Centralized JSON-LD injector.
+ *
+ * Supported states:
+ *
+ * - WebSite
+ * - TouristAttraction
+ * - ImageGallery
+ * - VideoObject
+ * - Video CollectionPage + ItemList
+ *
+ * This function only manages the JSON-LD script in <head>.
+ * Document title, meta tags, canonical URLs, OpenGraph and Twitter
+ * metadata are managed by updateSEO() below.
+ */
+export const injectJSONLDSchema = (
+  place = null,
+  canonicalUrl = "",
+  options = {}
+) => {
+  const {
+    isGallery = false,
+    isVideo = false,
+    isVideoGallery = false,
+    photos = [],
+    galleryVideos = [],
+    video = null,
+    videoIndex = 0
+  } = options;
+
+  if (
+    typeof document === "undefined"
+  ) {
+    return;
+  }
+
+  // ---------------------------------------------------------------------
+  // 12.1 Locate / create JSON-LD script
+  // ---------------------------------------------------------------------
+
+  let schemaScript =
+    document.getElementById(
+      "json-ld-schema"
+    );
+
+  if (!schemaScript) {
+    schemaScript =
+      document.createElement(
+        "script"
+      );
+
+    schemaScript.id =
+      "json-ld-schema";
+
+    schemaScript.setAttribute(
+      "type",
+      "application/ld+json"
+    );
+
+    document.head.appendChild(
+      schemaScript
+    );
+  }
+
+  // ---------------------------------------------------------------------
+  // 12.2 Base URL
+  // ---------------------------------------------------------------------
+
+  const BASE_URL = (
+    import.meta.env.VITE_SITE_URL ||
+    "https://www.myjournalview.com"
+  ).replace(
+    /\/+$/,
+    ""
+  );
+
+  // ---------------------------------------------------------------------
+  // 12.3 Safe JSON-LD serializer
+  // ---------------------------------------------------------------------
+
+  const writeSchema = (
+    schema
+  ) => {
+    if (!schema) {
+      schemaScript.textContent =
+        "";
+      return;
+    }
+
+    const safeJson =
+      JSON.stringify(
+        schema
+      ).replace(
+        /</g,
+        "\\u003c"
+      );
+
+    schemaScript.textContent =
+      safeJson;
+  };
+
+  // ---------------------------------------------------------------------
+  // 12.4 Individual VideoObject
+  // ---------------------------------------------------------------------
+
+  if (
+    isVideo &&
+    video &&
+    typeof video === "object"
+  ) {
+    const videoSchema =
+      buildVideoObjectSchema(
+        video,
+        videoIndex
+      );
+
+    writeSchema(
+      videoSchema
+    );
+
+    return;
+  }
+
+  // ---------------------------------------------------------------------
+  // 12.5 Video collection
+  // ---------------------------------------------------------------------
+
+  if (
+    isVideoGallery
+  ) {
+    const videoCollectionSchema =
+      buildVideoCollectionSchema(
+        galleryVideos,
+        canonicalUrl ||
+        `${BASE_URL}/videos`
+      );
+
+    writeSchema(
+      videoCollectionSchema
+    );
+
+    return;
+  }
+
+  // ---------------------------------------------------------------------
+  // 12.6 Default WebSite schema
+  // ---------------------------------------------------------------------
+
+  if (
+    !place ||
+    typeof place !== "object" ||
+    !place.place_name
+  ) {
+    const defaultSchema = {
+      "@context":
+        "https://schema.org",
+
+      "@type":
+        "WebSite",
+
+      "@id":
+        `${BASE_URL}/#website`,
+
+      name:
+        "My Journal",
+
+      url:
+        canonicalUrl ||
+        BASE_URL,
+
+      description:
+        "Explore remote Sri Lankan trails, hidden waterfalls, video journals, photo galleries, travel articles, and backcountry coordinates.",
+
+      abstract:
+        "විදිමු , රැකගමු අනාගතය වෙනුවෙන්. Live with care, preserve with love — for the future yet to come.",
+
+      publisher: {
+        "@type":
+          "Organization",
+
+        name:
+          "My Journal",
+
+        url:
+          BASE_URL,
+
+        logo: {
+          "@type":
+            "ImageObject",
+
+          url:
+            `${BASE_URL}/my-journal-logo.png`
+        }
+      },
+
+      sameAs: [
+        "https://www.youtube.com/@myjournalview"
+      ],
+
+      inLanguage:
+        "en"
+    };
+
+    writeSchema(
+      defaultSchema
+    );
+
+    return;
+  }
+
+  // ---------------------------------------------------------------------
+  // 12.7 Existing article JSONB
+  // ---------------------------------------------------------------------
+
+  const article =
+    typeof place.ai_article === "object" &&
+      place.ai_article !== null
+      ? place.ai_article
+      : {};
+
+  const legacyStory =
+    typeof place.ai_article === "string"
+      ? place.ai_article
+      : null;
+
+  const metrics =
+    article?.metrics &&
+      typeof article.metrics === "object"
+      ? article.metrics
+      : {};
+
+  const about =
+    article?.about &&
+      typeof article.about === "object"
+      ? article.about
+      : {};
+
+  const placeName =
+    getMediaSEOPlaceName(
+      place
+    );
+
+  const category =
+    getMediaSEOCategory(
+      place
+    );
+
+  const locality =
+    getMediaSEOLocality(
+      place
+    );
+
+  // ---------------------------------------------------------------------
+  // 12.8 Place description
+  // ---------------------------------------------------------------------
+
+  const placeDescription =
+    seoCleanText(
+      about?.overview ||
+      article?.story ||
+      legacyStory ||
+      place.description ||
+      (
+        locality
+          ? `Explore ${placeName} in ${locality}.`
+          : `Explore ${placeName} in Sri Lanka.`
+      ),
+      locality
+        ? `Explore ${placeName} in ${locality}.`
+        : `Explore ${placeName} in Sri Lanka.`
+    );
+
+  // ---------------------------------------------------------------------
+  // 12.9 Image Gallery schema
+  // ---------------------------------------------------------------------
+
+  if (isGallery) {
+    const photosList =
+      Array.isArray(photos) &&
+        photos.length > 0
+        ? photos
+        : (
+          Array.isArray(
+            place.album_photos
+          )
+            ? place.album_photos
+            : (
+              Array.isArray(
+                place.photos
+              )
+                ? place.photos
+                : []
+            )
+        );
+
+    const automaticImages =
+      buildAutomaticImageCollectionSEO(
+        photosList,
+        place
+      );
+
+    const galleryDescription =
+      seoCleanText(
+        locality
+          ? `High-resolution photo gallery and aerial drone perspectives of ${placeName}, a ${category} in ${locality}, Sri Lanka. Dedicated visual field notes and landscape photography.`
+          : `High-resolution photo gallery and aerial drone perspectives of ${placeName}, a ${category} in Sri Lanka. Dedicated visual field notes and landscape photography.`,
+        `Photo gallery of ${placeName}, Sri Lanka.`
+      );
+
+    const gallerySchema = {
+      "@context":
+        "https://schema.org",
+
+      "@type":
+        "ImageGallery",
+
+      "@id":
+        `${canonicalUrl}#gallery`,
+
+      name:
+        `${placeName} High-Resolution Photo Gallery & Aerial Perspectives`,
+
+      description:
+        galleryDescription,
+
+      url:
+        canonicalUrl,
+
+      isPartOf: {
+        "@type":
+          "WebSite",
+
+        name:
+          "My Journal",
+
+        url:
+          BASE_URL
+      },
+
+      primaryImageOfPage:
+        place.cover_photo_url ||
+        `${BASE_URL}/my-journal-logo.png`,
+
+      image:
+        automaticImages.map(
+          (image) => {
+            const latitude =
+              Number(
+                image.latitude
+              );
+
+            const longitude =
+              Number(
+                image.longitude
+              );
+
+            const hasCoordinates =
+              Number.isFinite(
+                latitude
+              ) &&
+              Number.isFinite(
+                longitude
+              );
+
+            return {
+              "@type":
+                "ImageObject",
+
+              "@id":
+                `${image.url}#image`,
+
+              url:
+                image.optimizedUrl ||
+                image.url,
+
+              contentUrl:
+                image.contentUrl ||
+                image.url,
+
+              name:
+                image.name ||
+                image.title,
+
+              caption:
+                image.caption,
+
+              description:
+                image.description,
+
+              representativeOfPage:
+                image.index === 1,
+
+              inLanguage:
+                "en",
+
+              ...(hasCoordinates
+                ? {
+                  contentLocation: {
+                    "@type":
+                      "Place",
+
+                    ...(image.placeName
+                      ? {
+                        name:
+                          image.placeName
+                      }
+                      : {}),
+
+                    geo: {
+                      "@type":
+                        "GeoCoordinates",
+
+                      latitude,
+
+                      longitude
+                    }
+                  }
+                }
+                : {})
+            };
+          }
+        ),
+
+      about: {
+        "@type":
+          "TouristAttraction",
+
+        name:
+          placeName,
+
+        ...(locality
+          ? {
+            address: {
+              "@type":
+                "PostalAddress",
+
+              addressLocality:
+                locality,
+
+              addressCountry:
+                "LK"
+            }
+          }
+          : {}),
+
+        ...(Number.isFinite(
+          Number(place.latitude)
+        ) &&
+          Number.isFinite(
+            Number(place.longitude)
+          )
+          ? {
+            geo: {
+              "@type":
+                "GeoCoordinates",
+
+              latitude:
+                Number(
+                  place.latitude
+                ),
+
+              longitude:
+                Number(
+                  place.longitude
+                )
+            }
+          }
+          : {})
+      }
+    };
+
+    writeSchema(
+      gallerySchema
+    );
+
+    return;
+  }
+
+  // ---------------------------------------------------------------------
+  // 12.10 TouristAttraction schema
+  // ---------------------------------------------------------------------
+
+  const additionalProperty = [];
+
+  if (
+    metrics?.difficulty_level
+  ) {
+    additionalProperty.push({
+      "@type":
+        "PropertyValue",
+
+      name:
+        "Trail Difficulty",
+
+      value:
+        metrics.difficulty_level
+    });
+  }
+
+  if (
+    metrics?.trek_distance_km !==
+    undefined &&
+    metrics?.trek_distance_km !==
+    null &&
+    metrics?.trek_distance_km !==
+    ""
+  ) {
+    additionalProperty.push({
+      "@type":
+        "PropertyValue",
+
+      name:
+        "Trek Distance",
+
+      value:
+        `${metrics.trek_distance_km} km`
+    });
+  }
+
+  if (
+    metrics?.estimated_time_mins !==
+    undefined &&
+    metrics?.estimated_time_mins !==
+    null &&
+    metrics?.estimated_time_mins !==
+    ""
+  ) {
+    additionalProperty.push({
+      "@type":
+        "PropertyValue",
+
+      name:
+        "Estimated Time",
+
+      value:
+        `${metrics.estimated_time_mins} mins`
+    });
+  }
+
+  if (
+    metrics?.elevation_m !==
+    undefined &&
+    metrics?.elevation_m !==
+    null &&
+    metrics?.elevation_m !==
+    ""
+  ) {
+    additionalProperty.push({
+      "@type":
+        "PropertyValue",
+
+      name:
+        "Elevation",
+
+      value:
+        `${metrics.elevation_m} m`
+    });
+  }
+
+  const latitude =
+    Number(
+      place.latitude
+    );
+
+  const longitude =
+    Number(
+      place.longitude
+    );
+
+  const hasCoordinates =
+    Number.isFinite(
+      latitude
+    ) &&
+    Number.isFinite(
+      longitude
+    );
+
+  const touristSchema = {
+    "@context":
+      "https://schema.org",
+
+    "@type":
+      "TouristAttraction",
+
+    "@id":
+      `${canonicalUrl}#place`,
+
+    name:
+      placeName,
+
+    description:
+      placeDescription,
+
+    url:
+      canonicalUrl,
+
+    image:
+      place.cover_photo_url ||
+      `${BASE_URL}/my-journal-logo.png`,
+
+    isPartOf: {
+      "@type":
+        "WebSite",
+
+      name:
+        "My Journal",
+
+      url:
+        BASE_URL
+    },
+
+    location: {
+      "@type":
+        "Place",
+
+      ...(locality
+        ? {
+          name:
+            locality,
+
+          address: {
+            "@type":
+              "PostalAddress",
+
+            addressLocality:
+              locality,
+
+            addressCountry:
+              "LK"
+          }
+        }
+        : {}),
+
+      ...(hasCoordinates
+        ? {
+          geo: {
+            "@type":
+              "GeoCoordinates",
+
+            latitude,
+
+            longitude
+          }
+        }
+        : {}),
+
+      ...(metrics?.elevation_m !==
+        undefined &&
+        metrics?.elevation_m !==
+        null &&
+        metrics?.elevation_m !==
+        ""
+        ? {
+          elevation:
+            `${metrics.elevation_m} m`
+        }
+        : {})
+    },
+
+    ...(additionalProperty.length > 0
+      ? {
+        additionalProperty
+      }
+      : {})
+  };
+
+  writeSchema(
+    touristSchema
+  );
+};
+
+// =======================================================================
+// 12A. CONSOLIDATED DOCUMENT SEO MANAGER
+// =======================================================================
+
+/**
+ * Centralized SEO manager for My Journal.
+ *
+ * Handles:
+ *
+ * - document title
+ * - meta description
+ * - robots
+ * - canonical URL
+ * - OpenGraph
+ * - Twitter cards
+ * - image gallery SEO
+ * - video SEO
+ * - video collection SEO
+ * - category SEO
+ * - search SEO
+ * - 404/noindex
+ * - JSON-LD
+ *
+ * IMPORTANT:
+ * This is the single document-level SEO owner for application routes.
+ *
+ * Presentation components such as PhotoGallery, VideoGallery and
+ * VideoDetailPage must NOT call updateSEO() themselves.
+ */
+export const updateSEO = (
+  place = null,
+  options = {}
+) => {
+  const normalizedOptions =
+    typeof options === "boolean"
+      ? {
+        isGallery:
+          options
+      }
+      : (
+        options &&
+          typeof options === "object"
+          ? options
+          : {}
+      );
+
   const {
     isGallery = false,
     isVideoGallery = false,
+    isVideo = false,
+    video = null,
+    videoIndex = 0,
     galleryPhotos = [],
+    galleryVideos = [],
     category = "All",
     searchTerm = "",
     categoryDescriptions = {},
     isNotFound = false,
-    isLoading = false,
-  } = typeof options === "boolean" ? { isGallery: options } : options;
+    isLoading = false
+  } = normalizedOptions;
+
+  // ---------------------------------------------------------------------
+  // 12A.1 Base URL
+  // ---------------------------------------------------------------------
 
   const BASE_URL = (
-    (typeof process !== "undefined" &&
-      (process.env.NEXT_PUBLIC_SITE_URL || process.env.VITE_SITE_URL)) ||
+    import.meta.env.VITE_SITE_URL ||
     "https://www.myjournalview.com"
-  ).replace(/\/$/, "");
+  ).replace(
+    /\/+$/,
+    ""
+  );
 
-  const DEFAULT_LOGO = `${BASE_URL}/my-journal-logo.png`;
-  const BRAND_SUFFIX = " | My Journal";
+  const DEFAULT_LOGO =
+    `${BASE_URL}/my-journal-logo.png`;
 
-  // PERMANENT HOME METADATA (Do not alter dynamically)
-  const PERMANENT_DEFAULT_TITLE = "Sri Lanka Backcountry Travel Guide | My Journal";
-  const PERMANENT_DEFAULT_OG_TITLE = "Sri Lanka Backcountry Travel Guide: Maps, Trails & Media";
-  const PERMANENT_DEFAULT_DESC = "Explore Sri Lanka's backcountry trails, hidden waterfalls, aerial drone video journals, field notes, and GPS map routes captured by drone and iPhone.";
+  const BRAND_SUFFIX =
+    " | My Journal";
 
-  let title = PERMANENT_DEFAULT_TITLE;
-  let ogTitle = PERMANENT_DEFAULT_OG_TITLE;
-  let description = PERMANENT_DEFAULT_DESC;
-  let rawCanonicalUrl = `${BASE_URL}/`;
-  let imageUrl = DEFAULT_LOGO;
-  let isNoIndex = false;
+  // ---------------------------------------------------------------------
+  // 12A.2 Defaults
+  // ---------------------------------------------------------------------
 
-  const hasPlace = Boolean(place && typeof place === "object" && place.place_name);
+  const PERMANENT_DEFAULT_TITLE =
+    "Sri Lanka Backcountry Travel Guide | My Journal";
 
-  // 1. Handle Page States
-  if (isNotFound && !isLoading) {
-    title = `Page Not Found${BRAND_SUFFIX}`;
-    ogTitle = "404 - Page Not Found";
-    description = "The requested location, gallery, or resource could not be found on My Journal.";
-    isNoIndex = true;
-  } else if (isVideoGallery) {
-    title = `Aerial & Video Journal${BRAND_SUFFIX}`;
-    ogTitle = "Sri Lanka Backcountry Video Journal & Aerial Drone Clips";
-    description = "Watch aerial drone perspectives, high-resolution video logs, and backcountry terrain footage across Sri Lanka.";
-    rawCanonicalUrl = `${BASE_URL}/videos`;
-  } else if (hasPlace) {
-    const placeName = place.place_name.trim();
-    const categoryName = place.category || "Attraction";
-    const localityName = place.locality ? `, ${place.locality}` : "";
+  const PERMANENT_DEFAULT_OG_TITLE =
+    "Sri Lanka Backcountry Travel Guide: Maps, Trails & Media";
 
-    // Normalize using place.slug first, falling back to place_name, piped through generateSlug
+  const PERMANENT_DEFAULT_DESC =
+    "Explore Sri Lanka's backcountry trails, hidden waterfalls, aerial drone video journals, field notes, and GPS map routes captured by drone and iPhone.";
+
+  let title =
+    PERMANENT_DEFAULT_TITLE;
+
+  let ogTitle =
+    PERMANENT_DEFAULT_OG_TITLE;
+
+  let description =
+    PERMANENT_DEFAULT_DESC;
+
+  let rawCanonicalUrl =
+    `${BASE_URL}/`;
+
+  let imageUrl =
+    DEFAULT_LOGO;
+
+  let isNoIndex =
+    false;
+
+  // ---------------------------------------------------------------------
+  // 12A.3 Valid place
+  // ---------------------------------------------------------------------
+
+  const hasPlace =
+    Boolean(
+      place &&
+      typeof place === "object" &&
+      place.place_name
+    );
+
+  // ---------------------------------------------------------------------
+  // 12A.4 404 / not found
+  // ---------------------------------------------------------------------
+
+  if (
+    isNotFound &&
+    !isLoading
+  ) {
+    title =
+      `Page Not Found${BRAND_SUFFIX}`;
+
+    ogTitle =
+      "404 - Page Not Found";
+
+    description =
+      "The requested location, gallery, video, or resource could not be found on My Journal.";
+
+    isNoIndex =
+      true;
+  }
+
+  // ---------------------------------------------------------------------
+  // 12A.5 Individual video
+  // ---------------------------------------------------------------------
+
+  else if (
+    isVideo &&
+    video &&
+    typeof video === "object"
+  ) {
+    const automaticVideo =
+      buildAutomaticVideoSEO(
+        video,
+        videoIndex
+      );
+
+    const videoTitle =
+      automaticVideo?.title ||
+      video?.title ||
+      "Sri Lanka Backcountry Video";
+
+    const videoDescription =
+      automaticVideo?.seoDescription ||
+      video?.description ||
+      `Watch ${videoTitle} from My Journal's Sri Lanka backcountry video archive.`;
+
+    title =
+      `${videoTitle}${BRAND_SUFFIX}`;
+
+    ogTitle =
+      automaticVideo?.seoTitle ||
+      videoTitle;
+
+    description =
+      truncateText(
+        videoDescription,
+        155
+      );
+
+    rawCanonicalUrl =
+      automaticVideo?.watchUrl ||
+      `${BASE_URL}/videos/${generateSlug(
+        videoTitle
+      )}`;
+
+    imageUrl =
+      automaticVideo?.thumbnailUrl ||
+      DEFAULT_LOGO;
+  }
+
+  // ---------------------------------------------------------------------
+  // 12A.6 Video gallery / collection
+  // ---------------------------------------------------------------------
+
+  else if (
+    isVideoGallery
+  ) {
+    title =
+      `Aerial & Video Journal${BRAND_SUFFIX}`;
+
+    ogTitle =
+      "Sri Lanka Backcountry Video Journal & Aerial Drone Clips";
+
+    description =
+      "Watch aerial drone perspectives, high-resolution video logs, and backcountry terrain footage across Sri Lanka.";
+
+    rawCanonicalUrl =
+      `${BASE_URL}/videos`;
+
+    imageUrl =
+      DEFAULT_LOGO;
+  }
+
+  // ---------------------------------------------------------------------
+  // 12A.7 Place / gallery
+  // ---------------------------------------------------------------------
+
+  else if (
+    hasPlace
+  ) {
+    const placeName =
+      seoCleanText(
+        place.place_name
+      );
+
+    const categoryName =
+      seoCleanText(
+        place.category,
+        "Attraction"
+      );
+
+    const localityValue =
+      seoCleanText(
+        place.locality
+      );
+
+    const localityName =
+      localityValue
+        ? `, ${localityValue}`
+        : "";
+
     const slug =
-      typeof generateSlug === "function"
-        ? generateSlug(place.slug || placeName)
-        : encodeURIComponent((place.slug || placeName).toLowerCase());
+      getMediaSEOPlaceSlug(
+        place
+      );
+
+    // -------------------------------------------------------------------
+    // 12A.7.1 Gallery
+    // -------------------------------------------------------------------
 
     if (isGallery) {
-      title = `${placeName} Photos (${categoryName})${BRAND_SUFFIX}`;
-      ogTitle = `${placeName} - Aerial Drone & Field Photos`;
-      description = `Visual field notes, terrain photos, and high-resolution aerial drone photography of ${placeName}${localityName}, Sri Lanka.`;
-      rawCanonicalUrl = `${BASE_URL}/gallery/${slug}`;
-    } else {
-      title = `${placeName} (${categoryName}) Guide${BRAND_SUFFIX}`;
-      ogTitle = `${placeName} Trail Guide: GPS Maps & Field Notes`;
+      title =
+        `${placeName} Photos (${categoryName})${BRAND_SUFFIX}`;
 
-      const rawStory = place.ai_article?.story || place.description;
+      ogTitle =
+        `${placeName} - Aerial Drone & Field Photos`;
+
+      description =
+        `Visual field notes, terrain photos, and high-resolution aerial drone photography of ${placeName}${localityName}, Sri Lanka.`;
+
+      rawCanonicalUrl =
+        `${BASE_URL}/gallery/${slug}`;
+    }
+
+    // -------------------------------------------------------------------
+    // 12A.7.2 Place
+    // -------------------------------------------------------------------
+
+    else {
+      title =
+        `${placeName} (${categoryName}) Guide${BRAND_SUFFIX}`;
+
+      ogTitle =
+        `${placeName} Trail Guide: GPS Maps & Field Notes`;
+
+      const article =
+        typeof place.ai_article === "object" &&
+          place.ai_article !== null
+          ? place.ai_article
+          : {};
+
+      const rawStory =
+        article?.story ||
+        (
+          typeof place.ai_article ===
+            "string"
+            ? place.ai_article
+            : null
+        ) ||
+        place.description;
+
       if (rawStory) {
-        description = rawStory.slice(0, 155).replace(/\s+\S*$/, ""); // Clean truncation without trailing words
+        description =
+          truncateText(
+            seoCleanText(
+              rawStory
+            ),
+            155
+          );
       } else {
-        description = `Backcountry guide for ${placeName}${localityName}, Sri Lanka. Features mapped GPS coordinates, route paths, terrain telemetry, and photos.`;
+        description =
+          `Backcountry guide for ${placeName}${localityName}, Sri Lanka. Features mapped GPS coordinates, route paths, terrain telemetry, and photos.`;
       }
-      rawCanonicalUrl = `${BASE_URL}/place/${slug}`;
+
+      rawCanonicalUrl =
+        `${BASE_URL}/place/${slug}`;
     }
 
-    if (place.cover_photo_url) {
-      imageUrl = place.cover_photo_url;
-      if (imageUrl.includes("googleusercontent.com")) {
-        imageUrl = `${imageUrl.split("=")[0].split("?")[0]}=w1200-rw`;
-      }
-    }
-  } else if (category && category !== "All") {
-    title = `${category} Travel Guide & Maps${BRAND_SUFFIX}`;
-    ogTitle = `Explore Top ${category} Locations in Sri Lanka`;
+    // -------------------------------------------------------------------
+    // 12A.7.3 Social image
+    // -------------------------------------------------------------------
 
-    const catDesc = categoryDescriptions[category];
-    description = catDesc
-      ? catDesc.slice(0, 155).replace(/\s+\S*$/, "")
-      : `Explore mapped ${category.toLowerCase()} destinations in Sri Lanka with field notes, coordinates, and photo guides.`;
-    rawCanonicalUrl = `${BASE_URL}/?category=${encodeURIComponent(category.toLowerCase())}`;
-  } else if (searchTerm) {
-    title = `Search: ${searchTerm}${BRAND_SUFFIX}`;
-    ogTitle = `Search Results for "${searchTerm}"`;
-    description = `Explore mapped locations, trails, and field notes matching "${searchTerm}" on My Journal.`;
+    if (
+      place.cover_photo_url
+    ) {
+      imageUrl =
+        getOptimizedUrl(
+          place.cover_photo_url,
+          1200,
+          82
+        );
+    }
   }
 
-  // 2. Canonical URL Normalization
-  let canonicalUrl = rawCanonicalUrl;
+  // ---------------------------------------------------------------------
+  // 12A.8 Category
+  // ---------------------------------------------------------------------
+
+  else if (
+    category &&
+    category !== "All"
+  ) {
+    const cleanCategory =
+      seoCleanText(
+        category,
+        "Travel"
+      );
+
+    title =
+      `${cleanCategory} Travel Guide & Maps${BRAND_SUFFIX}`;
+
+    ogTitle =
+      `Explore Top ${cleanCategory} Locations in Sri Lanka`;
+
+    const catDesc =
+      categoryDescriptions?.[
+      category
+      ];
+
+    description =
+      catDesc
+        ? truncateText(
+          seoCleanText(
+            catDesc
+          ),
+          155
+        )
+        : `Explore mapped ${cleanCategory.toLowerCase()} destinations in Sri Lanka with field notes, coordinates, and photo guides.`;
+
+    rawCanonicalUrl =
+      `${BASE_URL}/?category=${encodeURIComponent(
+        cleanCategory.toLowerCase()
+      )}`;
+  }
+
+  // ---------------------------------------------------------------------
+  // 12A.9 Search
+  // ---------------------------------------------------------------------
+
+  else if (
+    searchTerm
+  ) {
+    const cleanSearch =
+      seoCleanText(
+        searchTerm
+      );
+
+    title =
+      `Search: ${cleanSearch}${BRAND_SUFFIX}`;
+
+    ogTitle =
+      `Search Results for "${cleanSearch}"`;
+
+    description =
+      `Explore mapped locations, trails, and field notes matching "${cleanSearch}" on My Journal.`;
+  }
+
+  // ---------------------------------------------------------------------
+  // 12A.10 Canonical URL normalization
+  // ---------------------------------------------------------------------
+
+  let canonicalUrl;
+
   try {
-    const cleanUrl = new URL(rawCanonicalUrl);
-    cleanUrl.searchParams.delete("utm_source");
-    cleanUrl.searchParams.delete("utm_medium");
-    cleanUrl.searchParams.delete("utm_campaign");
-    cleanUrl.searchParams.delete("fbclid");
-    canonicalUrl = cleanUrl.toString().replace(/\/$/, "");
-  } catch (e) {
-    canonicalUrl = rawCanonicalUrl;
+    const cleanUrl =
+      new URL(
+        rawCanonicalUrl
+      );
+
+    [
+      "utm_source",
+      "utm_medium",
+      "utm_campaign",
+      "utm_term",
+      "utm_content",
+      "fbclid",
+      "gclid"
+    ].forEach(
+      (parameter) => {
+        cleanUrl.searchParams.delete(
+          parameter
+        );
+      }
+    );
+
+    canonicalUrl =
+      cleanUrl
+        .toString()
+        .replace(
+          /\/+$/,
+          ""
+        );
+
+    // Preserve root slash.
+    if (
+      cleanUrl.pathname === "/"
+    ) {
+      canonicalUrl =
+        `${cleanUrl.origin}/`;
+    }
+  } catch {
+    canonicalUrl =
+      rawCanonicalUrl;
   }
 
-  // 3. Strict SERP Pixel & Character Truncation (No literal "..." in Document Title)
-  if (title.length > 60) {
-    const brandIndex = title.indexOf(BRAND_SUFFIX);
-    if (brandIndex > 0) {
-      const coreTitle = title.substring(0, brandIndex);
-      const maxCoreLength = 60 - BRAND_SUFFIX.length;
-      const cleanCore = coreTitle.slice(0, maxCoreLength).replace(/\s+\S*$/, "");
-      title = `${cleanCore}${BRAND_SUFFIX}`;
+  // ---------------------------------------------------------------------
+  // 12A.11 Clean metadata
+  // ---------------------------------------------------------------------
+
+  description =
+    truncateText(
+      seoCleanText(
+        description
+      ),
+      155
+    );
+
+  ogTitle =
+    seoCleanText(
+      ogTitle,
+      title
+    );
+
+  // ---------------------------------------------------------------------
+  // 12A.12 Title length control
+  // ---------------------------------------------------------------------
+
+  if (
+    title.length > 60
+  ) {
+    const brandIndex =
+      title.indexOf(
+        BRAND_SUFFIX
+      );
+
+    if (
+      brandIndex > 0
+    ) {
+      const coreTitle =
+        title.substring(
+          0,
+          brandIndex
+        );
+
+      const maxCoreLength =
+        60 -
+        BRAND_SUFFIX.length;
+
+      let cleanCore =
+        coreTitle.slice(
+          0,
+          maxCoreLength
+        );
+
+      cleanCore =
+        cleanCore
+          .replace(
+            /\s+\S+$/,
+            ""
+          )
+          .trim();
+
+      title =
+        `${cleanCore}${BRAND_SUFFIX}`;
+    } else {
+      title =
+        title
+          .slice(
+            0,
+            60
+          )
+          .replace(
+            /\s+\S+$/,
+            ""
+          )
+          .trim();
     }
   }
 
-  // 4. Update Document Title
-  document.title = title;
+  // ---------------------------------------------------------------------
+  // 12A.13 Document title
+  // ---------------------------------------------------------------------
 
-  // 5. Sync Canonical Link Element
-  let canonicalEl = document.querySelector('link[rel="canonical"]');
-  if (!canonicalEl) {
-    canonicalEl = document.createElement("link");
-    canonicalEl.setAttribute("rel", "canonical");
-    document.head.appendChild(canonicalEl);
+  if (
+    typeof document !== "undefined"
+  ) {
+    document.title =
+      title;
   }
-  canonicalEl.setAttribute("href", canonicalUrl);
 
-  // 6. Sync Meta & OpenGraph Tags
-  const metaTags = {
-    "fb:app_id": "966242223397117",
-    robots: isNoIndex ? "noindex, follow" : "index, follow, max-image-preview:large",
-    description: description,
-    "og:title": ogTitle,
-    "og:description": description,
-    "og:image": imageUrl,
-    "og:url": canonicalUrl,
-    "og:type": hasPlace ? "article" : "website",
-    "og:site_name": "My Journal",
-    "twitter:card": "summary_large_image",
-    "twitter:title": ogTitle,
-    "twitter:description": description,
-    "twitter:image": imageUrl,
+  // ---------------------------------------------------------------------
+  // 12A.14 Canonical link
+  // ---------------------------------------------------------------------
+
+  if (
+    typeof document !== "undefined"
+  ) {
+    let canonicalEl =
+      document.querySelector(
+        'link[rel="canonical"]'
+      );
+
+    if (!canonicalEl) {
+      canonicalEl =
+        document.createElement(
+          "link"
+        );
+
+      canonicalEl.setAttribute(
+        "rel",
+        "canonical"
+      );
+
+      document.head.appendChild(
+        canonicalEl
+      );
+    }
+
+    canonicalEl.setAttribute(
+      "href",
+      canonicalUrl
+    );
+  }
+
+  // ---------------------------------------------------------------------
+  // 12A.15 Meta / OpenGraph / Twitter
+  // ---------------------------------------------------------------------
+
+  if (
+    typeof document !== "undefined"
+  ) {
+    const metaTags = {
+      "fb:app_id":
+        "966242223397117",
+
+      robots:
+        isNoIndex
+          ? "noindex, follow"
+          : "index, follow, max-image-preview:large",
+
+      description:
+        description,
+
+      "og:title":
+        ogTitle,
+
+      "og:description":
+        description,
+
+      "og:image":
+        imageUrl,
+
+      "og:url":
+        canonicalUrl,
+
+      "og:type":
+        isVideo
+          ? "video.other"
+          : (
+            hasPlace
+              ? "article"
+              : "website"
+          ),
+
+      "og:site_name":
+        "My Journal",
+
+      "og:locale":
+        "en_US",
+
+      "twitter:card":
+        "summary_large_image",
+
+      "twitter:title":
+        ogTitle,
+
+      "twitter:description":
+        description,
+
+      "twitter:image":
+        imageUrl
+    };
+
+    Object.entries(
+      metaTags
+    ).forEach(
+      ([key, content]) => {
+        const isProperty =
+          key.startsWith("og:") ||
+          key.startsWith("fb:");
+
+        const selector =
+          isProperty
+            ? `meta[property="${key}"]`
+            : `meta[name="${key}"]`;
+
+        let el =
+          document.querySelector(
+            selector
+          );
+
+        if (!el) {
+          el =
+            document.createElement(
+              "meta"
+            );
+
+          el.setAttribute(
+            isProperty
+              ? "property"
+              : "name",
+            key
+          );
+
+          document.head.appendChild(
+            el
+          );
+        }
+
+        el.setAttribute(
+          "content",
+          content || ""
+        );
+      }
+    );
+
+    // -------------------------------------------------------------------
+    // 12A.16 Remove stale video OpenGraph tags
+    // -------------------------------------------------------------------
+
+    const existingVideoTags =
+      document.querySelectorAll(
+        'meta[data-myjournal-video-meta="true"]'
+      );
+
+    existingVideoTags.forEach(
+      (el) => el.remove()
+    );
+
+    // -------------------------------------------------------------------
+    // 12A.17 Video-specific OpenGraph tags
+    // -------------------------------------------------------------------
+
+    if (
+      isVideo &&
+      video &&
+      typeof video === "object"
+    ) {
+      const automaticVideo =
+        buildAutomaticVideoSEO(
+          video,
+          videoIndex
+        );
+
+      const videoMeta = {
+        "og:video":
+          automaticVideo?.embedUrl,
+
+        "og:video:type":
+          "text/html",
+
+        "og:video:secure_url":
+          automaticVideo?.embedUrl,
+
+        "og:video:width":
+          "1280",
+
+        "og:video:height":
+          "720"
+      };
+
+      Object.entries(
+        videoMeta
+      ).forEach(
+        ([key, content]) => {
+          if (!content) {
+            return;
+          }
+
+          const el =
+            document.createElement(
+              "meta"
+            );
+
+          el.setAttribute(
+            "property",
+            key
+          );
+
+          el.setAttribute(
+            "content",
+            content
+          );
+
+          el.setAttribute(
+            "data-myjournal-video-meta",
+            "true"
+          );
+
+          document.head.appendChild(
+            el
+          );
+        }
+      );
+    }
+  }
+
+  // ---------------------------------------------------------------------
+  // 12A.18 JSON-LD
+  // ---------------------------------------------------------------------
+
+  if (
+    !isNoIndex &&
+    typeof injectJSONLDSchema ===
+    "function"
+  ) {
+    injectJSONLDSchema(
+      place,
+      canonicalUrl,
+      {
+        isGallery,
+
+        isVideo,
+
+        isVideoGallery,
+
+        photos:
+          galleryPhotos,
+
+        galleryVideos,
+
+        video,
+
+        videoIndex
+      }
+    );
+  } else if (
+    typeof document !== "undefined"
+  ) {
+    const schemaScript =
+      document.getElementById(
+        "json-ld-schema"
+      );
+
+    if (schemaScript) {
+      schemaScript.remove();
+    }
+  }
+
+  // ---------------------------------------------------------------------
+  // 12A.19 Return SEO state
+  // ---------------------------------------------------------------------
+
+  return {
+    title,
+
+    ogTitle,
+
+    description,
+
+    canonicalUrl,
+
+    imageUrl,
+
+    isNoIndex,
+
+    isGallery,
+
+    isVideo,
+
+    isVideoGallery
   };
-
-  Object.entries(metaTags).forEach(([key, content]) => {
-    const isProperty = key.startsWith("og:") || key.startsWith("fb:");
-    const selector = isProperty
-      ? `meta[property="${key}"]`
-      : `meta[name="${key}"]`;
-    let el = document.querySelector(selector);
-
-    if (!el) {
-      el = document.createElement("meta");
-      el.setAttribute(isProperty ? "property" : "name", key);
-      document.head.appendChild(el);
-    }
-    el.setAttribute("content", content || "");
-  });
-
-  // 7. Inject Structured JSON-LD Schema
-  if (!isNoIndex && typeof injectJSONLDSchema === "function") {
-    injectJSONLDSchema(place, canonicalUrl, isGallery, galleryPhotos);
-  }
 };
 
 // =======================================================================
@@ -804,185 +3333,377 @@ export const updateSEO = (place = null, options = {}) => {
 // =======================================================================
 
 /**
- * Initializes Microsoft Clarity analytics tracker
+ * Initializes Microsoft Clarity analytics tracker.
  */
 export const initClarity = () => {
-  if (typeof window === 'undefined' || document.getElementById('dynamic-clarity')) return;
+  if (
+    typeof window === 'undefined' ||
+    document.getElementById('dynamic-clarity')
+  ) {
+    return;
+  }
+
   (function (c, l, a, r, i, t, y) {
-    c[a] = c[a] || function () { (c[a].q = c[a].q || []).push(arguments) };
-    t = l.createElement(r); t.id = 'dynamic-clarity'; t.async = 1; t.src = "https://www.clarity.ms/tag/" + i + "?ref=bwt";
-    y = l.getElementsByTagName(r)[0]; y.parentNode.insertBefore(t, y);
-  })(window, document, "clarity", "script", "wogn225m7r");
+    c[a] =
+      c[a] ||
+      function () {
+        (c[a].q = c[a].q || []).push(arguments);
+      };
+
+    t = l.createElement(r);
+    t.id = 'dynamic-clarity';
+    t.async = 1;
+    t.src = `https://www.clarity.ms/tag/${i}?ref=bwt`;
+
+    y = l.getElementsByTagName(r)[0];
+    y.parentNode.insertBefore(t, y);
+  })(
+    window,
+    document,
+    'clarity',
+    'script',
+    'wogn225m7r'
+  );
 };
 
 /**
- * Fetches visitor geo-metadata from external IP fallback providers
+ * Invokes the Supabase telemetry Edge Function.
+ *
+ * IMPORTANT:
+ * Do not perform IP/geolocation lookups from the browser.
+ * The track-visit Edge Function is the single server-side telemetry
+ * endpoint and is responsible for obtaining the request IP and any
+ * server-side geolocation metadata required by the event.
+ *
+ * Supported event types:
+ *   - visit
+ *   - like
+ *   - unlike
+ *   - share
+ *   - comment
+ *
+ * The Edge Function should return the appropriate event result.
  */
-export const getInteractionMetadata = async () => {
-  let geo = { ip: '0.0.0.0', country: 'Unknown', region: 'Unknown', city: 'Unknown' };
-
-  const providers = [
-    {
-      url: 'https://ipwho.is/',
-      parse: (data) => ({ ip: data.ip, country: data.country, region: data.region, city: data.city })
-    },
-    {
-      url: 'https://ipapi.co/json/',
-      parse: (data) => ({ ip: data.ip, country: data.country_name, region: data.region, city: data.city })
-    },
-    {
-      url: 'https://api.db-ip.com/v2/free/self',
-      parse: (data) => ({ ip: data.ipAddress, country: data.countryName, region: data.stateProv, city: data.city })
-    }
-  ];
-
-  const fetchWithTimeout = async (url, timeoutMs = 3000) => {
-    const controller = new AbortController();
-    const id = setTimeout(() => controller.abort(), timeoutMs);
-    try {
-      const response = await fetch(url, { signal: controller.signal });
-      clearTimeout(id);
-      return response;
-    } catch (error) {
-      clearTimeout(id);
-      throw error;
-    }
-  };
-
-  for (const provider of providers) {
-    try {
-      const response = await fetchWithTimeout(provider.url, 3000);
-      if (!response.ok) throw new Error(`HTTP Error: ${response.status}`);
-      const data = await response.json();
-      const parsedData = provider.parse(data);
-
-      if (parsedData.ip && parsedData.ip !== '0.0.0.0') {
-        geo = {
-          ip: parsedData.ip,
-          country: parsedData.country || 'Unknown',
-          region: parsedData.region || 'Unknown',
-          city: parsedData.city || 'Unknown'
-        };
-        break;
-      }
-    } catch (e) {
-      console.warn(`Geo provider ${provider.url} failed, trying next...`);
-    }
+export const invokeInteractionEvent = async (
+  eventType,
+  payload = {}
+) => {
+  if (!supabaseClient) {
+    throw new Error('Supabase client is unavailable.');
   }
 
-  return geo;
+  if (typeof window === 'undefined') {
+    throw new Error('Telemetry requires a browser environment.');
+  }
+
+  const { data, error } =
+    await supabaseClient.functions.invoke(
+      'track-visit',
+      {
+        body: {
+          event_type: eventType,
+          page_path: window.location.pathname || '/',
+          user_agent: navigator.userAgent || '',
+          referrer: document.referrer
+            ? document.referrer.toLowerCase()
+            : '',
+          is_webdriver: Boolean(navigator.webdriver),
+          ...payload,
+        },
+      }
+    );
+
+  if (error) {
+    throw error;
+  }
+
+  return data;
 };
 
 /**
- * Logs visitor interactions to Supabase backend tracking function
-*/
-
-
+ * Logs a page visit through the Supabase backend tracking function.
+ *
+ * IP address and visitor geolocation are intentionally NOT obtained
+ * in the browser. The track-visit Edge Function handles those values
+ * server-side from the incoming request.
+ */
 export const logVisit = async (path = null) => {
-  // 1. Localhost exclusion
-  const host = window.location.hostname;
-  if (host === 'localhost' || host === '127.0.0.1' || host === '192.168.8.176') return;
+  // -------------------------------------------------------------------
+  // 1. Localhost / development exclusion
+  // -------------------------------------------------------------------
 
-  // 2. Owner mode bypass
-  const urlParams = new URLSearchParams(window.location.search);
-  if (urlParams.get('mode') === 'owner') {
-    localStorage.setItem('owner_auth_token', 'owner');
+  if (typeof window === 'undefined') {
+    return;
   }
-  if (localStorage.getItem('owner_auth_token') === 'owner' || !supabaseClient) return;
 
-  const safeDecode = (str) => {
-    try { return decodeURIComponent(str); } catch { return str; }
+  const host = window.location.hostname;
+
+  if (
+    host === 'localhost' ||
+    host === '127.0.0.1' ||
+    host === '192.168.8.176'
+  ) {
+    return;
+  }
+
+  // -------------------------------------------------------------------
+  // 2. Owner mode bypass
+  // -------------------------------------------------------------------
+
+  const urlParams = new URLSearchParams(
+    window.location.search
+  );
+
+  if (urlParams.get('mode') === 'owner') {
+    localStorage.setItem(
+      'owner_auth_token',
+      'owner'
+    );
+  }
+
+  if (
+    localStorage.getItem('owner_auth_token') === 'owner' ||
+    !supabaseClient
+  ) {
+    return;
+  }
+
+  // -------------------------------------------------------------------
+  // 3. Safe URL decoding helper
+  // -------------------------------------------------------------------
+
+  const safeDecode = (value) => {
+    try {
+      return decodeURIComponent(value);
+    } catch {
+      return value;
+    }
   };
 
-  // 3. Extract QR scan parameters and normalize path
-  const utmSource = (urlParams.get('utm_source') || '').toLowerCase();
-  const rawPath = path || window.location.pathname;
+  // -------------------------------------------------------------------
+  // 4. Extract QR / UTM parameters and normalize route
+  // -------------------------------------------------------------------
 
-  // Ensure a leading slash and uniform lowercasing for route checking
-  const trimmedPath = (rawPath || '').trim();
-  const normalizedPath = trimmedPath.startsWith('/') ? trimmedPath : `/${trimmedPath}`;
-  const lowerPath = normalizedPath.toLowerCase();
+  const utmSource = (
+    urlParams.get('utm_source') || ''
+  ).toLowerCase();
 
-  let loggingPath = rawPath;
+  const rawPath =
+    path || window.location.pathname || '/';
 
-  if (lowerPath === '/' || lowerPath === '/main page' || lowerPath === '') {
+  const trimmedPath = String(rawPath).trim();
+
+  const normalizedPath = trimmedPath.startsWith('/')
+    ? trimmedPath
+    : `/${trimmedPath}`;
+
+  const lowerPath =
+    normalizedPath.toLowerCase();
+
+  let loggingPath;
+
+  // Main page
+  if (
+    lowerPath === '/' ||
+    lowerPath === '/main page' ||
+    lowerPath === ''
+  ) {
     loggingPath = 'Main Page';
-  } else if (lowerPath === '/video gallery' || lowerPath.startsWith('/videos') || lowerPath.startsWith('/video-gallery')) {
+
+    // Video routes
+  } else if (
+    lowerPath === '/video gallery' ||
+    lowerPath.startsWith('/videos') ||
+    lowerPath.startsWith('/video-gallery')
+  ) {
     loggingPath = 'Video Gallery';
-  } else if (lowerPath === '/add function' || lowerPath === '/add') {
+
+    // Add function
+  } else if (
+    lowerPath === '/add function' ||
+    lowerPath === '/add' ||
+    lowerPath === '/suggest-spot'
+  ) {
     loggingPath = 'Add Function';
-  } else if (lowerPath === '/plan function' || lowerPath === '/plan') {
+
+    // Plan function
+  } else if (
+    lowerPath === '/plan function' ||
+    lowerPath === '/plan' ||
+    lowerPath === '/route-planner'
+  ) {
     loggingPath = 'Plan Function';
-  } else if (lowerPath.startsWith('/place/')) {
-    const slug = normalizedPath.slice(7).split('?')[0].replace(/\/$/, '');
-    const formattedSlug = safeDecode(slug).toLowerCase().trim().replace(/['’]/g, '').replace(/-/g, ' ');
+
+    // Place detail
+  } else if (
+    lowerPath.startsWith('/place/')
+  ) {
+    const slug = normalizedPath
+      .slice('/place/'.length)
+      .split('?')[0]
+      .replace(/\/+$/, '');
+
+    const formattedSlug = safeDecode(slug)
+      .toLowerCase()
+      .trim()
+      .replace(/['’]/g, '')
+      .replace(/-/g, ' ');
+
     loggingPath = `Place/${formattedSlug}`;
-  } else if (lowerPath.startsWith('/gallery/')) {
-    const slug = normalizedPath.slice(9).split('?')[0].replace(/\/$/, '');
-    const formattedSlug = safeDecode(slug).toLowerCase().trim().replace(/['’]/g, '').replace(/-/g, ' ');
+
+    // Photo gallery
+  } else if (
+    lowerPath.startsWith('/gallery/')
+  ) {
+    const slug = normalizedPath
+      .slice('/gallery/'.length)
+      .split('?')[0]
+      .replace(/\/+$/, '');
+
+    const formattedSlug = safeDecode(slug)
+      .toLowerCase()
+      .trim()
+      .replace(/['’]/g, '')
+      .replace(/-/g, ' ');
+
     loggingPath = `Gallery/${formattedSlug}`;
-  } else if (normalizedPath.startsWith('/')) {
-    loggingPath = safeDecode(normalizedPath.split('?')[0]).toLowerCase().replace(/^\/+|\/+$/g, '');
+
+    // Generic route
+  } else if (
+    normalizedPath.startsWith('/')
+  ) {
+    loggingPath = safeDecode(
+      normalizedPath.split('?')[0]
+    )
+      .toLowerCase()
+      .replace(/^\/+|\/+$/g, '');
+
   } else {
     loggingPath = rawPath;
   }
 
-  // 4. Rate-limit cache check (10 seconds per path)
+  // -------------------------------------------------------------------
+  // 5. In-memory rate limiting
+  //    Prevent duplicate requests within 10 seconds per route.
+  // -------------------------------------------------------------------
+
   const now = Date.now();
-  const lastLoggedTime = recentLogsCache.get(loggingPath);
-  if (lastLoggedTime && now - lastLoggedTime < 10000) return;
 
-  recentLogsCache.set(loggingPath, now);
-  recentLogsCache.forEach((timestamp, key) => {
-    if (now - timestamp > 60000) recentLogsCache.delete(key);
-  });
+  const lastLoggedTime =
+    recentLogsCache.get(loggingPath);
 
-  // 5. Session deduplication
-  const sessionKey = `logged_visit_${loggingPath}`;
-  if (sessionStorage.getItem(sessionKey)) return;
-  sessionStorage.setItem(sessionKey, 'true');
+  if (
+    lastLoggedTime &&
+    now - lastLoggedTime < 10000
+  ) {
+    return;
+  }
 
-  // 6. Invoke Edge Function
-  try {
-    const { error } = await supabaseClient.functions.invoke('track-visit', {
-      body: {
-        page_path: loggingPath,
-        user_agent: navigator.userAgent || "",
-        referrer: document.referrer ? document.referrer.toLowerCase() : "",
-        utm_source: utmSource,
-        is_webdriver: Boolean(navigator.webdriver)
+  recentLogsCache.set(
+    loggingPath,
+    now
+  );
+
+  // Remove stale entries.
+  recentLogsCache.forEach(
+    (timestamp, key) => {
+      if (now - timestamp > 60000) {
+        recentLogsCache.delete(key);
       }
-    });
-    if (error) throw error;
+    }
+  );
+
+  // -------------------------------------------------------------------
+  // 6. Session-level deduplication
+  // -------------------------------------------------------------------
+
+  const sessionKey =
+    `logged_visit_${loggingPath}`;
+
+  if (sessionStorage.getItem(sessionKey)) {
+    return;
+  }
+
+  sessionStorage.setItem(
+    sessionKey,
+    'true'
+  );
+
+  // -------------------------------------------------------------------
+  // 7. Send visit event to server
+  // -------------------------------------------------------------------
+
+  try {
+    await invokeInteractionEvent(
+      'visit',
+      {
+        page_path: loggingPath,
+        utm_source: utmSource,
+      }
+    );
   } catch (err) {
+    // Allow a failed telemetry request to be retried.
     sessionStorage.removeItem(sessionKey);
     recentLogsCache.delete(loggingPath);
-    console.error('Logging failed:', err);
+
+    console.error(
+      'Logging failed:',
+      err
+    );
   }
 };
 
 /**
- * Real-time Geolocation tracker watcher
+ * Real-time browser geolocation watcher.
+ *
+ * NOTE:
+ * This is different from IP geolocation.
+ *
+ * - IP address / IP-based country/city:
+ *     handled server-side by track-visit.
+ *
+ * - Device GPS/location:
+ *     handled here through the browser Geolocation API.
  */
-export const getUserLocation = (setUserCoords) => {
-  if (!navigator.geolocation) {
-    console.warn("Geolocation is not supported by this browser.");
+export const getUserLocation = (
+  setUserCoords
+) => {
+  if (
+    typeof navigator === 'undefined' ||
+    !navigator.geolocation
+  ) {
+    console.warn(
+      'Geolocation is not supported by this browser.'
+    );
+
     setUserCoords(DEFAULT_LOCATION);
+
     return null;
   }
 
   return navigator.geolocation.watchPosition(
-    (pos) => {
+    (position) => {
       setUserCoords({
-        lat: pos.coords.latitude,
-        lng: pos.coords.longitude,
+        lat: position.coords.latitude,
+        lng: position.coords.longitude,
       });
     },
-    (err) => {
-      console.warn("Geolocation tracking error:", err);
-      setUserCoords((prevCoords) => prevCoords || DEFAULT_LOCATION);
+    (error) => {
+      console.warn(
+        'Geolocation tracking error:',
+        error
+      );
+
+      setUserCoords(
+        (previousCoords) =>
+          previousCoords || DEFAULT_LOCATION
+      );
     },
-    { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
+    {
+      enableHighAccuracy: true,
+      timeout: 15000,
+      maximumAge: 0,
+    }
   );
 };
 
@@ -1018,7 +3739,6 @@ export const calculateMealAndStayMilestones = (routeData) => {
   if (!routeData || !routeData.coordinates || routeData.coordinates.length === 0) return null;
 
   const totalDist = parseFloat(routeData.distance) || 0;
-  const totalMinutes = routeData.duration || 0;
   const coords = routeData.coordinates;
 
   const getPointAtFraction = (fraction) => {
@@ -1058,20 +3778,6 @@ export const calculateMealAndStayMilestones = (routeData) => {
 // 16. GEMINI AI TRANSLATION SERVICE
 // =======================================================================
 
-const genAI = new GoogleGenerativeAI(import.meta.env.VITE_ARTICLE_KEY);
-
-const MODEL_PRIORITY_LIST = [
-  "gemini-2.5-flash",
-  "gemini-2.5-pro",
-  "gemini-1.5-flash" // Fallback
-];
-
-const generationConfig = {
-  maxOutputTokens: 65536, // Gemini 2.5 Flash max limit
-  temperature: 0.2,
-  responseMimeType: "application/json",
-};
-
 const SUPPORTED_LANGUAGES = {
   'ar': 'Arabic', 'de': 'German', 'en': 'English', 'es': 'Spanish',
   'fr': 'French', 'he': 'Hebrew', 'hi': 'Hindi', 'in': 'Indonesian', 'it': 'Italian',
@@ -1083,9 +3789,6 @@ const SUPPORTED_LANGUAGES = {
 // In-memory cache store
 const translationCache = new Map();
 
-// Helper function for exponential backoff delay between model fallbacks
-const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
-
 export const translateContentService = async (ai_article, targetLangCode, articleId) => {
   if (!ai_article) return ai_article;
 
@@ -1096,110 +3799,42 @@ export const translateContentService = async (ai_article, targetLangCode, articl
     return ai_article;
   }
 
-  // BUMPED CACHE KEY VERSION (v3) to bust previous incomplete translations
-  const cacheKey = `v3:${baseLang}:${articleId}`;
+  const sourceFields = JSON.stringify({
+    seo_intro: ai_article.seo_intro || "",
+    story: ai_article.story || "",
+    history: ai_article.history || "",
+    why_visit_summary: ai_article.why_visit?.summary || "",
+  });
+  const cacheKey = "v5:" + baseLang + ":" + String(articleId || "article") + ":" + sourceFields;
 
   // 2. Cache hit check
   if (translationCache.has(cacheKey)) {
     return translationCache.get(cacheKey);
   }
 
-  let translatedData = null;
-  let success = false;
-
   try {
-    const lookupKey = targetLangCode?.toLowerCase();
-    const targetLanguageName = SUPPORTED_LANGUAGES[lookupKey] || SUPPORTED_LANGUAGES[baseLang] || baseLang;
+    const response = await fetch("/api/translate-content", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ article: ai_article, targetLangCode: baseLang }),
+    });
+    if (!response.ok) throw new Error(`Translation service returned ${response.status}.`);
 
-    // TRANSLATION PROMPT — TARGET ONLY THE FOUR ARTICLE PROSE FIELDS
-    const prompt = `
-You are an expert localization engine.
-
-Translate ONLY these four human-readable prose fields into "${targetLanguageName}":
-
-1. seo_intro
-2. why_visit.summary
-3. story
-4. history
-
-CRITICAL CONSTRAINTS:
-1. Keep ALL JSON keys exactly unchanged.
-2. Keep ALL numeric values, booleans, arrays, and technical values unchanged.
-3. DO NOT translate any other fields.
-4. The following exact JSON paths MUST be translated:
-   - ["seo_intro"]
-   - ["why_visit"]["summary"]
-   - ["story"]
-   - ["history"]
-5. Preserve the exact JSON structure and all existing nodes.
-6. Do not add, remove, rename, or reorder fields.
-7. Return a complete valid JSON object only.
-8. Never return markdown fences or explanatory text.
-9. If one of the four fields is missing or empty in the source, leave it unchanged.
-10. The translated result MUST contain all four original fields when they exist.
-
-SOURCE JSON:
-${JSON.stringify(ai_article)}
-`.trim();
-
-    for (let i = 0; i < MODEL_PRIORITY_LIST.length; i++) {
-      const modelName = MODEL_PRIORITY_LIST[i];
-      let currentResponseText = '';
-
-      try {
-        const model = genAI.getGenerativeModel({ model: modelName, generationConfig });
-        const result = await model.generateContent(prompt);
-        currentResponseText = result.response.text().trim();
-
-        // Strip markdown fences cleanly
-        let cleanJsonText = currentResponseText
-          .replace(/^```(?:json)?\s*/gi, '')
-          .replace(/\s*```$/gi, '')
-          .trim();
-
-        // Attempt JSON parse with auto-repair for truncated tail brackets
-        try {
-          translatedData = JSON.parse(cleanJsonText);
-        } catch (parseErr) {
-          if (!cleanJsonText.endsWith('}')) {
-            console.warn(`[Translation Engine] JSON truncation detected for ${modelName}. Attempting auto-repair...`);
-            cleanJsonText += '}';
-            translatedData = JSON.parse(cleanJsonText);
-          } else {
-            throw parseErr;
-          }
-        }
-
-        success = true;
-        break; // Exit loop on successful translation & parse
-      } catch (err) {
-        console.warn(`[Translation Engine] ${modelName} failed generation or produced invalid JSON. Output length: ${currentResponseText.length}`);
-        if (currentResponseText) {
-          console.log(`[Raw Output Preview]:`, currentResponseText.substring(0, 300) + '...[TRUNCATED]');
-        }
-
-        // Exponential backoff delay before hitting next fallback model to prevent rate-limit cascading (HTTP 429)
-        if (i < MODEL_PRIORITY_LIST.length - 1) {
-          const backoffDelay = Math.pow(2, i) * 1000; // 1000ms, 2000ms...
-          console.warn(`[Translation Engine] Delaying ${backoffDelay}ms before trying fallback model...`);
-          await delay(backoffDelay);
-        }
-      }
+    const payload = await response.json();
+    if (!payload.translation || typeof payload.translation !== "object") {
+      throw new Error("Translation service returned an invalid response.");
     }
 
-    if (!success || !translatedData) {
-      throw new Error("All translation models failed to produce valid JSON.");
-    }
-
-    const finalResult = { ...translatedData, language: baseLang };
-
-    // Save to cache
+    const finalResult = { ...ai_article, ...payload.translation, language: baseLang };
     translationCache.set(cacheKey, finalResult);
+    if (translationCache.size > 100) {
+      translationCache.delete(translationCache.keys().next().value);
+    }
     return finalResult;
 
   } catch (error) {
-    console.error("[Translation Engine Error]: Fallback to original content.", error);
-    return ai_article; // Default fallback on failure
+    console.error("Translation request failed.", error);
+    throw error;
   }
 };
 
@@ -1455,917 +4090,3302 @@ const MapSelectionComponent = React.memo(({ onLocationSelect, initialCoords, onM
   return <div ref={mapRef} style={{ height: '100%', width: '100%' }} />;
 });
 
-
 /*
-* ============================================================
-* PHOTO GALLERY
-* ============================================================
-*/
+ * ============================================================
+ * PHOTO GALLERY
+ * ============================================================
+ *
+ * AUTOMATIC SEO ARCHITECTURE
+ * --------------------------
+ *
+ * Image SEO is generated at runtime from:
+ *
+ *   selectedLocation
+ *   +
+ *   album_photos[]
+ *   +
+ *   image array index
+ *
+ * No image SEO database table is required.
+ *
+ * Section 11 helpers expected:
+ *
+ *   generateSlug()
+ *   getOptimizedUrl()
+ *   buildAutomaticImageSEO()
+ *   buildAutomaticImageCollectionSEO()
+ *   getAutomaticGallerySEOUrl()
+ *
+ * MASTER SEO OWNERSHIP:
+ *
+ *   Section 34
+ *       ↓
+ *   owns document-level SEO
+ *
+ *   Section 11
+ *       ↓
+ *   owns automatic image SEO/schema helpers
+ *
+ *   PhotoGallery
+ *       ↓
+ *   presentation + gallery URL lifecycle only
+ *
+ * IMPORTANT:
+ *
+ * This component deliberately does NOT:
+ *
+ *   - call updateSEO()
+ *   - inject JSON-LD
+ *   - remove JSON-LD
+ *   - modify document.title
+ *   - modify meta tags
+ *
+ * The automatically generated image SEO data is available to the
+ * presentation layer and is supplied to the master SEO controller
+ * by the parent/controller architecture.
+ *
+ * This component owns:
+ *
+ *   - gallery presentation
+ *   - lightbox
+ *   - slideshow
+ *   - keyboard controls
+ *   - gallery URL lifecycle
+ *   - image accessibility metadata
+ *   - Pinterest sharing
+ *
+ * It does NOT create persistent SEO records.
+ * ============================================================
+ */
+
 
 export const PhotoGallery = React.memo(
-  ({ photos, onClose, placeName, selectedLocation, onShare, handleShareEvent }) => {
-    const [activeIndex, setActiveIndex] = useState(null);
-    const [isSlideshowActive, setIsSlideshowActive] = useState(false);
+  ({
+    photos,
+    onClose,
+    placeName,
+    selectedLocation,
+    onShare,
+    handleShareEvent
+  }) => {
 
-    // Drag-scroll hooks for scrollable containers
-    const gridScrollRef = typeof useDragScroll === 'function' ? useDragScroll() : null;
-    const lightboxScrollRef = typeof useDragScroll === 'function' ? useDragScroll() : null;
+    // ==========================================================
+    // STATE
+    // ==========================================================
 
-    const preventCopy = (e) => {
-      e.preventDefault();
-      return false;
-    };
+    const [activeIndex, setActiveIndex] =
+      useState(null);
 
-    /*
-     * ============================================================
-     * PHOTO GALLERY SEO
-     * ============================================================
-     */
-    useEffect(() => {
-      if (selectedLocation || placeName) {
-        const locationObj = selectedLocation || { place_name: placeName };
+    const [isSlideshowActive, setIsSlideshowActive] =
+      useState(false);
 
-        if (typeof updateSEO === 'function') {
-          updateSEO(locationObj, {
-            isGallery: true,
-            galleryPhotos: photos,
-          });
-        }
-      }
-    }, [selectedLocation, placeName, photos]);
 
-    /*
-     * ============================================================
-     * PHOTO GALLERY MODAL + URL LIFECYCLE
-     * ============================================================
-     */
-    useEffect(() => {
-      const scrollY = window.scrollY;
-      document.body.classList.add('modal-open');
+    // ==========================================================
+    // NORMALIZED LOCATION
+    // ==========================================================
 
-      const locationObj =
-        selectedLocation || (placeName ? { place_name: placeName } : null);
-
-      if (locationObj?.place_name || locationObj?.slug) {
-        const rawName = String(locationObj.slug || locationObj.place_name);
-        const gallerySlug =
-          typeof generateSlug === 'function'
-            ? generateSlug(rawName)
-            : encodeURIComponent(rawName.toLowerCase());
-        const galleryPath = `/gallery/${gallerySlug}`;
-
-        // Dynamic URL update (Triggers automated page-watcher/analytics without manual log calls)
-        if (window.location.pathname !== galleryPath) {
-          window.history.pushState(
-            {
-              modalOpen: true,
-              gallery: true,
-              placeId: locationObj.id || null,
-            },
-            '',
-            galleryPath
-          );
-        }
+    const locationObj = useMemo(() => {
+      if (selectedLocation) {
+        return selectedLocation;
       }
 
-      const handlePopState = () => {
-        if (typeof onClose === 'function') {
-          onClose();
-        }
-      };
-
-      window.addEventListener('popstate', handlePopState);
-
-      return () => {
-        document.body.classList.remove('modal-open');
-        window.scrollTo(0, scrollY);
-        window.removeEventListener('popstate', handlePopState);
-      };
-    }, [selectedLocation, placeName, onClose]);
-
-    /*
-     * ============================================================
-     * IMAGE NAVIGATION
-     * ============================================================
-     */
-    const nextImage = (e) => {
-      if (e) e.stopPropagation();
-      if (!photos || photos.length === 0) return;
-      setActiveIndex((prev) => (prev + 1) % photos.length);
-    };
-
-    const prevImage = (e) => {
-      if (e) e.stopPropagation();
-      if (!photos || photos.length === 0) return;
-      setActiveIndex((prev) => (prev - 1 + photos.length) % photos.length);
-    };
-
-    /*
-     * ============================================================
-     * SLIDESHOW
-     * ============================================================
-     */
-    useEffect(() => {
-      let timer;
-
-      if (isSlideshowActive && activeIndex !== null) {
-        timer = setTimeout(() => {
-          nextImage();
-        }, 5000);
+      if (placeName) {
+        return {
+          place_name: placeName
+        };
       }
 
-      return () => clearTimeout(timer);
-    }, [isSlideshowActive, activeIndex, photos]);
+      return null;
+    }, [
+      selectedLocation,
+      placeName
+    ]);
 
-    /*
-     * ============================================================
-     * KEYBOARD CONTROLS
-     * ============================================================
-     */
-    useEffect(() => {
-      const handleKeyDown = (e) => {
-        if (activeIndex === null) return;
 
-        if (e.key === 'ArrowRight') {
-          nextImage();
-          setIsSlideshowActive(false);
-        }
+    // ==========================================================
+    // NORMALIZED PHOTOS
+    // ==========================================================
 
-        if (e.key === 'ArrowLeft') {
-          prevImage(e);
-          setIsSlideshowActive(false);
-        }
+    const normalizedPhotos = useMemo(() => {
+      if (!Array.isArray(photos)) {
+        return [];
+      }
 
-        if (e.key === 'Escape') {
-          setActiveIndex(null);
-        }
-
-        if (e.key === ' ') {
-          e.preventDefault();
-          setIsSlideshowActive((prev) => !prev);
-        }
-      };
-
-      window.addEventListener('keydown', handleKeyDown);
-
-      return () => {
-        window.removeEventListener('keydown', handleKeyDown);
-      };
-    }, [activeIndex, photos]);
-
-    /*
-     * ============================================================
-     * PINTEREST INTEGRATION
-     * ============================================================
-     */
-    const handlePinterestSave = (e, imageUrl, locationData) => {
-      e.stopPropagation();
-
-      const locationName =
-        locationData?.place_name || placeName || 'New Discovery';
-      const rawSlugOrName = locationData?.slug || locationName;
-      const rawCategory = locationData?.category || 'Location';
-      const baseUrl = 'https://www.myjournalview.com';
-
-      const formattedLocation =
-        typeof generateSlug === 'function'
-          ? generateSlug(rawSlugOrName)
-          : encodeURIComponent(String(rawSlugOrName).toLowerCase());
-
-      const sourceUrl = `${baseUrl}/gallery/${formattedLocation}?utm_source=pinterest_save_btn`;
-
-      const mandatoryHashtags = [
-        'MyJournal',
-        'SriLanka',
-        'VisitSriLanka',
-        'TravelSriLanka',
-        'WanderlustSriLanka',
-        'BeautifulSriLanka',
-        'HiddenGemsSriLanka',
-        'SriLankaDiaries',
-        'ChasingWaterfalls',
-        'HikingAdventures',
-        'CampingLife',
-        'MountainViews',
-        'NatureSeekers',
-        'AdventureSriLanka',
-        'ExploreSriLanka',
-        'TravelPhotography',
-        'TravelDiaries',
-        'IslandParadise',
-        'ProtectNature',
-        'CeylonVibes',
+      return [
+        ...new Set(
+          photos.filter(Boolean)
+        )
       ];
+    }, [photos]);
 
-      const categoryMap = {
-        Waterfall: ['Waterfalls', 'Nature'],
-        Mountain: ['Mountains', 'Peaks', 'Hiking'],
-        Trail: ['Trekking', 'Adventure'],
-        Viewpoint: ['ScenicViews', 'Landscape'],
-        Beach: ['Coastal', 'OceanVibes', 'BeachLife'],
-        Park: ['NationalPark', 'Wildlife'],
-        Plateaus: ['Highlands', 'Plains'],
-        'Reserved Forest': ['Rainforest', 'EcoTravel'],
-        Monastery: ['Spiritual', 'BuddhistTemple', 'Serenity'],
-        Archaeology: ['AncientHistory', 'Heritage', 'HistoricalSites'],
-        Reservoir: ['Lakes', 'WaterViews'],
-        Pool: ['NaturalPool', 'Swimming'],
-        Stream: ['Rivers', 'Streams'],
-        Location: ['Travel', 'Explore'],
+
+    // ==========================================================
+    // SEO PLACE
+    // ==========================================================
+    //
+    // Presentation-safe fallback only.
+    //
+    // This does NOT create a persistent SEO record and does not
+    // directly control document-level SEO.
+    //
+    // ==========================================================
+
+    const gallerySEOPlace = useMemo(
+      () =>
+        locationObj || {
+          place_name:
+            placeName ||
+            "Sri Lanka Backcountry Location"
+        },
+      [
+        locationObj,
+        placeName
+      ]
+    );
+
+
+    // ==========================================================
+    // AUTOMATIC IMAGE SEO
+    // ==========================================================
+    //
+    // Used by:
+    //
+    //   - gallery rendering
+    //   - alt text
+    //   - semantic image context
+    //   - lightbox image metadata
+    //
+    // Document-level SEO remains owned by Section 34.
+    //
+    // ==========================================================
+
+    const imageSEOCollection = useMemo(() => {
+
+      if (
+        typeof buildAutomaticImageCollectionSEO ===
+        "function"
+      ) {
+        return buildAutomaticImageCollectionSEO(
+          normalizedPhotos,
+          gallerySEOPlace
+        );
+      }
+
+      /*
+       * Defensive fallback.
+       *
+       * Section 11 normally provides the automatic helper.
+       */
+
+      return normalizedPhotos.map(
+        (url, index) => ({
+          url,
+
+          optimizedUrl:
+            typeof getOptimizedUrl ===
+              "function"
+              ? getOptimizedUrl(
+                url,
+                1200,
+                82
+              )
+              : url,
+
+          index: index + 1,
+
+          placeName:
+            gallerySEOPlace?.place_name ||
+            placeName ||
+            "Sri Lanka Backcountry Location",
+
+          category:
+            gallerySEOPlace?.category ||
+            "natural attraction",
+
+          locality:
+            gallerySEOPlace?.locality ||
+            "Sri Lanka"
+        })
+      );
+
+    }, [
+      normalizedPhotos,
+      gallerySEOPlace,
+      placeName
+    ]);
+
+
+    // ==========================================================
+    // ACTIVE IMAGE SEO
+    // ==========================================================
+
+    const activeImageSEO =
+      activeIndex !== null
+        ? imageSEOCollection[
+        activeIndex
+        ] || null
+        : null;
+
+
+    // ==========================================================
+    // DRAG SCROLL
+    // ==========================================================
+
+    const gridScrollRef = useDragScroll();
+
+    const lightboxScrollRef = useDragScroll();
+
+
+    // ==========================================================
+    // GALLERY SLUG
+    // ==========================================================
+
+    const gallerySlug = useMemo(() => {
+
+      const rawName =
+        gallerySEOPlace?.place_name ||
+        placeName ||
+        "gallery";
+
+      if (
+        typeof generateSlug ===
+        "function"
+      ) {
+        return gallerySEOPlace?.place_name || gallerySEOPlace?.slug
+          ? getMediaSEOPlaceSlug(gallerySEOPlace)
+          : generateSlug(rawName);
+      }
+
+      return encodeURIComponent(
+        String(rawName)
+          .toLowerCase()
+          .trim()
+      );
+
+    }, [
+      gallerySEOPlace,
+      placeName
+    ]);
+
+
+    // ==========================================================
+    // CANONICAL GALLERY PATH
+    // ==========================================================
+
+    const galleryPath =
+      `/gallery/${gallerySlug}`;
+
+
+    // ==========================================================
+    // CLOSE GALLERY
+    // ==========================================================
+    //
+    // This function owns gallery UI/history state only.
+    //
+    // It deliberately does NOT call updateSEO().
+    //
+    // Section 34 observes the resulting application state and
+    // restores the appropriate document SEO.
+    //
+    // ==========================================================
+
+    const handleCloseGallery =
+      useCallback(
+        (e) => {
+
+          if (e) {
+            e.stopPropagation();
+          }
+
+          setActiveIndex(null);
+          setIsSlideshowActive(false);
+
+          if (
+            window.location.pathname.startsWith(
+              "/gallery/"
+            )
+          ) {
+
+            const state =
+              window.history.state;
+
+            if (
+              state?.modalOpen === true &&
+              state?.gallery === true
+            ) {
+
+              window.history.back();
+
+            } else if (
+              window.history.length > 1
+            ) {
+
+              /*
+               * Compatibility fallback for older gallery
+               * history entries.
+               */
+
+              window.history.back();
+
+            } else {
+
+              window.history.replaceState(
+                {
+                  modalOpen: false
+                },
+                "",
+                "/"
+              );
+
+            }
+
+          }
+
+          if (
+            typeof onClose ===
+            "function"
+          ) {
+            onClose();
+          }
+
+        },
+        [onClose]
+      );
+
+
+    // ==========================================================
+    // COPY PROTECTION
+    // ==========================================================
+
+    const preventCopy =
+      useCallback((e) => {
+        e.preventDefault();
+        return false;
+      }, []);
+
+
+    // ==========================================================
+    // IMAGE NAVIGATION
+    // ==========================================================
+
+    const nextImage =
+      useCallback(
+        (e) => {
+
+          if (e) {
+            e.stopPropagation();
+          }
+
+          if (
+            normalizedPhotos.length === 0
+          ) {
+            return;
+          }
+
+          setActiveIndex(
+            (previous) => {
+
+              if (
+                previous === null
+              ) {
+                return 0;
+              }
+
+              return (
+                previous + 1
+              ) %
+                normalizedPhotos.length;
+
+            }
+          );
+
+        },
+        [
+          normalizedPhotos.length
+        ]
+      );
+
+
+    const prevImage =
+      useCallback(
+        (e) => {
+
+          if (e) {
+            e.stopPropagation();
+          }
+
+          if (
+            normalizedPhotos.length === 0
+          ) {
+            return;
+          }
+
+          setActiveIndex(
+            (previous) => {
+
+              if (
+                previous === null
+              ) {
+                return (
+                  normalizedPhotos.length -
+                  1
+                );
+              }
+
+              return (
+                previous -
+                1 +
+                normalizedPhotos.length
+              ) %
+                normalizedPhotos.length;
+
+            }
+          );
+
+        },
+        [
+          normalizedPhotos.length
+        ]
+      );
+
+
+    // ==========================================================
+    // MASTER SEO
+    // ==========================================================
+    //
+    // IMPORTANT:
+    //
+    // PhotoGallery does NOT call updateSEO().
+    //
+    // Section 34 remains the single document-SEO owner.
+    //
+    // ==========================================================
+
+
+    // ==========================================================
+    // MODAL + URL LIFECYCLE
+    // ==========================================================
+
+    useEffect(() => {
+
+      if (!locationObj) {
+        return undefined;
+      }
+
+      const scrollY =
+        window.scrollY;
+
+      document.body.classList.add(
+        "modal-open"
+      );
+
+      /*
+       * Only create the gallery history entry
+       * when the current URL is not already the
+       * canonical gallery URL.
+       */
+
+      if (
+        window.location.pathname !==
+        galleryPath
+      ) {
+
+        window.history.pushState(
+          {
+            ...(window.history.state || {}),
+
+            modalOpen: true,
+
+            gallery: true,
+
+            placeId:
+              locationObj.id ||
+              null,
+
+            gallerySlug,
+
+            galleryOrigin:
+              window.location.pathname
+          },
+          "",
+          galleryPath
+        );
+
+      }
+
+
+      const handlePopState =
+        () => {
+
+          if (
+            typeof onClose ===
+            "function"
+          ) {
+            onClose();
+          }
+
+        };
+
+
+      window.addEventListener(
+        "popstate",
+        handlePopState
+      );
+
+
+      return () => {
+
+        document.body.classList.remove(
+          "modal-open"
+        );
+
+        window.scrollTo(
+          0,
+          scrollY
+        );
+
+        window.removeEventListener(
+          "popstate",
+          handlePopState
+        );
+
       };
 
-      const uniqueHashtags = new Set(mandatoryHashtags);
-      const locationHashtag = locationName.replace(/[^a-zA-Z0-9]/g, '');
+    }, [
+      locationObj,
+      galleryPath,
+      gallerySlug,
+      onClose
+    ]);
 
-      if (locationHashtag) {
-        uniqueHashtags.add(locationHashtag);
+
+    // ==========================================================
+    // SLIDESHOW
+    // ==========================================================
+
+    useEffect(() => {
+
+      if (
+        !isSlideshowActive ||
+        activeIndex === null ||
+        normalizedPhotos.length <= 1
+      ) {
+        return undefined;
       }
 
-      const dynamicTags = categoryMap[rawCategory] || [];
-      dynamicTags.forEach((tag) => uniqueHashtags.add(tag));
+      const timer =
+        window.setTimeout(
+          () => {
+            nextImage();
+          },
+          5000
+        );
 
-      const hashtagString = Array.from(uniqueHashtags)
-        .map((tag) => `#${tag}`)
-        .join(' ');
+      return () => {
+        window.clearTimeout(
+          timer
+        );
+      };
 
-      const protectedDescription =
-        `New Adventure: ${locationName} (${rawCategory}) 🏔️ | ` +
-        `Experience breathtaking views and cinematic highlights. ` +
-        `See the full gallery on My Journal! © Hasitha Gunasekera\n\n` +
-        hashtagString;
+    }, [
+      isSlideshowActive,
+      activeIndex,
+      normalizedPhotos.length,
+      nextImage
+    ]);
 
-      const pinterestUrl =
-        `https://www.pinterest.com/pin/create/button/?` +
-        `url=${encodeURIComponent(sourceUrl)}` +
-        `&media=${encodeURIComponent(imageUrl)}` +
-        `&description=${encodeURIComponent(protectedDescription)}`;
 
-      window.open(
-        pinterestUrl,
-        '_blank',
-        'width=600,height=700,scrollbars=yes,resizable=yes'
+    // ==========================================================
+    // KEYBOARD CONTROLS
+    // ==========================================================
+
+    useEffect(() => {
+
+      const handleKeyDown =
+        (e) => {
+
+          if (
+            activeIndex === null
+          ) {
+            return;
+          }
+
+          if (
+            e.key ===
+            "ArrowRight"
+          ) {
+
+            nextImage();
+
+            setIsSlideshowActive(
+              false
+            );
+
+            return;
+
+          }
+
+          if (
+            e.key ===
+            "ArrowLeft"
+          ) {
+
+            prevImage();
+
+            setIsSlideshowActive(
+              false
+            );
+
+            return;
+
+          }
+
+          if (
+            e.key ===
+            "Escape"
+          ) {
+
+            setActiveIndex(
+              null
+            );
+
+            setIsSlideshowActive(
+              false
+            );
+
+            return;
+
+          }
+
+          if (
+            e.key ===
+            " "
+          ) {
+
+            e.preventDefault();
+
+            if (
+              normalizedPhotos.length >
+              1
+            ) {
+
+              setIsSlideshowActive(
+                (previous) =>
+                  !previous
+              );
+
+            }
+
+          }
+
+        };
+
+
+      window.addEventListener(
+        "keydown",
+        handleKeyDown
       );
-    };
 
-    /*
-     * ============================================================
-     * CLOSE GALLERY
-     * ============================================================
-     */
-    const handleCloseGallery = (e) => {
-      if (e) e.stopPropagation();
 
-      if (window.location.pathname.startsWith('/gallery/')) {
-        window.history.replaceState({ modalOpen: false }, '', '/');
-      }
+      return () => {
 
-      if (typeof updateSEO === 'function') {
-        updateSEO(null);
-      }
+        window.removeEventListener(
+          "keydown",
+          handleKeyDown
+        );
 
-      if (typeof onClose === 'function') {
-        onClose();
-      }
-    };
+      };
 
-    /*
-     * ============================================================
-     * SAFETY CHECK
-     * ============================================================
-     */
-    if (!photos || photos.length === 0) {
+    }, [
+      activeIndex,
+      normalizedPhotos.length,
+      nextImage,
+      prevImage
+    ]);
+
+
+    // ==========================================================
+    // PINTEREST
+    // ==========================================================
+
+    const handlePinterestSave =
+      useCallback(
+        (
+          e,
+          imageUrl,
+          locationData
+        ) => {
+
+          e.stopPropagation();
+
+          const locationName =
+            locationData?.place_name ||
+            placeName ||
+            "New Discovery";
+
+          const rawSlugOrName =
+            locationData?.slug ||
+            locationName;
+
+          const rawCategory =
+            locationData?.category ||
+            "Location";
+
+          const baseUrl =
+            "https://www.myjournalview.com";
+
+
+          const formattedLocation =
+            typeof generateSlug ===
+              "function"
+              ? generateSlug(
+                rawSlugOrName
+              )
+              : encodeURIComponent(
+                String(
+                  rawSlugOrName
+                ).toLowerCase()
+              );
+
+
+          const sourceUrl =
+            `${baseUrl}/gallery/` +
+            `${formattedLocation}` +
+            `?utm_source=pinterest_save_btn`;
+
+
+          const mandatoryHashtags = [
+            "MyJournal",
+            "SriLanka",
+            "VisitSriLanka",
+            "TravelSriLanka",
+            "WanderlustSriLanka",
+            "BeautifulSriLanka",
+            "HiddenGemsSriLanka",
+            "SriLankaDiaries",
+            "ChasingWaterfalls",
+            "HikingAdventures",
+            "CampingLife",
+            "MountainViews",
+            "NatureSeekers",
+            "AdventureSriLanka",
+            "ExploreSriLanka",
+            "TravelPhotography",
+            "TravelDiaries",
+            "IslandParadise",
+            "ProtectNature",
+            "CeylonVibes"
+          ];
+
+
+          const categoryMap = {
+
+            Waterfall: [
+              "Waterfalls",
+              "Nature"
+            ],
+
+            Mountain: [
+              "Mountains",
+              "Peaks",
+              "Hiking"
+            ],
+
+            Trail: [
+              "Trekking",
+              "Adventure"
+            ],
+
+            Viewpoint: [
+              "ScenicViews",
+              "Landscape"
+            ],
+
+            Beach: [
+              "Coastal",
+              "OceanVibes",
+              "BeachLife"
+            ],
+
+            Park: [
+              "NationalPark",
+              "Wildlife"
+            ],
+
+            Plateaus: [
+              "Highlands",
+              "Plains"
+            ],
+
+            "Reserved Forest": [
+              "Rainforest",
+              "EcoTravel"
+            ],
+
+            Monastery: [
+              "Spiritual",
+              "BuddhistTemple",
+              "Serenity"
+            ],
+
+            Archaeology: [
+              "AncientHistory",
+              "Heritage",
+              "HistoricalSites"
+            ],
+
+            Reservoir: [
+              "Lakes",
+              "WaterViews"
+            ],
+
+            Pool: [
+              "NaturalPool",
+              "Swimming"
+            ],
+
+            Stream: [
+              "Rivers",
+              "Streams"
+            ],
+
+            Location: [
+              "Travel",
+              "Explore"
+            ]
+
+          };
+
+
+          const uniqueHashtags =
+            new Set(
+              mandatoryHashtags
+            );
+
+
+          const locationHashtag =
+            locationName.replace(
+              /[^a-zA-Z0-9]/g,
+              ""
+            );
+
+
+          if (
+            locationHashtag
+          ) {
+            uniqueHashtags.add(
+              locationHashtag
+            );
+          }
+
+
+          const dynamicTags =
+            categoryMap[
+            rawCategory
+            ] || [];
+
+
+          dynamicTags.forEach(
+            (tag) => {
+              uniqueHashtags.add(
+                tag
+              );
+            }
+          );
+
+
+          const hashtagString =
+            Array.from(
+              uniqueHashtags
+            )
+              .map(
+                (tag) =>
+                  `#${tag}`
+              )
+              .join(" ");
+
+
+          const protectedDescription =
+            `New Adventure: ${locationName} (${rawCategory}) 🏔️ | ` +
+            `Experience breathtaking views and cinematic highlights. ` +
+            `See the full gallery on My Journal! © Hasitha Gunasekera\n\n` +
+            hashtagString;
+
+
+          const pinterestUrl =
+            `https://www.pinterest.com/pin/create/button/?` +
+            `url=${encodeURIComponent(
+              sourceUrl
+            )}` +
+            `&media=${encodeURIComponent(
+              imageUrl
+            )}` +
+            `&description=${encodeURIComponent(
+              protectedDescription
+            )}`;
+
+
+          window.open(
+            pinterestUrl,
+            "_blank",
+            "noopener,noreferrer,width=600,height=700,scrollbars=yes,resizable=yes"
+          );
+
+        },
+        [
+          placeName
+        ]
+      );
+
+
+    // ==========================================================
+    // SAFETY CHECK
+    // ==========================================================
+
+    if (
+      normalizedPhotos.length === 0
+    ) {
       return null;
     }
+
+
+    // ==========================================================
+    // RENDER
+    // ==========================================================
 
     return (
       <div
         className="fixed inset-0 z-[10000] bg-white/95 backdrop-blur-3xl flex flex-col animate-in fade-in duration-200 select-none"
-        style={{ height: '100dvh' }}
-        onClick={(e) => e.stopPropagation()}
-        onContextMenu={preventCopy}
+        style={{
+          height: "100dvh"
+        }}
+        onClick={(e) =>
+          e.stopPropagation()
+        }
+        onContextMenu={
+          preventCopy
+        }
       >
-        {/* HEADER */}
+
+        {/* =====================================================
+            HEADER
+        ====================================================== */}
+
         <header className="flex justify-between items-center p-6 border-b border-slate-100 shrink-0">
+
           <div>
+
             <h3 className="text-slate-600 font-black uppercase tracking-widest text-xs">
-              {placeName ? `${placeName} Gallery` : 'Location Gallery'}
+
+              {placeName
+                ? `${placeName} Gallery`
+                : "Location Gallery"}
+
             </h3>
+
             <p className="text-[10px] text-indigo-400 font-bold uppercase">
-              {photos.length} Total Images
+
+              {normalizedPhotos.length}{" "}
+              Total Images
+
             </p>
+
           </div>
 
+
           <div className="flex items-center gap-3">
-            {/* SHARE */}
+
+            {/* =================================================
+                SHARE
+            ================================================== */}
+
             <button
               type="button"
               onClick={(e) => {
+
                 e.stopPropagation();
-                if (selectedLocation?.id && typeof handleShareEvent === 'function') {
-                  handleShareEvent(selectedLocation.id, 'gallery');
+
+                if (
+                  selectedLocation?.id &&
+                  typeof handleShareEvent ===
+                  "function"
+                ) {
+
+                  handleShareEvent(
+                    selectedLocation.id,
+                    "gallery"
+                  );
+
                 }
-                if (onShare) onShare(e, selectedLocation);
+
+                if (
+                  typeof onShare ===
+                  "function"
+                ) {
+
+                  onShare(
+                    e,
+                    selectedLocation
+                  );
+
+                }
+
               }}
               aria-label="Share Gallery"
               className="w-12 h-12 flex items-center justify-center bg-slate-800/10 text-slate-700 hover:bg-blue-500 hover:text-white rounded-full transition-all shadow-sm"
             >
-              <Share2 className="w-5 h-5" />
+
+              <Share2
+                className="w-5 h-5"
+                aria-hidden="true"
+              />
+
             </button>
 
-            {/* CLOSE */}
+
+            {/* =================================================
+                CLOSE
+            ================================================== */}
+
             <button
               type="button"
-              onClick={handleCloseGallery}
+              onClick={
+                handleCloseGallery
+              }
               aria-label="Close photo gallery"
               className="w-12 h-12 flex items-center justify-center bg-gray-600/80 hover:bg-rose-600 text-white rounded-full transition-colors shadow-md focus:outline-none focus:ring-2 focus:ring-rose-500 focus:ring-offset-2"
             >
-              <X className="w-5 h-5" aria-hidden="true" />
+
+              <X
+                className="w-5 h-5"
+                aria-hidden="true"
+              />
+
             </button>
+
           </div>
+
         </header>
 
-        {/* SEO CONTEXT BLOCK (CRAWLER ACCESSIBLE) */}
-        {selectedLocation && (
-          <div className="sr-only" itemScope itemType="https://schema.org/ImageGallery">
-            <h2>
-              Visual Field Notes and Photography Archive: {selectedLocation.place_name || placeName}
+
+        {/* =====================================================
+            CRAWLER-ACCESSIBLE SEMANTIC GALLERY CONTEXT
+        ====================================================== */}
+
+        {locationObj && (
+          <div
+            className="sr-only"
+            itemScope
+            itemType="https://schema.org/ImageGallery"
+          >
+
+            <h2 itemProp="name">
+
+              Visual Field Notes and Photography
+              Archive:{" "}
+              {locationObj.place_name ||
+                placeName}
+
             </h2>
-            <p>
-              Welcome to the dedicated photo gallery and visual repository for{' '}
-              {selectedLocation.place_name || placeName}, categorized as a{' '}
-              {selectedLocation.category || 'natural attraction'} in{' '}
-              {selectedLocation.locality || 'Sri Lanka'}. This page serves as a comprehensive visual
-              field guide, completely distinct from our main route logs, specifically curated to aid
-              landscape photographers, drone pilots, and backcountry researchers.
+
+
+            <p itemProp="description">
+
+              Welcome to the dedicated photo
+              gallery and visual repository for{" "}
+              {locationObj.place_name ||
+                placeName}
+              , categorized as a{" "}
+              {locationObj.category ||
+                "natural attraction"} in{" "}
+              {locationObj.locality ||
+                "Sri Lanka"}.
+              This visual field archive documents
+              the landscape, terrain and
+              geographical character of the
+              location.
+
             </p>
+
+
             <p>
-              Within this specific gallery, you are exploring a collection of {photos?.length || 'several'}{' '}
-              high-resolution images capturing the unique terrain, weather anomalies, and spatial
-              geography of {selectedLocation.place_name || placeName}. Unlike standard travel
-              overviews, this visual ledger documents the physical reality of the environment—showcasing
-              vegetation density, trail exposure, and ambient lighting crucial for expedition planning.
-              {selectedLocation.ai_article?.metrics?.elevation_m
-                ? ` The mapped area features a baseline elevation of approximately ${selectedLocation.ai_article.metrics.elevation_m} meters, directly dictating the atmospheric conditions and cloud forest borders visible in these specific frames.`
-                : ''}
-              {selectedLocation.ai_article?.metrics?.difficulty_level
-                ? ` The approach terrain corresponds to a ${selectedLocation.ai_article.metrics.difficulty_level} difficulty level, highlighting the physical characteristics of the landscape.`
-                : ''}
+
+              This gallery contains{" "}
+              {normalizedPhotos.length}{" "}
+              photographs documenting{" "}
+              {locationObj.place_name ||
+                placeName}{" "}
+              and its surrounding{" "}
+              {locationObj.category ||
+                "natural attraction"} landscape
+              in{" "}
+              {locationObj.locality ||
+                "Sri Lanka"}.
+
             </p>
-            <p>
-              By analyzing these photographic records, explorers can better assess on-the-ground reality
-              before deployment. Every image in this archive emphasizes raw environmental data,
-              ensuring that the natural scale, topographic challenges, and geographical features of this{' '}
-              {selectedLocation.category || 'location'} in {selectedLocation.locality || 'Sri Lanka'}{' '}
-              are mapped accurately for visual reference.
-            </p>
+
+
+            {locationObj?.ai_article?.metrics
+              ?.elevation_m !==
+              undefined &&
+              locationObj?.ai_article?.metrics
+                ?.elevation_m !== null && (
+
+                <p>
+
+                  The mapped area features a
+                  baseline elevation of approximately{" "}
+                  {
+                    locationObj
+                      .ai_article
+                      .metrics
+                      .elevation_m
+                  }{" "}
+                  metres.
+
+                </p>
+
+              )}
+
+
+            {locationObj?.ai_article?.metrics
+              ?.difficulty_level && (
+
+                <p>
+
+                  The approach terrain corresponds
+                  to a{" "}
+                  {
+                    locationObj
+                      .ai_article
+                      .metrics
+                      .difficulty_level
+                  }{" "}
+                  difficulty level.
+
+                </p>
+
+              )}
+
+
+            {imageSEOCollection.map(
+              (
+                image,
+                index
+              ) => (
+
+                <figure
+                  key={
+                    image.url ||
+                    `image-${index}`
+                  }
+                  itemProp="associatedMedia"
+                  itemScope
+                  itemType="https://schema.org/ImageObject"
+                >
+
+                  <meta
+                    itemProp="contentUrl"
+                    content={
+                      image.url
+                    }
+                  />
+
+                  <meta
+                    itemProp="name"
+                    content={
+                      image.title ||
+                      image.name ||
+                      `Photo ${index + 1}`
+                    }
+                  />
+
+                  <meta
+                    itemProp="description"
+                    content={
+                      image.description ||
+                      image.caption ||
+                      image.title ||
+                      ""
+                    }
+                  />
+
+                  <meta
+                    itemProp="caption"
+                    content={
+                      image.caption ||
+                      image.title ||
+                      ""
+                    }
+                  />
+
+                </figure>
+
+              )
+            )}
+
           </div>
         )}
 
-        {/* PHOTO GRID */}
+
+        {/* =====================================================
+            PHOTO GRID
+        ====================================================== */}
+
         <main
           ref={gridScrollRef}
           className="flex-1 overflow-y-auto overscroll-y-contain touch-pan-y p-4 md:p-10 custom-scrollbar"
         >
-          <div className="max-w-5xl mx-auto grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {photos.map((url, i) => (
-              <article
-                key={`${placeName || 'photo'}-${i}`}
-                onClick={() => setActiveIndex(i)}
-                className="group relative aspect-[4/5] rounded-[2rem] overflow-hidden bg-slate-800 border border-white/5 shadow-2xl cursor-zoom-in hover:scale-[1.02] transition-transform duration-300"
-              >
-                <img
-                  src={
-                    typeof getOptimizedUrl === 'function'
-                      ? getOptimizedUrl(url, 400, 60)
-                      : url
-                  }
-                  className="w-full h-full object-cover select-none pointer-events-none"
-                  loading={i === 0 ? 'eager' : 'lazy'}
-                  fetchPriority={i === 0 ? 'high' : 'auto'}
-                  draggable={false}
-                  alt={`${placeName || 'Remote location'} ${selectedLocation?.category ? `(${selectedLocation.category})` : ''
-                    } in ${selectedLocation?.locality || 'Sri Lanka'} - High resolution image ${i + 1}`}
-                />
-              </article>
-            ))}
-          </div>
-        </main>
 
-        {/* LIGHTBOX */}
-        {activeIndex !== null && (
-          <div
-            className="fixed inset-0 z-[11000] bg-black/95 backdrop-blur-2xl flex flex-col animate-in zoom-in-95 duration-200"
-            onContextMenu={preventCopy}
-          >
-            {/* SLIDESHOW PROGRESS */}
-            {isSlideshowActive && (
-              <div className="absolute top-0 left-0 h-1 bg-indigo-500 z-[12001] animate-[progress_5s_linear_infinite]" />
+          <div className="max-w-5xl mx-auto grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+
+            {normalizedPhotos.map(
+              (
+                url,
+                index
+              ) => {
+
+                const imageSEO =
+                  imageSEOCollection[
+                  index
+                  ] ||
+                  (
+                    typeof buildAutomaticImageSEO ===
+                      "function"
+                      ? buildAutomaticImageSEO(
+                        url,
+                        index,
+                        gallerySEOPlace
+                      )
+                      : null
+                  );
+
+
+                const optimizedUrl =
+                  imageSEO?.optimizedUrl ||
+                  (
+                    typeof getOptimizedUrl ===
+                      "function"
+                      ? getOptimizedUrl(
+                        url,
+                        400,
+                        60
+                      )
+                      : url
+                  );
+
+
+                const altText =
+                  imageSEO?.alt ||
+                  `${placeName || "Sri Lanka"} ${locationObj?.category
+                    ? `(${locationObj.category})`
+                    : ""
+                  } in ${locationObj?.locality ||
+                  "Sri Lanka"
+                  } - landscape photograph ${index + 1
+                  }`;
+
+
+                return (
+                  <article
+                    key={
+                      `${imageSEO?.slug ||
+                      gallerySlug ||
+                      "photo"
+                      }-${index}`
+                    }
+                    onClick={() =>
+                      setActiveIndex(
+                        index
+                      )
+                    }
+                    className="group relative aspect-[4/5] rounded-[2rem] overflow-hidden bg-slate-800 border border-white/5 shadow-2xl cursor-zoom-in hover:scale-[1.02] transition-transform duration-300"
+                  >
+
+                    <img
+                      src={optimizedUrl}
+                      className="w-full h-full object-cover select-none pointer-events-none"
+                      loading={
+                        index === 0
+                          ? "eager"
+                          : "lazy"
+                      }
+                      fetchPriority={
+                        index === 0
+                          ? "high"
+                          : "auto"
+                      }
+                      decoding="async"
+                      draggable={false}
+                      alt={altText}
+                    />
+
+
+                    {imageSEO?.caption && (
+                      <span className="sr-only">
+                        {
+                          imageSEO.caption
+                        }
+                      </span>
+                    )}
+
+                  </article>
+                );
+
+              }
             )}
 
-            {/* LIGHTBOX CONTROLS */}
-            <div className="absolute top-6 right-6 flex gap-3 z-[12000]">
-              {/* PINTEREST */}
-              <button
-                type="button"
-                className="w-12 h-12 flex items-center justify-center bg-white/10 hover:bg-[#E60023] text-white rounded-full transition-all shadow-lg"
-                onClick={(e) => handlePinterestSave(e, photos[activeIndex], selectedLocation)}
-                aria-label="Save to Pinterest"
-              >
-                <svg className="w-5 h-5 fill-current" viewBox="0 0 24 24">
-                  <path d="M12.017 0C5.396 0 .029 5.367.029 11.987c0 5.079 3.158 9.417 7.618 11.162-.105-.949-.199-2.403.041-3.439.219-.937 1.406-5.966 1.406-5.966s-.359-.719-.359-1.782c0-1.668.967-2.914 2.171-2.914 1.023 0 1.518.769 1.518 1.69 0 1.029-.655 2.568-.994 3.995-.283 1.194.599 2.169 1.777 2.169 2.133 0 3.772-2.249 3.772-5.495 0-2.873-2.064-4.882-5.012-4.882-3.414 0-5.418 2.561-5.418 5.207 0 1.031.397 2.138.893 2.738.098.119.112.224.083.345l-.333 1.36c-.053.22-.174.267-.402.161-1.499-.698-2.436-2.889-2.436-4.649 0-3.785 2.75-7.261 7.929-7.261 4.162 0 7.397 2.966 7.397 6.93 0 4.136-2.607 7.464-6.227 7.464-1.216 0-2.359-.631-2.75-1.378l-.748 2.853c-.271 1.033-1.002 2.324-1.492 3.121 1.12.345 2.3.533 3.524.533 6.621 0 11.988-5.367 11.988-11.987C24.005 5.367 18.638 0 12.017 0z" />
-                </svg>
-              </button>
+          </div>
 
-              {/* SLIDESHOW */}
-              <button
-                type="button"
-                className={`w-12 h-12 flex items-center justify-center rounded-full transition-all duration-300 ${isSlideshowActive
-                  ? 'bg-indigo-600 text-white shadow-lg'
-                  : 'bg-white/10 text-white hover:bg-white/20'
-                  }`}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setIsSlideshowActive((prev) => !prev);
-                }}
-                aria-label={isSlideshowActive ? 'Pause Slideshow' : 'Start Slideshow'}
-              >
-                {isSlideshowActive ? <Pause className="w-5 h-5" /> : <Play className="w-5 h-5" />}
-              </button>
+        </main>
 
-              {/* CLOSE LIGHTBOX */}
-              <button
-                type="button"
-                className="w-12 h-12 flex items-center justify-center bg-white/10 hover:bg-rose-500 text-white rounded-full transition-all"
-                onClick={() => setActiveIndex(null)}
-                aria-label="Close image"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
 
-            {/* PREVIOUS */}
-            <button
-              type="button"
-              className="absolute left-4 top-1/2 -translate-y-1/2 w-14 h-14 flex items-center justify-center bg-white/5 hover:bg-white/20 text-white rounded-full transition-all z-[12000]"
-              onClick={(e) => {
-                prevImage(e);
-                setIsSlideshowActive(false);
-              }}
-              aria-label="Previous image"
-            >
-              <ChevronLeft className="w-8 h-8" />
-            </button>
+        {/* =====================================================
+            LIGHTBOX
+        ====================================================== */}
 
-            {/* NEXT */}
-            <button
-              type="button"
-              className="absolute right-4 top-1/2 -translate-y-1/2 w-14 h-14 flex items-center justify-center bg-white/5 hover:bg-white/20 text-white rounded-all transition-all z-[12000]"
-              onClick={(e) => {
-                nextImage(e);
-                setIsSlideshowActive(false);
-              }}
-              aria-label="Next image"
-            >
-              <ChevronRight className="w-8 h-8" />
-            </button>
+        {activeIndex !== null &&
+          normalizedPhotos[
+          activeIndex
+          ] && (
 
-            {/* IMAGE */}
             <div
-              ref={lightboxScrollRef}
-              className="photo-gallery-scroll native-scroll-y flex-1 w-full overflow-y-auto p-4 no-scrollbar"
-              onClick={() => setActiveIndex(null)}
+              className="fixed inset-0 z-[11000] bg-black/95 backdrop-blur-2xl flex flex-col animate-in zoom-in-95 duration-200"
+              onContextMenu={
+                preventCopy
+              }
             >
-              <div className="min-h-full w-full flex items-center justify-center">
-                <div className="relative w-fit h-fit" onClick={(e) => e.stopPropagation()}>
-                  <img
-                    key={photos[activeIndex]}
-                    src={
-                      typeof getOptimizedUrl === 'function'
-                        ? getOptimizedUrl(photos[activeIndex], 1200, 85)
-                        : photos[activeIndex]
+
+              {/* =================================================
+                  SLIDESHOW PROGRESS
+              ================================================== */}
+
+              {isSlideshowActive && (
+                <div className="absolute top-0 left-0 h-1 bg-indigo-500 z-[12001] animate-[progress_5s_linear_infinite]" />
+              )}
+
+
+              {/* =================================================
+                  LIGHTBOX CONTROLS
+              ================================================== */}
+
+              <div className="absolute top-6 right-6 flex gap-3 z-[12000]">
+
+                {/* PINTEREST */}
+
+                <button
+                  type="button"
+                  className="w-12 h-12 flex items-center justify-center bg-white/10 hover:bg-[#E60023] text-white rounded-full transition-all shadow-lg"
+                  onClick={(e) =>
+                    handlePinterestSave(
+                      e,
+                      normalizedPhotos[
+                      activeIndex
+                      ],
+                      locationObj
+                    )
+                  }
+                  aria-label="Save to Pinterest"
+                >
+
+                  <svg
+                    className="w-5 h-5 fill-current"
+                    viewBox="0 0 24 24"
+                    aria-hidden="true"
+                  >
+
+                    <path d="M12.017 0C5.396 0 .029 5.367.029 11.987c0 5.079 5.367 11.988 11.987 11.988 5.079 0 9.417-3.158 11.162-7.618-.105.949-.199 2.403.041 3.439.219.937 1.406 5.966 1.406 5.966s-.359.719-.359 1.782c0 1.668.967 2.914 2.171 2.914 1.023 0 1.518-.769 1.518-1.69 0-1.029-.655-2.568-.994-3.995-.283-1.194.599-2.169 1.777-2.169 2.133 0 3.772 2.249 3.772 5.495 0 2.873-2.064 4.882-5.012 4.882-3.414 0-5.418-2.561-5.418-5.207 0-1.031.397-2.138.893-2.738.098-.119.112-.224.083-.345l-.333-1.36c-.053-.22-.174-.267-.402-.161-1.499.698-2.436 2.889-2.436 4.649 0 3.785 2.75 7.261 7.929 7.261 4.162 0 7.397-2.966 7.397-6.93 0-4.136-2.607-7.464-6.227-7.464-1.216 0-2.359.631-2.75 1.378l-.748-2.853c-.271-1.033-1.002-2.324-1.492-3.121 1.12-.345 2.3-.533 3.524-.533 6.621 0 11.988-5.367 11.988-11.987C24.005 5.367 18.638 0 12.017 0z" />
+
+                  </svg>
+
+                </button>
+
+
+                {/* SLIDESHOW */}
+
+                <button
+                  type="button"
+                  className={`w-12 h-12 flex items-center justify-center rounded-full transition-all duration-300 ${isSlideshowActive
+                    ? "bg-indigo-600 text-white shadow-lg"
+                    : "bg-white/10 text-white hover:bg-white/20"
+                    }`}
+                  onClick={(e) => {
+
+                    e.stopPropagation();
+
+                    if (
+                      normalizedPhotos.length >
+                      1
+                    ) {
+
+                      setIsSlideshowActive(
+                        (previous) =>
+                          !previous
+                      );
+
                     }
-                    className="max-w-full max-h-[85vh] object-contain rounded-lg shadow-2xl animate-in fade-in zoom-in-95 duration-500"
-                    alt={`${placeName || 'Gallery'} featured view`}
-                    fetchPriority="high"
-                    loading="eager"
-                    draggable={false}
+
+                  }}
+                  aria-label={
+                    isSlideshowActive
+                      ? "Pause Slideshow"
+                      : "Start Slideshow"
+                  }
+                >
+
+                  {isSlideshowActive ? (
+                    <Pause
+                      className="w-5 h-5"
+                      aria-hidden="true"
+                    />
+                  ) : (
+                    <Play
+                      className="w-5 h-5"
+                      aria-hidden="true"
+                    />
+                  )}
+
+                </button>
+
+
+                {/* CLOSE LIGHTBOX */}
+
+                <button
+                  type="button"
+                  className="w-12 h-12 flex items-center justify-center bg-white/10 hover:bg-rose-500 text-white rounded-full transition-all"
+                  onClick={() => {
+
+                    setActiveIndex(
+                      null
+                    );
+
+                    setIsSlideshowActive(
+                      false
+                    );
+
+                  }}
+                  aria-label="Close image"
+                >
+
+                  <X
+                    className="w-5 h-5"
+                    aria-hidden="true"
                   />
 
-                  {/* WATERMARK */}
-                  <div className="absolute bottom-6 right-6 pointer-events-none select-none">
-                    <div className="flex flex-col items-end drop-shadow-[0_2px_4px_rgba(0,0,0,0.5)]">
-                      <span className="text-[10px] md:text-xs font-light tracking-[0.4em] text-white/70 uppercase border-b border-white/30 pb-0.5">
-                        My Journal
-                      </span>
-                      <div className="w-4 h-[0.5px] bg-white/30 mt-0.5" />
-                    </div>
-                  </div>
-                </div>
+                </button>
+
               </div>
+
+
+              {/* =================================================
+                  PREVIOUS
+              ================================================== */}
+
+              <button
+                type="button"
+                className="absolute left-4 top-1/2 -translate-y-1/2 w-14 h-14 flex items-center justify-center bg-white/5 hover:bg-white/20 text-white rounded-full transition-all z-[12000]"
+                onClick={(e) => {
+
+                  prevImage(e);
+
+                  setIsSlideshowActive(
+                    false
+                  );
+
+                }}
+                aria-label="Previous image"
+              >
+
+                <ChevronLeft
+                  className="w-8 h-8"
+                  aria-hidden="true"
+                />
+
+              </button>
+
+
+              {/* =================================================
+                  NEXT
+              ================================================== */}
+
+              <button
+                type="button"
+                className="absolute right-4 top-1/2 -translate-y-1/2 w-14 h-14 flex items-center justify-center bg-white/5 hover:bg-white/20 text-white rounded-full transition-all z-[12000]"
+                onClick={(e) => {
+
+                  nextImage(e);
+
+                  setIsSlideshowActive(
+                    false
+                  );
+
+                }}
+                aria-label="Next image"
+              >
+
+                <ChevronRight
+                  className="w-8 h-8"
+                  aria-hidden="true"
+                />
+
+              </button>
+
+
+              {/* =================================================
+                  LIGHTBOX IMAGE
+              ================================================== */}
+
+              <div
+                ref={lightboxScrollRef}
+                className="photo-gallery-scroll native-scroll-y flex-1 w-full overflow-y-auto p-4 no-scrollbar"
+                onClick={() =>
+                  setActiveIndex(
+                    null
+                  )
+                }
+              >
+
+                <div className="min-h-full w-full flex items-center justify-center">
+
+                  <div
+                    className="relative w-fit h-fit"
+                    onClick={(e) =>
+                      e.stopPropagation()
+                    }
+                  >
+
+                    <img
+                      key={
+                        normalizedPhotos[
+                        activeIndex
+                        ]
+                      }
+                      src={
+                        activeImageSEO?.optimizedUrl ||
+                        (
+                          typeof getOptimizedUrl ===
+                            "function"
+                            ? getOptimizedUrl(
+                              normalizedPhotos[
+                              activeIndex
+                              ],
+                              1200,
+                              85
+                            )
+                            : normalizedPhotos[
+                            activeIndex
+                            ]
+                        )
+                      }
+                      className="max-w-full max-h-[85vh] object-contain rounded-lg shadow-2xl animate-in fade-in zoom-in-95 duration-500"
+                      alt={
+                        activeImageSEO?.alt ||
+                        `${placeName || "Sri Lanka"} featured landscape photograph ${activeIndex + 1
+                        }`
+                      }
+                      loading="eager"
+                      fetchPriority="high"
+                      decoding="async"
+                      draggable={false}
+                    />
+
+                    {/* =================================================
+                        NO VISIBLE IMAGE CAPTION
+                    ================================================== */}
+
+                    {/*
+                     * Intentionally removed.
+                     *
+                     * activeImageSEO.caption remains available in
+                     * semantic metadata above, but is not rendered
+                     * over the fullscreen/lightbox image.
+                     */}
+
+                    {/* =================================================
+                        WATERMARK
+                    ================================================== */}
+
+                    <div className="absolute bottom-6 right-6 pointer-events-none select-none">
+
+                      <div className="flex flex-col items-end drop-shadow-[0_2px_4px_rgba(0,0,0,0.5)]">
+
+                        <span className="text-[10px] md:text-xs font-light tracking-[0.4em] text-white/70 uppercase border-b border-white/30 pb-0.5">
+
+                          My Journal
+
+                        </span>
+
+                        <div className="w-4 h-[0.5px] bg-white/30 mt-0.5" />
+
+                      </div>
+
+                    </div>
+
+                  </div>
+
+                </div>
+
+              </div>
+
+
+              {/* =================================================
+                  COUNTER
+              ================================================== */}
+
+              <footer className="absolute bottom-10 left-1/2 -translate-x-1/2 bg-white/10 px-6 py-2 rounded-full border border-white/10 z-[12000]">
+
+                <p className="text-white text-[10px] font-black tracking-[0.2em] uppercase">
+
+                  {activeIndex + 1}
+                  {" / "}
+                  {normalizedPhotos.length}
+
+                </p>
+
+              </footer>
+
             </div>
 
-            {/* COUNTER */}
-            <footer className="absolute bottom-10 left-1/2 -translate-x-1/2 bg-white/10 px-6 py-2 rounded-full border border-white/10 z-[12000]">
-              <p className="text-white text-[10px] font-black tracking-[0.2em] uppercase">
-                {activeIndex + 1} / {photos.length}
-              </p>
-            </footer>
-          </div>
-        )}
+          )}
 
-        {/* STYLES */}
+
+        {/* =====================================================
+            STYLES
+        ====================================================== */}
+
         <style>{`
+
           @keyframes progress {
-            from { width: 0%; }
-            to { width: 100%; }
+            from {
+              width: 0%;
+            }
+
+            to {
+              width: 100%;
+            }
           }
-          .modal-open { overflow: hidden !important; }
-          .custom-scrollbar::-webkit-scrollbar { width: 6px; }
-          .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+
+          .modal-open {
+            overflow: hidden !important;
+          }
+
+          .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
+          }
+
+          .custom-scrollbar::-webkit-scrollbar-track {
+            background: transparent;
+          }
+
           .custom-scrollbar::-webkit-scrollbar-thumb {
             background: rgba(0, 0, 0, 0.1);
             border-radius: 10px;
           }
+
         `}</style>
+
       </div>
     );
+
   }
 );
 
-/*
- * ============================================================
- * VIDEO GALLERY
- * ============================================================
- */
 
-/**
- * YouTube Video ID parser
- */
-export const getYouTubeId = (url) => {
-  if (!url) return null;
 
-  const regExp =
-    /^.*(youtu\.be\/|v\/|u\/\w\/|embed\/|shorts\/|live\/|watch\?v=|&v=)([^#&?]*).*/;
+// =======================================================================
+// VIDEO GALLERY + INDEXABLE VIDEO DETAIL PAGE
+// =======================================================================
+//
+// AUTOMATIC VIDEO SEO ARCHITECTURE
+// --------------------------------
+//
+// Source of truth:
+//
+//     hub_videos
+//
+// Existing fields:
+//
+//     id
+//     url
+//     title
+//     custom_thumbnail_url
+//
+// Optional existing fields:
+//
+//     created_at
+//     published_at
+//     upload_date
+//     duration
+//     duration_iso
+//     latitude
+//     longitude
+//     locality
+//     district
+//     province
+//     description
+//     meta_description
+//     slug
+//     display_order
+//     is_active
+//
+// SEO metadata is generated automatically at runtime.
+//
+// NO separate video SEO table is required.
+//
+// Section 11 provides:
+//
+//     getYouTubeId()
+//     buildYouTubeEmbedUrl()
+//     buildAutomaticVideoSEO()
+//     buildAutomaticVideoCollectionSEO()
+//     buildVideoObjectSchema()
+//     getAutomaticVideoSEOUrl()
+//     generateSlug()
+//
+// Section 12 provides:
+//
+//     normalizeVideoRecords()
+//     normalizeVideoSEORecords()
+//     shuffleVideoRecords()
+//     getVideoPageUrl()
+//     VideoDetailPage
+//     VideoGallery
+//
+// IMPORTANT ARCHITECTURE:
+//
+//     hub_videos
+//          ↓
+//     fetchVideoLibrary()
+//          ↓
+//     normalizeVideoRecords()
+//          ↓
+//     buildAutomaticVideoSEO()
+//          ↓
+//     ┌───────────────────────────────┐
+//     │                               │
+//     ↓                               ↓
+// /videos/<slug>                 /videos
+// crawlable detail page          visual gallery
+//
+// IMPORTANT SEO OWNERSHIP:
+//
+//     Section 34
+//          ↓
+//     owns document-level SEO
+//
+//     Section 11G
+//          ↓
+//     owns VideoObject JSON-LD
+//
+//     buildAutomaticVideoSEO()
+//          ↓
+//     owns normalized video SEO identity
+//
+//     VideoDetailPage / VideoGallery
+//          ↓
+//     presentation only
+//
+// Neither presentation component calls updateSEO().
+// =======================================================================
 
-  const match = url.match(regExp);
 
-  return match && match[2] && match[2].length === 11
-    ? match[2]
-    : null;
-};
 
-/**
- * ============================================================
- * VIDEO NORMALIZATION ENGINE
- * ============================================================
- * Extracts and flattens comma/space-separated URLs before shuffling
- */
-export const normalizeVideoRecords = (videos) => {
-  return (Array.isArray(videos) ? videos : [videos])
+// =======================================================================
+// VIDEO RECORD NORMALIZATION
+// =======================================================================
+//
+// Accepts:
+//
+//     string
+//     array
+//     hub_videos records
+//
+// Existing metadata is preserved.
+//
+// Invalid YouTube records are removed before they reach the player.
+//
+// =======================================================================
+
+export const normalizeVideoRecords = (
+  videos
+) => {
+  const source =
+    Array.isArray(videos)
+      ? videos
+      : videos
+        ? [videos]
+        : [];
+
+  return source
     .flatMap((item) => {
-      if (typeof item === 'string') {
-        return item.split(/[\s,;|]+/);
+
+      // ---------------------------------------------------------------
+      // Plain string
+      // ---------------------------------------------------------------
+
+      if (
+        typeof item === "string"
+      ) {
+        return item
+          .split(/[\s,;|]+/)
+          .filter(Boolean);
       }
-      if (item && typeof item === 'object' && typeof item.url === 'string') {
-        const urls = item.url.split(/[\s,;|]+/);
-        if (urls.length > 1) {
-          return urls.map((u) => ({ ...item, url: u }));
+
+
+      // ---------------------------------------------------------------
+      // Existing database record
+      // ---------------------------------------------------------------
+
+      if (
+        item &&
+        typeof item === "object" &&
+        typeof item.url === "string"
+      ) {
+        const urls =
+          item.url
+            .split(/[\s,;|]+/)
+            .filter(Boolean);
+
+        if (
+          urls.length > 1
+        ) {
+          return urls.map(
+            (url) => ({
+              ...item,
+              url
+            })
+          );
         }
       }
+
       return item;
     })
+
+
+    // -----------------------------------------------------------------
+    // Convert plain strings into records
+    // -----------------------------------------------------------------
+
     .map((item) => {
-      if (typeof item === 'string') {
-        return { url: item.trim(), title: '', custom_thumbnail_url: '' };
+      if (
+        typeof item === "string"
+      ) {
+        return {
+          url: item.trim(),
+          title: "",
+          custom_thumbnail_url: ""
+        };
       }
+
       return item;
     })
-    .filter(
-      (item) =>
-        item &&
-        (item.url || item.custom_thumbnail_url) &&
-        String(item.url).trim() !== ''
-    );
+
+
+    // -----------------------------------------------------------------
+    // Basic record validation
+    // -----------------------------------------------------------------
+
+    .filter((item) => {
+      if (
+        !item ||
+        typeof item !== "object"
+      ) {
+        return false;
+      }
+
+      return Boolean(
+        String(
+          item.url || ""
+        ).trim()
+      );
+    })
+
+
+    // -----------------------------------------------------------------
+    // YouTube ID validation
+    // -----------------------------------------------------------------
+
+    .filter((item) => {
+      const youtubeId =
+        getYouTubeId(
+          item.url
+        );
+
+      if (!youtubeId) {
+        console.warn(
+          "Skipping invalid YouTube video URL:",
+          item.url
+        );
+
+        return false;
+      }
+
+      return true;
+    });
 };
 
 
-/**
- * ============================================================
- * RANDOM VIDEO SHUFFLE
- * ============================================================
- */
-export const shuffleVideoRecords = (records) => {
-  if (!Array.isArray(records) || records.length === 0) return [];
 
-  // Map over array to create fresh object references and guarantee React re-renders
-  const shuffled = records.map((record) => ({ ...record }));
+// =======================================================================
+// VIDEO SEO NORMALIZATION
+// =======================================================================
+//
+// Converts normalized hub_videos records into the same automatic SEO
+// representation used by:
+//
+//     VideoDetailPage
+//     VideoGallery
+//     VideoObject JSON-LD
+//     Video sitemap generation
+//
+// =======================================================================
 
-  // Standard Fisher-Yates shuffle
-  for (let i = shuffled.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    const temp = shuffled[i];
-    shuffled[i] = shuffled[j];
-    shuffled[j] = temp;
+export const normalizeVideoSEORecords = (
+  records = []
+) => {
+  if (
+    !Array.isArray(records)
+  ) {
+    return [];
+  }
+
+  return records
+    .map(
+      (video, index) =>
+        buildAutomaticVideoSEO(
+          video,
+          index
+        )
+    )
+    .filter(Boolean);
+};
+
+
+
+// =======================================================================
+// RANDOM VIDEO SHUFFLE
+// =======================================================================
+//
+// Presentation only.
+//
+// SEO identity does NOT depend on this order.
+//
+// IMPORTANT:
+//
+// Never use the shuffled index to construct a permanent URL.
+//
+// =======================================================================
+
+export const shuffleVideoRecords = (
+  records
+) => {
+  if (
+    !Array.isArray(records) ||
+    records.length === 0
+  ) {
+    return [];
+  }
+
+  const shuffled =
+    records.map(
+      (record) => ({
+        ...record
+      })
+    );
+
+  for (
+    let i = shuffled.length - 1;
+    i > 0;
+    i--
+  ) {
+    const j =
+      Math.floor(
+        Math.random() *
+        (i + 1)
+      );
+
+    const temp =
+      shuffled[i];
+
+    shuffled[i] =
+      shuffled[j];
+
+    shuffled[j] =
+      temp;
   }
 
   return shuffled;
 };
 
-/**
- * ============================================================
- * HUB VIDEO LIST
- * ============================================================
- */
-export const HubVideoList = ({ supabaseClient, onVideosLoaded }) => {
-  const onVideosLoadedRef = useRef(onVideosLoaded);
-  const hasFetchedRef = useRef(false);
 
-  useEffect(() => {
-    onVideosLoadedRef.current = onVideosLoaded;
-  }, [onVideosLoaded]);
 
-  useEffect(() => {
-    if (!supabaseClient || hasFetchedRef.current) return;
+// =======================================================================
+// VIDEO PAGE URL
+// =======================================================================
+//
+// All internal video links must use the same automatic SEO URL builder.
+//
+// This guarantees:
+//
+//     sitemap URL
+//     detail-page URL
+//     gallery link
+//     related-video link
+//
+// all resolve to the same canonical URL.
+//
+// IMPORTANT:
+//
+// The index is only supplied for compatibility with the automatic SEO
+// helper. Permanent URL identity must come from the video record itself,
+// preferably its database slug or stable ID-derived fallback.
+//
+// =======================================================================
 
-    let isSubscribed = true;
-
-    const fetchVideos = async () => {
-      try {
-        const { data, error } = await supabaseClient
-          .from('hub_videos')
-          .select('id, url, title, custom_thumbnail_url')
-          .eq('is_active', true);
-
-        if (!error && data && isSubscribed) {
-          hasFetchedRef.current = true;
-
-          // 1. Flatten all grouped/comma-separated URLs
-          const normalizedData = typeof normalizeVideoRecords === 'function'
-            ? normalizeVideoRecords(data)
-            : data;
-
-          // 2. Shuffle the flattened array
-          const shuffledVideos = shuffleVideoRecords(normalizedData);
-
-          if (onVideosLoadedRef.current) {
-            onVideosLoadedRef.current(shuffledVideos);
-          }
-        }
-      } catch (err) {
-        console.error('Error loading hub videos:', err);
-      }
-    };
-
-    fetchVideos();
-
-    return () => {
-      isSubscribed = false;
-    };
-  }, [supabaseClient]);
-
-  return null;
+export const getVideoPageUrl = (
+  video,
+  index = 0
+) => {
+  return getAutomaticVideoSEOUrl(
+    video,
+    index
+  );
 };
 
-/**
- * ============================================================
- * VIDEO GALLERY
- * ============================================================
- */
-export const VideoGallery = React.memo(({ videos, initialIndex = 0, onClose }) => {
-  const [activeIndex, setActiveIndex] = useState(initialIndex);
 
-  /*
-   * Clean normalization of incoming video records.
-   * Memoized to prevent re-processing on every index change/re-render.
-   */
-  const videoList = useMemo(() => {
-    return typeof normalizeVideoRecords === 'function'
-      ? normalizeVideoRecords(videos)
-      : (Array.isArray(videos) ? videos : []);
-  }, [videos]);
 
-  /*
-   * ========================================================
-   * GALLERY LIFECYCLE + URL SYNCHRONIZATION
-   * ========================================================
-   */
-  useEffect(() => {
-    const scrollY = window.scrollY;
+// =======================================================================
+// INDEXABLE VIDEO DETAIL PAGE
+// =======================================================================
+//
+// Public URL:
+//
+//     /videos/<slug>
+//
+// This page is intentionally separate from the visual modal gallery.
+//
+// Responsibilities:
+//
+//     - Render crawlable <h1> content
+//     - Render textual video description
+//     - Render breadcrumb navigation
+//     - Render crawlable related-video links
+//     - Render the YouTube player
+//     - Render available video metadata
+//
+// SEO ownership:
+//
+//     - Master Section 34 owns document SEO
+//     - buildVideoObjectSchema() owns VideoObject JSON-LD
+//     - buildAutomaticVideoSEO() owns normalized video SEO data
+//
+// IMPORTANT:
+//
+// This component deliberately does NOT:
+//
+//     - call updateSEO()
+//     - inject JSON-LD
+//     - remove JSON-LD
+//     - modify document.title
+//     - modify document meta tags
+//
+// =======================================================================
 
-    document.body.classList.add('modal-open');
+export const VideoDetailPage = React.memo(
+  ({
+    video,
+    allVideos = [],
+  }) => {
 
-    // Log visit analytics
-    if (typeof logVisit === 'function') {
-      logVisit('Video Gallery');
-    }
+    // -----------------------------------------------------------------
+    // Automatic SEO representation
+    // -----------------------------------------------------------------
 
-    // Push URL state for modal
-    if (window.location.pathname !== '/videos') {
-      window.history.pushState({ modalOpen: true }, '', '/videos');
-    }
+    const seo = useMemo(
+      () =>
+        buildAutomaticVideoSEO(
+          video || {},
+          0
+        ),
+      [video]
+    );
 
-    // Escape key handling
-    const handleKeyDown = (e) => {
-      if (e.key === 'Escape') {
-        onClose();
-      }
-    };
 
-    // Back button handling
-    const handlePopState = () => {
-      onClose();
-    };
+    // -----------------------------------------------------------------
+    // Validated YouTube ID
+    // -----------------------------------------------------------------
 
-    window.addEventListener('keydown', handleKeyDown);
-    window.addEventListener('popstate', handlePopState);
+    const videoId =
+      seo?.youtubeId ||
+      getYouTubeId(
+        seo?.url ||
+        video?.url
+      );
 
-    return () => {
-      document.body.classList.remove('modal-open');
-      window.scrollTo(0, scrollY);
 
-      window.removeEventListener('keydown', handleKeyDown);
-      window.removeEventListener('popstate', handlePopState);
+    // -----------------------------------------------------------------
+    // Guaranteed safe embed URL
+    // -----------------------------------------------------------------
 
-      // Revert URL when gallery closes
-      if (window.location.pathname === '/videos') {
-        window.history.pushState({ modalOpen: false }, '', '/');
-      }
-    };
-  }, [onClose]);
+    const embedUrl =
+      videoId
+        ? buildYouTubeEmbedUrl(
+          videoId,
+          {
+            autoplay: false,
+            rel: false,
+          }
+        )
+        : null;
 
-  /*
-   * ========================================================
-   * VIDEO GALLERY DYNAMIC SEO
-   * ========================================================
-   */
-  useEffect(() => {
-    if (typeof updateSEO === 'function') {
-      updateSEO(null, { isVideoGallery: true });
-    }
 
-    return () => {
-      if (typeof updateSEO === 'function') {
-        updateSEO(null);
-      }
-    };
-  }, []);
+    // -----------------------------------------------------------------
+    // NOT FOUND
+    // -----------------------------------------------------------------
 
-  /*
-   * Fallback for empty list
-   */
-  if (!videoList || videoList.length === 0) {
-    return null;
-  }
+    if (!video) {
+      return (
+        <main className="min-h-screen bg-slate-950 text-white p-10">
+          <div className="max-w-4xl mx-auto">
 
-  const currentVideo = videoList[activeIndex] || videoList[0];
-  const videoId = typeof getYouTubeId === 'function'
-    ? getYouTubeId(currentVideo.url)
-    : null;
+            <nav
+              aria-label="Breadcrumb"
+              className="mb-8 text-sm text-white/60"
+            >
+              <a
+                href="/"
+                className="hover:text-white"
+              >
+                My Journal
+              </a>
 
-  return (
-    <div className="fixed inset-0 z-[10000] bg-slate-900/98 backdrop-blur-3xl flex flex-col animate-in fade-in duration-200 select-none">
+              {" / "}
 
-      {/* Header */}
-      <header className="flex justify-between items-center p-6 border-b border-white/10 shrink-0">
-        <div>
-          <h3 className="text-white font-black uppercase tracking-widest text-xs">
-            Video Journal
-          </h3>
-          <p className="text-[10px] text-indigo-400 font-bold uppercase">
-            {activeIndex + 1} of {videoList.length} Clips
-          </p>
-        </div>
+              <a
+                href="/videos"
+                className="hover:text-white"
+              >
+                Videos
+              </a>
+            </nav>
 
-        <div className="flex items-center gap-3">
-          <a
-            href="https://www.youtube.com/@myjournalview"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex items-center gap-2 px-3.5 py-2 bg-red-600 hover:bg-red-700 text-white text-xs font-bold rounded-full transition-colors shadow-sm"
-          >
-            <Video className="w-4 h-4" />
-            <span>Visit Channel</span>
-          </a>
 
-          <button
-            onClick={onClose}
-            aria-label="Close video gallery"
-            className="w-12 h-12 flex items-center justify-center bg-white/10 hover:bg-rose-500 text-white rounded-full transition-all shadow-md focus:outline-none focus:ring-2 focus:ring-white"
-          >
-            <X className="w-5 h-5" />
-          </button>
-        </div>
-      </header>
+            <h1 className="text-3xl font-black">
+              Video not found
+            </h1>
 
-      {/* SEO CONTEXT BLOCK (CRAWLER ACCESSIBLE) */}
-      <div className="sr-only" itemScope itemType="https://schema.org/VideoGallery">
-        <h2>Video Journal and Aerial Highlights Archive</h2>
-        <p>
-          Welcome to the dedicated video gallery and visual repository. This page serves as a comprehensive visual video guide featuring {videoList.length} high-resolution clips, aerial drone perspectives, and backcountry travel logs across Sri Lanka.
-        </p>
 
-        {videoList.map((video, idx) => (
-          <div key={`seo-vid-${idx}`} itemScope itemProp="video" itemType="https://schema.org/VideoObject">
-            <h3 itemProp="name">{video.title || `Video Journal Entry ${idx + 1}`}</h3>
-            <meta itemProp="url" content={video.url} />
-            {video.custom_thumbnail_url && (
-              <meta itemProp="thumbnailUrl" content={video.custom_thumbnail_url} />
-            )}
-            <p itemProp="description">
-              Visual field note and landscape recording: {video.title || `Video Journal Entry ${idx + 1}`}. Documenting the physical reality of the environment.
+            <p className="mt-4 text-white/60">
+              The requested video could not
+              be found in the My Journal
+              video archive.
             </p>
-          </div>
-        ))}
-      </div>
 
-      {/* Main Content */}
-      <main className="flex-1 flex flex-col lg:flex-row gap-6 p-4 md:p-6 overflow-hidden">
-        {/* Active Player Frame */}
-        <div className="flex-none lg:flex-1 w-full flex items-center justify-center relative min-h-[40vh] lg:min-h-0">
-          <div className="relative w-full max-w-5xl aspect-video rounded-[2rem] overflow-hidden bg-black border border-white/10 shadow-2xl">
-            {videoId ? (
+
+            <a
+              href="/videos"
+              className="inline-block mt-6 px-5 py-3 rounded-xl bg-white/10 hover:bg-white/20"
+            >
+              Browse Videos
+            </a>
+
+          </div>
+        </main>
+      );
+    }
+
+
+    // -----------------------------------------------------------------
+    // RENDER
+    // -----------------------------------------------------------------
+
+    return (
+      <main className="min-h-screen bg-slate-950 text-white">
+
+        <article className="max-w-6xl mx-auto px-5 py-10">
+
+          {/* =========================================================
+              BREADCRUMB
+          ========================================================= */}
+
+          <nav
+            aria-label="Breadcrumb"
+            className="mb-6 text-sm text-white/60"
+          >
+            <a
+              href="/"
+              className="hover:text-white"
+            >
+              My Journal
+            </a>
+
+            {" / "}
+
+            <a
+              href="/videos"
+              className="hover:text-white"
+            >
+              Videos
+            </a>
+
+            {" / "}
+
+            <span
+              className="text-white/80"
+              aria-current="page"
+            >
+              {seo?.title || "Video"}
+            </span>
+          </nav>
+
+
+          {/* =========================================================
+              HEADER
+          ========================================================= */}
+
+          <header className="mb-8">
+
+            <h1 className="text-3xl md:text-5xl font-black">
+              {seo?.seoTitle ||
+                seo?.title ||
+                "Sri Lanka Backcountry Video | My Journal"}
+            </h1>
+
+
+            <p className="mt-4 text-white/70 max-w-3xl">
+              {seo?.seoDescription ||
+                "Sri Lanka backcountry video from My Journal."}
+            </p>
+
+          </header>
+
+
+          {/* =========================================================
+              VIDEO PLAYER
+          ========================================================= */}
+
+          <section
+            aria-label="Video player"
+            className="relative aspect-video overflow-hidden rounded-3xl bg-black shadow-2xl"
+          >
+
+            {videoId && embedUrl ? (
               <iframe
                 key={videoId}
-                src={`https://www.youtube-nocookie.com/embed/${videoId}?autoplay=1&rel=0`}
-                className="absolute top-0 left-0 w-full h-full border-0"
+                src={embedUrl}
+                title={
+                  seo?.seoTitle ||
+                  seo?.title ||
+                  "My Journal Video"
+                }
+                className="absolute inset-0 w-full h-full"
+                loading="eager"
                 allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                 allowFullScreen
-                title={currentVideo.title || 'Video Journal Player'}
+                referrerPolicy="strict-origin-when-cross-origin"
               />
             ) : (
-              <div className="flex items-center justify-center h-full text-white/50 text-sm">
-                Invalid or Unsupported Video URL
+              <div className="flex items-center justify-center h-full text-white/50">
+                Video unavailable
               </div>
             )}
-          </div>
-        </div>
 
-        {/* Playlist Sidebar */}
-        <aside className="w-full lg:w-80 flex-1 lg:flex-none flex flex-col gap-3 overflow-y-auto custom-scrollbar pr-2 pb-20 lg:pb-0 min-h-0">
-          <h4 className="text-white/70 text-xs font-bold uppercase tracking-widest mb-2 px-1">
-            More Videos
-          </h4>
+          </section>
 
-          {videoList.map((item, idx) => {
-            const listVideoId = typeof getYouTubeId === 'function'
-              ? getYouTubeId(item.url)
-              : null;
 
-            const thumbnailUrl =
-              item.custom_thumbnail_url ||
-              (listVideoId
-                ? `https://img.youtube.com/vi/${listVideoId}/hqdefault.jpg`
-                : '/default-video-placeholder.jpg');
+          {/* =========================================================
+              VIDEO INFORMATION
+          ========================================================= */}
 
-            const isActive = activeIndex === idx;
+          <section className="mt-8 grid gap-8 md:grid-cols-3">
 
-            return (
-              <button
-                key={item.id || item.url || idx}
-                onClick={() => setActiveIndex(idx)}
-                className={`group flex items-start gap-3 w-full text-left p-2 rounded-xl transition-all ${isActive
-                  ? 'bg-white/10 border border-indigo-500'
-                  : 'hover:bg-white/5 border border-transparent'
-                  }`}
-              >
-                {/* Thumbnail */}
-                <div className="relative w-24 aspect-video flex-shrink-0 rounded-lg overflow-hidden bg-slate-800">
-                  <img
-                    src={thumbnailUrl}
-                    alt={item.title || 'Thumbnail'}
-                    className={`w-full h-full object-cover transition-opacity ${isActive ? 'opacity-100' : 'opacity-70 group-hover:opacity-100'
-                      }`}
-                    onError={(e) => {
-                      e.target.onerror = null;
-                      e.target.src = '/default-video-placeholder.jpg';
-                    }}
-                  />
+            <div className="md:col-span-2">
 
-                  {isActive && (
-                    <div className="absolute inset-0 bg-indigo-500/30 flex items-center justify-center">
-                      <Play className="w-4 h-4 text-white fill-white" />
+              <h2 className="text-2xl font-bold mb-4">
+                About this video
+              </h2>
+
+
+              <p className="text-white/75 leading-8">
+                {seo?.seoDescription ||
+                  "Sri Lanka backcountry video from My Journal."}
+              </p>
+
+            </div>
+
+
+            <aside className="rounded-2xl bg-white/5 p-5">
+
+              <h2 className="font-bold mb-4">
+                Video information
+              </h2>
+
+
+              <dl className="space-y-3 text-sm">
+
+                {/* -------------------------------------------------
+                    Location
+                ------------------------------------------------- */}
+
+                {(seo?.locality ||
+                  seo?.district ||
+                  seo?.province) && (
+                    <div>
+                      <dt className="text-white/50">
+                        Location
+                      </dt>
+
+                      <dd>
+                        {[
+                          seo?.locality,
+                          seo?.district,
+                          seo?.province,
+                        ]
+                          .filter(Boolean)
+                          .join(", ")}
+                      </dd>
                     </div>
                   )}
+
+
+                {/* -------------------------------------------------
+                    Published
+                ------------------------------------------------- */}
+
+                {seo?.uploadDate && (
+                  <div>
+                    <dt className="text-white/50">
+                      Published
+                    </dt>
+
+                    <dd>
+                      {new Date(
+                        seo.uploadDate
+                      ).toLocaleDateString()}
+                    </dd>
+                  </div>
+                )}
+
+
+                {/* -------------------------------------------------
+                    Duration
+                ------------------------------------------------- */}
+
+                {seo?.duration && (
+                  <div>
+                    <dt className="text-white/50">
+                      Duration
+                    </dt>
+
+                    <dd>
+                      {seo.duration}
+                    </dd>
+                  </div>
+                )}
+
+              </dl>
+
+            </aside>
+
+          </section>
+
+
+          {/* =========================================================
+              MORE VIDEOS
+          ========================================================= */}
+
+          {Array.isArray(allVideos) &&
+            allVideos.length > 1 && (
+              <section className="mt-12">
+
+                <h2 className="text-2xl font-bold mb-5">
+                  More Sri Lanka videos
+                </h2>
+
+
+                <div className="grid md:grid-cols-3 gap-5">
+
+                  {allVideos
+                    .filter(
+                      (item) =>
+                        item &&
+                        item.id !== video.id
+                    )
+                    .slice(0, 6)
+                    .map(
+                      (item, index) => {
+
+                        const itemSEO =
+                          buildAutomaticVideoSEO(
+                            item,
+                            index
+                          );
+
+
+                        const itemUrl =
+                          getVideoPageUrl(
+                            itemSEO,
+                            index
+                          );
+
+
+                        const itemVideoId =
+                          itemSEO?.youtubeId ||
+                          getYouTubeId(
+                            itemSEO?.url ||
+                            item?.url
+                          );
+
+
+                        const itemThumbnail =
+                          itemSEO?.thumbnailUrl ||
+                          (
+                            itemVideoId
+                              ? `https://img.youtube.com/vi/${itemVideoId}/hqdefault.jpg`
+                              : "/default-video-placeholder.jpg"
+                          );
+
+
+                        return (
+                          <a
+                            key={
+                              item.id ||
+                              item.url ||
+                              `related-video-${index}`
+                            }
+                            href={itemUrl}
+                            className="group"
+                          >
+
+                            <img
+                              src={itemThumbnail}
+                              alt={
+                                itemSEO?.seoTitle ||
+                                itemSEO?.title ||
+                                `Sri Lanka video ${index + 1}`
+                              }
+                              title={
+                                itemSEO?.seoTitle ||
+                                itemSEO?.title ||
+                                `Sri Lanka video ${index + 1}`
+                              }
+                              loading="lazy"
+                              decoding="async"
+                              className="w-full aspect-video object-cover rounded-xl"
+                            />
+
+
+                            <h3 className="mt-3 font-bold group-hover:underline">
+                              {itemSEO?.seoTitle ||
+                                itemSEO?.title ||
+                                `Sri Lanka Video ${index + 1}`}
+                            </h3>
+
+                          </a>
+                        );
+                      }
+                    )}
+
                 </div>
 
-                {/* Title */}
-                <div className="flex-1 overflow-hidden">
-                  <p
-                    className={`text-xs font-semibold line-clamp-2 ${isActive ? 'text-white' : 'text-slate-300'
-                      }`}
-                  >
-                    {item.title || 'Journal Entry'}
-                  </p>
-                </div>
-              </button>
-            );
-          })}
-        </aside>
+              </section>
+            )}
+
+        </article>
       </main>
-    </div>
-  );
-});
+    );
+  }
+);
 
+
+
+// =======================================================================
+// VIDEO GALLERY
+// =======================================================================
+//
+// Visual/modal gallery:
+//
+//     /videos
+//
+// Individual crawlable pages:
+//
+//     /videos/<slug>
+//
+// IMPORTANT:
+//
+// The modal is a presentation layer.
+//
+// The:
+//
+//     <a href="/videos/<slug">...</a>
+//
+// links remain crawlable.
+//
+// The player itself ALWAYS uses:
+//
+//     getYouTubeId()
+//          ↓
+//     buildYouTubeEmbedUrl()
+//
+// IMPORTANT SEO RULE:
+//
+// This component does NOT call updateSEO().
+//
+// Section 34 is the single owner of document-level video/gallery SEO.
+//
+// =======================================================================
+
+export const VideoGallery =
+  React.memo(
+    ({
+      videos,
+      initialIndex = 0,
+      onClose
+    }) => {
+
+      // -----------------------------------------------------------------
+      // Normalize + SEO
+      // -----------------------------------------------------------------
+
+      const videoList =
+        useMemo(
+          () => {
+            const normalized =
+              normalizeVideoRecords(
+                videos
+              );
+
+            return normalizeVideoSEORecords(
+              normalized
+            );
+          },
+          [videos]
+        );
+
+
+      // -----------------------------------------------------------------
+      // Active index
+      // -----------------------------------------------------------------
+
+      const [
+        activeIndex,
+        setActiveIndex
+      ] = useState(
+        Math.max(
+          0,
+          Number(initialIndex) || 0
+        )
+      );
+
+
+      const safeActiveIndex = videoList.length > 0
+        ? activeIndex % videoList.length
+        : 0;
+
+
+      // -----------------------------------------------------------------
+      // Current video
+      // -----------------------------------------------------------------
+
+      const currentVideo = videoList[safeActiveIndex];
+
+
+      // -----------------------------------------------------------------
+      // Current video SEO
+      // -----------------------------------------------------------------
+
+      const currentVideoSEO =
+        currentVideo
+          ? buildAutomaticVideoSEO(
+            currentVideo,
+            safeActiveIndex
+          )
+          : null;
+
+
+      // -----------------------------------------------------------------
+      // Validated YouTube ID
+      // -----------------------------------------------------------------
+
+      const videoId =
+        currentVideoSEO?.youtubeId ||
+        getYouTubeId(
+          currentVideoSEO?.url ||
+          currentVideo?.url
+        );
+
+
+      // -----------------------------------------------------------------
+      // Safe embed URL
+      // -----------------------------------------------------------------
+
+      const embedUrl =
+        videoId
+          ? buildYouTubeEmbedUrl(
+            videoId,
+            {
+              autoplay: true,
+              rel: false
+            }
+          )
+          : null;
+
+
+      // -----------------------------------------------------------------
+      // Close handler
+      // -----------------------------------------------------------------
+      //
+      // IMPORTANT:
+      //
+      // updateSEO() is intentionally NOT called here.
+      //
+      // Section 34 reacts to the controller state after onClose()
+      // and restores the appropriate document SEO.
+      //
+      // -----------------------------------------------------------------
+
+      const handleClose =
+        useCallback(
+          (event) => {
+            if (event) {
+              event.stopPropagation();
+            }
+
+            if (
+              window.location.pathname ===
+              "/videos"
+            ) {
+              if (
+                window.history.length >
+                1
+              ) {
+                window.history.back();
+              } else {
+                window.history.replaceState(
+                  {
+                    modalOpen: false
+                  },
+                  "",
+                  "/"
+                );
+              }
+            }
+
+            if (
+              typeof onClose ===
+              "function"
+            ) {
+              onClose();
+            }
+          },
+          [onClose]
+        );
+
+
+      // -----------------------------------------------------------------
+      // Gallery lifecycle
+      // -----------------------------------------------------------------
+
+      useEffect(() => {
+        const scrollY =
+          window.scrollY;
+
+        document.body.classList.add(
+          "modal-open"
+        );
+
+
+        if (
+          typeof logVisit ===
+          "function"
+        ) {
+          logVisit(
+            "Video Gallery"
+          );
+        }
+
+
+        // ---------------------------------------------------------------
+        // IMPORTANT:
+        //
+        // Only push /videos when opening the modal from another route.
+        //
+        // Never overwrite:
+        //
+        //     /videos/<slug>
+        //
+        // ---------------------------------------------------------------
+
+        if (
+          window.location.pathname !==
+          "/videos"
+        ) {
+          window.history.pushState(
+            {
+              modalOpen: true,
+              videoGallery: true
+            },
+            "",
+            "/videos"
+          );
+        }
+
+
+        const handleKeyDown =
+          (event) => {
+
+            if (
+              event.key ===
+              "Escape"
+            ) {
+              handleClose();
+              return;
+            }
+
+
+            if (
+              event.key ===
+              "ArrowRight" &&
+              videoList.length > 1
+            ) {
+              setActiveIndex(
+                (previous) =>
+                  ((previous % videoList.length) + 1) % videoList.length
+              );
+            }
+
+
+            if (
+              event.key ===
+              "ArrowLeft" &&
+              videoList.length > 1
+            ) {
+              setActiveIndex(
+                (previous) =>
+                  ((previous % videoList.length) - 1 + videoList.length) % videoList.length
+              );
+            }
+          };
+
+
+        const handlePopState =
+          () => {
+            if (
+              typeof onClose ===
+              "function"
+            ) {
+              onClose();
+            }
+          };
+
+
+        window.addEventListener(
+          "keydown",
+          handleKeyDown
+        );
+
+        window.addEventListener(
+          "popstate",
+          handlePopState
+        );
+
+
+        return () => {
+          document.body.classList.remove(
+            "modal-open"
+          );
+
+          window.scrollTo(
+            0,
+            scrollY
+          );
+
+          window.removeEventListener(
+            "keydown",
+            handleKeyDown
+          );
+
+          window.removeEventListener(
+            "popstate",
+            handlePopState
+          );
+        };
+      }, [
+        handleClose,
+        onClose,
+        videoList.length
+      ]);
+
+
+      // -----------------------------------------------------------------
+      // IMPORTANT SEO CHANGE
+      // -----------------------------------------------------------------
+      //
+      // Removed the old local updateSEO() effect.
+      //
+      // Section 34 now owns:
+      //
+      //     isVideoGallery
+      //     galleryVideos
+      //
+      // This prevents:
+      //
+      //     component SEO
+      //          ↓
+      //     master SEO
+      //          ↓
+      //     cleanup race
+      //          ↓
+      //     stale/empty document metadata
+      //
+      // -----------------------------------------------------------------
+
+
+      // -----------------------------------------------------------------
+      // Empty state
+      // -----------------------------------------------------------------
+
+      if (
+        videoList.length === 0
+      ) {
+        return null;
+      }
+
+
+      // -----------------------------------------------------------------
+      // Render
+      // -----------------------------------------------------------------
+
+      return (
+        <div className="fixed inset-0 z-[10000] bg-slate-900/98 backdrop-blur-3xl flex flex-col animate-in fade-in duration-200 select-none">
+
+          {/* ===========================================================
+              HEADER
+          =========================================================== */}
+
+          <header className="flex justify-between items-center p-6 border-b border-white/10 shrink-0">
+
+            <div>
+
+              <h3 className="text-white font-black uppercase tracking-widest text-xs">
+                Video Journal
+              </h3>
+
+              <p className="text-[10px] text-indigo-400 font-bold uppercase">
+                {safeActiveIndex + 1}{" "}
+                of{" "}
+                {videoList.length}{" "}
+                Clips
+              </p>
+
+            </div>
+
+
+            <div className="flex items-center gap-3">
+
+              <a
+                href="https://www.youtube.com/@myjournalview"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-2 px-3.5 py-2 bg-red-600 hover:bg-red-700 text-white text-xs font-bold rounded-full transition-colors shadow-sm"
+              >
+                <Video className="w-4 h-4" />
+
+                <span>
+                  Visit Channel
+                </span>
+              </a>
+
+
+              <button
+                type="button"
+                onClick={handleClose}
+                aria-label="Close video gallery"
+                className="w-12 h-12 flex items-center justify-center bg-white/10 hover:bg-rose-500 text-white rounded-full transition-all shadow-md focus:outline-none focus:ring-2 focus:ring-white"
+              >
+                <X className="w-5 h-5" />
+              </button>
+
+            </div>
+
+          </header>
+
+
+          {/* ===========================================================
+              CRAWLER-ACCESSIBLE VIDEO CONTEXT
+          =========================================================== */}
+
+          <div
+            className="sr-only"
+            itemScope
+            itemType="https://schema.org/VideoGallery"
+          >
+
+            <h2 itemProp="name">
+              Video Journal and Aerial Highlights Archive
+            </h2>
+
+
+            <p itemProp="description">
+              Explore the My Journal video archive
+              featuring Sri Lanka backcountry landscapes,
+              trails, natural attractions, aerial perspectives
+              and field recordings.
+              This collection contains{" "}
+              {videoList.length}{" "}
+              video entries.
+            </p>
+
+
+            {videoList.map(
+              (video, index) => {
+
+                const seo =
+                  buildAutomaticVideoSEO(
+                    video,
+                    index
+                  );
+
+
+                const videoPageUrl =
+                  getVideoPageUrl(
+                    video,
+                    index
+                  );
+
+
+                const seoVideoId =
+                  seo?.youtubeId ||
+                  getYouTubeId(
+                    seo?.url
+                  );
+
+
+                const seoEmbedUrl =
+                  seoVideoId
+                    ? buildYouTubeEmbedUrl(
+                      seoVideoId
+                    )
+                    : null;
+
+
+                return (
+                  <article
+                    key={
+                      video.id ||
+                      video.url ||
+                      `seo-video-${index}`
+                    }
+                    itemScope
+                    itemProp="video"
+                    itemType="https://schema.org/VideoObject"
+                  >
+
+                    <h3 itemProp="name">
+                      {seo?.seoTitle ||
+                        seo?.title ||
+                        `Sri Lanka Backcountry Video ${index + 1}`}
+                    </h3>
+
+
+                    <a
+                      itemProp="url"
+                      href={videoPageUrl}
+                    >
+                      View video:{" "}
+                      {seo?.title ||
+                        `Video ${index + 1}`}
+                    </a>
+
+
+                    <meta
+                      itemProp="description"
+                      content={
+                        seo?.seoDescription ||
+                        `Sri Lanka backcountry video ${index + 1}.`
+                      }
+                    />
+
+
+                    {seo?.thumbnailUrl && (
+                      <meta
+                        itemProp="thumbnailUrl"
+                        content={
+                          seo.thumbnailUrl
+                        }
+                      />
+                    )}
+
+
+                    {seo?.uploadDate && (
+                      <meta
+                        itemProp="uploadDate"
+                        content={
+                          new Date(
+                            seo.uploadDate
+                          ).toISOString()
+                        }
+                      />
+                    )}
+
+
+                    {seo?.duration && (
+                      <meta
+                        itemProp="duration"
+                        content={
+                          seo.duration
+                        }
+                      />
+                    )}
+
+
+                    {seoEmbedUrl && (
+                      <meta
+                        itemProp="embedUrl"
+                        content={
+                          seoEmbedUrl
+                        }
+                      />
+                    )}
+
+                  </article>
+                );
+              }
+            )}
+
+          </div>
+
+
+          {/* ===========================================================
+              MAIN CONTENT
+          =========================================================== */}
+
+          <main className="flex-1 flex flex-col lg:flex-row gap-6 p-4 md:p-6 overflow-hidden">
+
+            {/* =========================================================
+                ACTIVE PLAYER
+            ========================================================= */}
+
+            <div className="flex-none lg:flex-1 w-full flex items-center justify-center relative min-h-[40vh] lg:min-h-0">
+
+              <div className="relative w-full max-w-5xl aspect-video rounded-[2rem] overflow-hidden bg-black border border-white/10 shadow-2xl">
+
+                {videoId &&
+                  embedUrl ? (
+                  <iframe
+                    key={videoId}
+                    src={embedUrl}
+                    className="absolute top-0 left-0 w-full h-full border-0"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    allowFullScreen
+                    referrerPolicy="strict-origin-when-cross-origin"
+                    title={
+                      currentVideoSEO?.seoTitle ||
+                      currentVideoSEO?.title ||
+                      "My Journal Video Player"
+                    }
+                  />
+                ) : (
+                  <div className="flex flex-col items-center justify-center h-full text-white/50 text-sm px-6 text-center">
+
+                    <span>
+                      Invalid or Unsupported Video URL
+                    </span>
+
+
+                    {currentVideoSEO?.url && (
+                      <span className="mt-2 text-xs text-white/30 break-all">
+                        Unable to extract a YouTube video ID.
+                      </span>
+                    )}
+
+                  </div>
+                )}
+
+              </div>
+
+            </div>
+
+
+            {/* =========================================================
+                PLAYLIST
+            ========================================================= */}
+
+            <aside className="w-full lg:w-80 flex-1 lg:flex-none flex flex-col gap-3 overflow-y-auto custom-scrollbar pr-2 pb-20 lg:pb-0 min-h-0">
+
+              <h4 className="text-white/70 text-xs font-bold uppercase tracking-widest mb-2 px-1">
+                More Videos
+              </h4>
+
+
+              {videoList.map(
+                (item, index) => {
+
+                  const itemSEO =
+                    buildAutomaticVideoSEO(
+                      item,
+                      index
+                    );
+
+
+                  const listVideoId =
+                    itemSEO?.youtubeId ||
+                    getYouTubeId(
+                      itemSEO?.url ||
+                      item?.url
+                    );
+
+
+                  const thumbnailUrl =
+                    itemSEO?.thumbnailUrl ||
+                    (
+                      listVideoId
+                        ? `https://img.youtube.com/vi/${listVideoId}/hqdefault.jpg`
+                        : "/default-video-placeholder.jpg"
+                    );
+
+
+                  const isActive =
+                    safeActiveIndex ===
+                    index;
+
+
+                  const videoPageUrl =
+                    getVideoPageUrl(
+                      item,
+                      index
+                    );
+
+
+                  return (
+                    <a
+                      key={
+                        item.id ||
+                        item.url ||
+                        index
+                      }
+                      href={videoPageUrl}
+                      onClick={(event) => {
+
+                        /*
+                         * Preserve the existing modal playlist UX.
+                         *
+                         * The href remains crawlable for:
+                         *
+                         *     search engines
+                         *     right-click/open-new-tab
+                         *     accessibility
+                         *
+                         * Normal left-click changes the active
+                         * modal video instead of navigating away.
+                         */
+
+                        event.preventDefault();
+
+                        setActiveIndex(
+                          index
+                        );
+                      }}
+                      className={`group flex items-start gap-3 w-full text-left p-2 rounded-xl transition-all ${isActive
+                        ? "bg-white/10 border border-indigo-500"
+                        : "hover:bg-white/5 border border-transparent"
+                        }`}
+                      aria-current={
+                        isActive
+                          ? "true"
+                          : undefined
+                      }
+                    >
+
+                      {/* =================================================
+                          THUMBNAIL
+                      ================================================= */}
+
+                      <div className="relative w-24 aspect-video flex-shrink-0 rounded-lg overflow-hidden bg-slate-800">
+
+                        <img
+                          src={thumbnailUrl}
+                          alt={
+                            itemSEO?.seoTitle ||
+                            itemSEO?.title ||
+                            `Video thumbnail for ${itemSEO?.locality ||
+                            "Sri Lanka"
+                            }`
+                          }
+                          title={
+                            itemSEO?.seoTitle ||
+                            itemSEO?.title ||
+                            `Sri Lanka video ${index + 1}`
+                          }
+                          loading={
+                            index < 3
+                              ? "eager"
+                              : "lazy"
+                          }
+                          decoding="async"
+                          className={`w-full h-full object-cover transition-opacity ${isActive
+                            ? "opacity-100"
+                            : "opacity-70 group-hover:opacity-100"
+                            }`}
+                          onError={(event) => {
+                            event.currentTarget.onerror =
+                              null;
+
+                            event.currentTarget.src =
+                              "/default-video-placeholder.jpg";
+                          }}
+                        />
+
+
+                        {isActive && (
+                          <div className="absolute inset-0 bg-indigo-500/30 flex items-center justify-center">
+
+                            <Play className="w-4 h-4 text-white fill-white" />
+
+                          </div>
+                        )}
+
+                      </div>
+
+
+                      {/* =================================================
+                          TITLE
+                      ================================================= */}
+
+                      <div className="flex-1 overflow-hidden">
+
+                        <p
+                          className={`text-xs font-semibold line-clamp-2 ${isActive
+                            ? "text-white"
+                            : "text-slate-300"
+                            }`}
+                        >
+                          {itemSEO?.title ||
+                            "Journal Entry"}
+                        </p>
+
+
+                        {itemSEO?.locality && (
+                          <p className="text-[10px] text-slate-500 mt-1 truncate">
+                            {itemSEO.locality}
+                          </p>
+                        )}
+
+                      </div>
+
+                    </a>
+                  );
+                }
+              )}
+
+            </aside>
+
+          </main>
+
+        </div>
+      );
+    }
+  );
 
 /**
  * ============================================================
@@ -2388,16 +7408,8 @@ export const MapComponent = ({
   mapInstanceRef,
   handleOpenArticle,
 
-  // -------------------------------------------------------------
-  // SEARCH TOGGLES
-  // -------------------------------------------------------------
-  // Nearby Places engine ONLY:
-  // Controls nearby attractions, fuel, restaurants and lodgings.
   isNearbySearchEnabled = false,
 
-  // Location Search → Google Maps Places ONLY:
-  // Controls whether Google Places are included in Location Search.
-  includeGooglePlaces = false
 }) => {
   const mapRef = useRef(null);
   const mapInstance = useRef(null);
@@ -2406,10 +7418,6 @@ export const MapComponent = ({
 
   // Active Polyline Ref
   const routeLineRef = useRef(null);
-
-  // Search States
-  const [searchTerm, setSearchTerm] = useState('');
-  const [searchResults, setSearchResults] = useState([]);
 
   // OpenRouteService API Key from environment variables
   const ORS_KEY = import.meta.env.VITE_ORS_KEY;
@@ -2431,7 +7439,7 @@ export const MapComponent = ({
   };
 
   const getSlug = (item) => {
-    const text = item.place_name || item.name || item.slug || '';
+    const text = item.slug || item.place_name || item.name || '';
     return generateSlug(text);
   };
 
@@ -2462,7 +7470,7 @@ export const MapComponent = ({
   };
 
   // Helper to update state metrics
-  const updateRouteMetrics = (
+  const updateRouteMetrics = useCallback((
     distKm,
     durationMins,
     pathCoords = []
@@ -2479,138 +7487,7 @@ export const MapComponent = ({
         coordinates: pathCoords
       });
     }
-  };
-
-  // -------------------------------------------------------------
-  // Location Search Handler
-  //
-  // IMPORTANT:
-  // Location Search Google Maps integration is controlled ONLY
-  // by includeGooglePlaces / "+ Maps".
-  //
-  // It is deliberately NOT controlled by
-  // isNearbySearchEnabled.
-  // -------------------------------------------------------------
-  const handleLocationSearch = useCallback(
-    async (query, includeGoogle) => {
-      if (!query || query.trim() === '') {
-        setSearchResults([]);
-        return;
-      }
-
-      const normalizedQuery = query.trim().toLowerCase();
-
-      // -----------------------------------------------------------
-      // 1. ALWAYS search the local My Journal database
-      // -----------------------------------------------------------
-      const localResults = (places || []).filter(place =>
-        (place.place_name || place.name || '')
-          .toLowerCase()
-          .includes(normalizedQuery) ||
-        (place.locality || '')
-          .toLowerCase()
-          .includes(normalizedQuery)
-      );
-
-      // -----------------------------------------------------------
-      // 2. "+ Maps" OFF
-      //
-      // Return ONLY local/My Journal database results.
-      // -----------------------------------------------------------
-      if (!includeGoogle) {
-        setSearchResults(localResults);
-        return;
-      }
-
-      // -----------------------------------------------------------
-      // 3. "+ Maps" ON
-      //
-      // Search Google Maps Places in addition to local results.
-      // -----------------------------------------------------------
-      try {
-        if (
-          window.google?.maps?.places
-        ) {
-          const autocompleteService =
-            new window.google.maps.places.AutocompleteService();
-
-          autocompleteService.getPlacePredictions(
-            {
-              input: query.trim(),
-              componentRestrictions: {
-                country: 'lk'
-              }
-            },
-            (predictions, status) => {
-              if (
-                status ===
-                window.google.maps.places.PlacesServiceStatus.OK &&
-                predictions
-              ) {
-                const googlePlacesMapped =
-                  predictions.map(p => ({
-                    id: p.place_id,
-
-                    place_name:
-                      p.structured_formatting?.main_text ||
-                      p.description,
-
-                    locality:
-                      p.structured_formatting?.secondary_text ||
-                      '',
-
-                    isGooglePlace: true,
-
-                    description: p.description
-                  }));
-
-                setSearchResults([
-                  ...localResults,
-                  ...googlePlacesMapped
-                ]);
-              } else {
-                setSearchResults(localResults);
-              }
-            }
-          );
-        } else {
-          // Google Maps API unavailable:
-          // gracefully fall back to local database results.
-          setSearchResults(localResults);
-        }
-      } catch (error) {
-        console.error(
-          'Google Places location search error:',
-          error
-        );
-
-        setSearchResults(localResults);
-      }
-    },
-    [places]
-  );
-
-  // -------------------------------------------------------------
-  // Search Input / "+ Maps" Toggle Change Trigger
-  //
-  // IMPORTANT:
-  // Changing Nearby Places state does NOT trigger Location Search.
-  // Changing "+ Maps" DOES trigger Location Search.
-  // -------------------------------------------------------------
-  useEffect(() => {
-    if (searchTerm) {
-      handleLocationSearch(
-        searchTerm,
-        includeGooglePlaces
-      );
-    } else {
-      setSearchResults([]);
-    }
-  }, [
-    searchTerm,
-    includeGooglePlaces,
-    handleLocationSearch
-  ]);
+  }, [setRouteDistance, setRouteData]);
 
   // -------------------------------------------------------------
   // 1. Initialize Map & User Location Marker
@@ -3410,7 +8287,8 @@ export const MapComponent = ({
     debouncedUserCoords,
     setRouteData,
     setRouteDistance,
-    ORS_KEY
+    ORS_KEY,
+    updateRouteMetrics,
   ]);
 
   return (
@@ -3631,7 +8509,72 @@ export const LegalAndAboutModal = ({ isOpen, onClose, currentView, setView }) =>
 };
 
 
+function SafetyOverlay({ location, isOpen, onClose }) {
+  const { t, i18n } = useTranslation();
+  if (!isOpen || !location) return null;
+
+  const restrictionLevel = String(location.restriction_level || "").trim().toLowerCase();
+  const isHighRisk = ["high", "restricted"].includes(restrictionLevel);
+  const currentLang = i18n.language || "en";
+  const placeName = getLocalizedValue(location, "place_name", currentLang);
+  const locality = getLocalizedValue(location, "locality", currentLang);
+  const governingOrg = location.governing_org || t("safety_overlay.default_authority", {
+    defaultValue: "local administrative departments",
+  });
+
+  const theme = {
+    headerBg: isHighRisk ? "bg-orange-500" : "bg-blue-600",
+    cardStyles: isHighRisk
+      ? "bg-orange-50 border-orange-100 text-orange-900 dark:bg-orange-950/20 dark:border-orange-900/30 dark:text-orange-300"
+      : "bg-slate-50 border-slate-100 text-slate-800 dark:bg-slate-800/40 dark:border-slate-800 dark:text-slate-300",
+  };
+
+  return (
+    <div className="fixed inset-0 z-[99999] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+      <div className="bg-white dark:bg-slate-900 rounded-2xl max-w-md w-full shadow-2xl overflow-hidden border border-slate-100 dark:border-slate-800 transform transition-all scale-100">
+        <div className={`p-4 flex items-center justify-between text-white ${theme.headerBg}`}>
+          <div className="flex items-center gap-2">
+            <AlertCircle size={20} />
+            <span className="font-black uppercase text-xs tracking-widest">{t("safety_overlay.title")}</span>
+          </div>
+          <button onClick={onClose} className="hover:bg-white/20 p-1.5 rounded-full transition-colors active:scale-95" aria-label="Close modal">
+            <X size={18} />
+          </button>
+        </div>
+        <div className="p-6">
+          <div className="mb-5">
+            <h2 className="text-xl font-extrabold text-slate-800 dark:text-white leading-snug">{placeName}</h2>
+            <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mt-0.5">{locality}</p>
+            <div className="mt-3"><RestrictionBadge level={location.restriction_level} /></div>
+          </div>
+          <div className="space-y-4 text-sm">
+            <div className={`p-4 rounded-xl border leading-relaxed ${theme.cardStyles}`}>
+              <p className="font-bold mb-1.5 flex items-center gap-2 text-xs uppercase tracking-wider opacity-90">
+                <ShieldCheck size={16} className={isHighRisk ? "text-orange-600 dark:text-orange-400" : "text-blue-600 dark:text-blue-400"} />
+                {t("safety_overlay.notice_title")}
+              </p>
+              <p className="text-sm">
+                {placeName} {t("safety_overlay.jurisdiction")} <span className="font-bold text-slate-900 dark:text-white">{governingOrg}</span>.
+                {isHighRisk
+                  ? <span className="block mt-2 font-medium">{t("safety_overlay.controlled")}</span>
+                  : <span className="block mt-2 font-medium">{t("safety_overlay.guidelines")}</span>}
+              </p>
+            </div>
+            <p className="text-[10px] leading-relaxed italic text-slate-400 dark:text-slate-500 pt-4 border-t border-slate-100 dark:border-slate-800/60">
+              {t("safety_overlay.footer_disclaimer")}
+            </p>
+          </div>
+          <button onClick={onClose} className="w-full mt-6 bg-slate-900 hover:bg-slate-800 dark:bg-indigo-600 dark:hover:bg-indigo-700 text-white py-3 rounded-xl font-bold text-xs uppercase tracking-widest active:scale-[0.98] transition-all duration-150 shadow-sm">
+            {t("safety_overlay.button")}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function App() {
+  const [initialRouteState] = useState(getInitialAppRouteState);
 
   // ============================================================================
   // 18. MUTABLE APPLICATION REFERENCES (DOM & MAP INSTANCE REGISTRIES)
@@ -3639,19 +8582,14 @@ function App() {
   const lastLoggedArticleRef = useRef(null);
   const lastLoggedGalleryRef = useRef(null);
   const mapRef = useRef(null);
-  const addMapRef = useRef(null);
   const tempMarkerRef = useRef(null);
   const markerRegistryRef = useRef({});
-  const routingControlRef = useRef(null);
-  const currentRouteIdsRef = useRef("");
   const autocompleteRef = useRef(null);
   const searchInputRef = useRef(null);
   const nearbyMarkersRef = useRef([]);
-  const placesCacheRef = useRef(new Map());
   const hasHandledDeepLink = useRef(false);
   const hasLoggedPlanOpen = useRef(false);
   const hasLoggedAddOpen = useRef(false);
-  const hasLoggedVideoOpen = useRef(false);
   const pendingRouteRef = useRef({ type: null, slug: null });
   const sentinelRef = useRef(null);
   const mapInstanceRef = useRef(null);
@@ -3660,31 +8598,134 @@ function App() {
   // ============================================================================
   // 19. TRANSLATION, LOCALIZATION, COOKIE CONSENT & PROMPTS
   // ============================================================================
+
   const { t, i18n } = useTranslation();
-  const [isTranslating, setIsTranslating] = useState(false);
-  const [translatedContent, setTranslatedContent] = useState(null);
 
-  // Persistent Client Storage: Cookie Consent Tracking
-  const [showCookieBanner, setShowCookieBanner] = useState(() => {
-    if (typeof window !== 'undefined') {
-      return localStorage.getItem('myjournal_cookie_consent') === null;
+  const [translatedContent, setTranslatedContent] =
+    useState(null);
+
+
+  // ============================================================================
+  // PERSISTENT CLIENT STORAGE: COOKIE CONSENT TRACKING
+  // ============================================================================
+
+  const [showCookieBanner, setShowCookieBanner] =
+    useState(() => {
+      if (typeof window !== 'undefined') {
+        return (
+          localStorage.getItem(
+            'myjournal_cookie_consent'
+          ) === null
+        );
+      }
+
+      return false;
+    });
+
+
+  // ============================================================================
+  // OS THEME TRACKER
+  // ============================================================================
+  //
+  // The application follows the user's operating-system/browser theme.
+  //
+  // Light OS
+  //     ↓
+  // remove .dark
+  //
+  // Dark OS
+  //     ↓
+  // add .dark
+  //
+  // Existing Tailwind `dark:` classes remain active.
+  //
+  // Theme preference is intentionally NOT stored in localStorage.
+  // This prevents an old "dark"/"light" value from overriding the
+  // user's current operating-system preference.
+  //
+  // The MediaQueryList listener also allows the application to react
+  // immediately when the OS/browser theme changes while the app is open.
+  // ============================================================================
+
+  // ============================================================================
+  // OS THEME SYNCHRONIZATION
+  // ============================================================================
+
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      return undefined;
     }
-    return false;
-  });
 
-  // Persistent Theme Tracker
-  const [isDark, setIsDark] = useState(() => {
-    if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('theme');
-      return saved === 'dark' || (!saved && window.matchMedia('(prefers-color-scheme: dark)').matches);
-    }
-    return false;
-  });
+    const mediaQuery = window.matchMedia(
+      '(prefers-color-scheme: dark)'
+    );
 
-  // Newsletter Prompt Tracking
-  const [showNewsletterPrompt, setShowNewsletterPrompt] = useState(false);
-  const [newsletterEmail, setNewsletterEmail] = useState('');
-  const [isNewsletterSubmitting, setIsNewsletterSubmitting] = useState(false);
+    // --------------------------------------------------------------------------
+    // Apply theme to the document root.
+    // --------------------------------------------------------------------------
+
+    const applyTheme = (darkMode) => {
+      const root = document.documentElement;
+
+      if (darkMode) {
+        root.classList.add('dark');
+      } else {
+        root.classList.remove('dark');
+      }
+
+      // Keep browser-native controls aligned with the active theme.
+      root.style.colorScheme = darkMode
+        ? 'dark'
+        : 'light';
+    };
+
+    // --------------------------------------------------------------------------
+    // Initial synchronization.
+    // --------------------------------------------------------------------------
+
+    applyTheme(mediaQuery.matches);
+
+    // --------------------------------------------------------------------------
+    // React to operating-system/browser theme changes.
+    // --------------------------------------------------------------------------
+
+    const handleThemeChange = (event) => {
+      const darkMode = event.matches;
+
+      applyTheme(darkMode);
+    };
+
+    mediaQuery.addEventListener(
+      'change',
+      handleThemeChange
+    );
+
+    // --------------------------------------------------------------------------
+    // Cleanup.
+    // --------------------------------------------------------------------------
+
+    return () => {
+      mediaQuery.removeEventListener(
+        'change',
+        handleThemeChange
+      );
+    };
+  }, []);
+
+
+  // ============================================================================
+  // NEWSLETTER PROMPT TRACKING
+  // ============================================================================
+
+  const [showNewsletterPrompt, setShowNewsletterPrompt] =
+    useState(false);
+
+  const [newsletterEmail, setNewsletterEmail] =
+    useState('');
+
+  const [isNewsletterSubmitting, setIsNewsletterSubmitting] =
+    useState(false);
+
 
   // ============================================================================
   // 20. CORE UI, MODALS & OVERLAYS STATE
@@ -3694,10 +8735,9 @@ function App() {
   const [viewingArticle, setviewingArticle] = useState(null);
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
   const [sharingData, setSharingData] = useState(null);
-  const [isPrivacyOpen, setIsPrivacyOpen] = useState(false);
-  const [legalView, setLegalView] = useState('privacy');
+  const [isPrivacyOpen, setIsPrivacyOpen] = useState(initialRouteState.isPrivacyOpen);
+  const [legalView, setLegalView] = useState(initialRouteState.legalView);
   const [showSafetyModal, setShowSafetyModal] = useState(false);
-  const [showEngineHint, setShowEngineHint] = useState(true);
 
   // ============================================================================
   // 21. DATA LISTS, FILTERING & PAGINATION STATE
@@ -3706,7 +8746,7 @@ function App() {
   const [visibleCount, setVisibleCount] = useState(20);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterTag, setFilterTag] = useState('All');
-  const [statusFilter, setStatusFilter] = useState('done');
+  const statusFilter = 'done';
   const [sortBy, setSortBy] = useState('recent');
   const [selectedLocation, setSelectedLocation] = useState(null);
 
@@ -3715,7 +8755,7 @@ function App() {
   // 22. ADVENTURE ENGINE & ROUTE PLANNER STATE
   // ============================================================================
   const [isEngineOpen, setIsEngineOpen] = useState(false);
-  const [isPlannerOpen, setIsPlannerOpen] = useState(false);
+  const [isPlannerOpen, setIsPlannerOpen] = useState(initialRouteState.isPlannerOpen);
   const [isPlannerExpanded, setIsPlannerExpanded] = useState(false);
   const [plannerSearch, setPlannerSearch] = useState('');
   const [selectedRoute, setSelectedRoute] = useState([]);
@@ -3723,15 +8763,8 @@ function App() {
   const [routeDistance, setRouteDistance] = useState(0);
   const [userCoords, setUserCoords] = useState(null);
   const [hoveredPlaceId, setHoveredPlaceId] = useState(null);
-  const [destination, setDestination] = useState(null); // { name, lat, lng }
-  const [enRouteBucketPlaces, setEnRouteBucketPlaces] = useState([]);
-  const [enRouteAttractions, setEnRouteAttractions] = useState([]);
-  const [isCalculatingSuggestions, setIsCalculatingSuggestions] = useState(false);
   const [isNearbySearchEnabled, setIsNearbySearchEnabled] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
   const [includeGooglePlaces, setIncludeGooglePlaces] = useState(false);
-  const [searchResults, setSearchResults] = useState([]);
-  const [isSearching, setIsSearching] = useState(false);
 
   // Data states for the markers
   const [routeAmenities, setRouteAmenities] = useState({
@@ -3740,22 +8773,10 @@ function App() {
     lodgings: []
   });
 
-  const formatCategoryLabel = (cat) => {
-    switch (cat) {
-      case 'gas_station': return 'Gas Station';
-      case 'restaurant': return 'Restaurant';
-      case 'lodging': return 'Lodging';
-      case 'attraction': return 'Attraction';
-      default: return cat;
-    }
-  };
-
-
-
   // ============================================================================
   // 23. CONTENT CREATION & NEW LOCATION FORM STATE
   // ============================================================================
-  const [isAddOpen, setIsAddOpen] = useState(false);
+  const [isAddOpen, setIsAddOpen] = useState(initialRouteState.isAddOpen);
   const [addMapInstance, setAddMapInstance] = useState(null);
 
   const [formData, setFormData] = useState({
@@ -3781,9 +8802,6 @@ function App() {
   // ============================================================================
   // 25. UI EXPANSION & ACTION NAVIGATION CONTROLS (FABs)
   // ============================================================================
-  const [isFabExpanded, setIsFabExpanded] = useState(false);
-  const [isSocialExpanded, setIsSocialExpanded] = useState(false);
-  const [isAddExpanded, setIsAddExpanded] = useState(false);
   const locationGridScrollRef = useDragScroll();
   const articleWindowScrollRef = useDragScroll();
 
@@ -3792,7 +8810,6 @@ function App() {
   // ============================================================================
   const [weatherData, setWeatherData] = useState({});
   const [nearbyAttractions, setNearbyAttractions] = useState([]);
-  const [qrUrl, setQrUrl] = useState(null);
   const fetchedWeatherKeys = useRef(new Set());
 
   // ============================================================================
@@ -3802,49 +8819,106 @@ function App() {
   const [videoLibrary, setVideoLibrary] = useState([]);
   const [activeId, setActiveId] = useState(null);
   const [activeVideos, setActiveVideos] = useState([]);
-  const [isVideosLoading, setIsVideosLoading] = useState(false);
-  const [isVideoHubOpen, setIsVideoHubOpen] = useState(false);
+
+  // ---------------------------------------------------------------------------
+  // Video detail / deep-link state
+  // ---------------------------------------------------------------------------
+
+  const [activeVideo, setActiveVideo] = useState(null);
+  const [isVideoDetailOpen, setIsVideoDetailOpen] = useState(false);
+  const [hasLoadedVideoLibrary, setHasLoadedVideoLibrary] = useState(false);
+
+  // ---------------------------------------------------------------------------
+  // Fetch video library
+  // ---------------------------------------------------------------------------
 
   const fetchVideoLibrary = useCallback(async () => {
-    if (!supabaseClient) return [];
-
-    setIsVideosLoading(true);
+    if (!supabaseClient) {
+      setVideoLibrary([]);
+      setHasLoadedVideoLibrary(true);
+      return [];
+    }
 
     try {
       const { data, error } = await supabaseClient
-        .from('hub_videos')
-        .select('id, url, title, custom_thumbnail_url')
-        .eq('is_active', true)
-        .order('display_order', { ascending: false, nullsFirst: false })
-        .order('created_at', { ascending: false });
+        .from("hub_videos")
+        .select(`
+        id,
+        url,
+        title,
+        custom_thumbnail_url
+      `)
+        .eq("is_active", true)
+        .order("display_order", {
+          ascending: false,
+          nullsFirst: false,
+        })
+        .order("created_at", {
+          ascending: false,
+        });
 
       if (error) {
-        console.error('Error loading videos:', error);
+        console.error(
+          "Error loading video library:",
+          error
+        );
+
+        setVideoLibrary([]);
+
         return [];
       }
 
-      const videos = data || [];
+      const videos = Array.isArray(data)
+        ? data
+        : [];
+
       setVideoLibrary(videos);
+
       return videos;
-    } catch (err) {
-      console.error('Error loading video library:', err);
+    } catch (error) {
+      console.error(
+        "Error loading video library:",
+        error
+      );
+
+      setVideoLibrary([]);
+
       return [];
     } finally {
-      setIsVideosLoading(false);
+      setHasLoadedVideoLibrary(true);
     }
-  }, [supabaseClient]);
+  }, []);
+
+  // ---------------------------------------------------------------------------
+  // Load video library
+  // ---------------------------------------------------------------------------
 
   useEffect(() => {
-    fetchVideoLibrary();
+    let isMounted = true;
+    queueMicrotask(() => {
+      if (isMounted) void fetchVideoLibrary();
+    });
+    return () => {
+      isMounted = false;
+    };
   }, [fetchVideoLibrary]);
+
+  // ---------------------------------------------------------------------------
+  // Photo gallery close handler
+  // ---------------------------------------------------------------------------
 
   const handleClosePhotoGallery = useCallback(() => {
     setActiveId(null);
   }, []);
 
+  // ---------------------------------------------------------------------------
+  // Video gallery close handler
+  // ---------------------------------------------------------------------------
+
   const handleCloseVideoGallery = useCallback(() => {
     setActiveVideos([]);
   }, []);
+
 
   // ============================================================================
   // 28. PERFORMANCE OPTIMIZATION & DEBOUNCED / DERIVED STATE
@@ -4062,28 +9136,6 @@ function App() {
     return filteredPlaces.slice(0, visibleCount);
   }, [filteredPlaces, visibleCount]);
 
-  const fetchAttractions = async (lat, lng) => {
-    if (!lat || !lng) return;
-
-    try {
-      setIsCalculatingSuggestions(true);
-
-      // TODO: Insert your actual API call here. 
-      // (e.g., Google Places Service, Supabase Edge Function, or Overpass API)
-      console.log(`Fetching nearby attractions for: ${lat}, ${lng}`);
-
-      // Example of setting the state once data is fetched:
-      // const data = await myGeocodingOrPlacesApi(lat, lng);
-      // setNearbyAttractions(data);
-
-    } catch (error) {
-      console.error("Error fetching attractions:", error);
-    } finally {
-      setIsCalculatingSuggestions(false);
-    }
-  };
-
-
   // ============================================================================
   // 29. EVENT HANDLERS & BUSINESS LOGIC
   // ============================================================================
@@ -4092,6 +9144,7 @@ function App() {
   // A. Localization, Prompts & Newsletter Handlers
   // ---------------------------------------------------------------------------
   const changeLanguage = (e) => {
+    setTranslatedContent(null);
     i18n.changeLanguage(e.target.value);
   };
 
@@ -4164,6 +9217,7 @@ function App() {
         .select(`
         id, 
         created_at,
+        slug,
         place_name,
         locality, 
         category, 
@@ -4193,27 +9247,14 @@ function App() {
       console.error("Fetch Error:", err.message);
       toast.error("Failed to load locations");
     }
-  }, [toast]);
-
-  const updateLocationLifecycle = async (locationId, nextStatus) => {
-    const { data, error } = await supabaseClient.rpc('update_location_status_and_stage_notify', {
-      target_id: locationId,
-      new_status: nextStatus
-    });
-
-    if (error) {
-      console.error('Failed to transition lifecycle state:', error.message);
-      return null;
-    }
-    return data[0];
-  };
-
+  }, []);
 
   const handleOpenArticle = useCallback(async (place) => {
     if (!place) return;
 
+    setTranslatedContent(null);
     const isPublished = place.status === 'done';
-    const slug = generateSlug(place.place_name || place.name || place.slug);
+    const slug = getMediaSEOPlaceSlug(place);
 
     if (isPublished) {
       window.history.pushState({ placeId: place.id }, '', `/place/${slug}`);
@@ -4256,181 +9297,345 @@ function App() {
       console.error("Content Fetch Failure:", err);
       toast.error("Error loading article content");
     }
-  }, [supabaseClient, toast, setviewingArticle, setIsArticleOpen, setPlaces]);
+  }, []);
 
   // ---------------------------------------------------------------------------
   // C. Social Interactions Handlers (Likes & Comments)
   // ---------------------------------------------------------------------------
 
+  const invokeInteractionEvent = async (eventType, payload = {}) => {
+    if (!supabaseClient) {
+      throw new Error("Supabase client is unavailable.");
+    }
 
-  const fetchInteractions = async () => {
+    const { data, error } = await supabaseClient.functions.invoke(
+      "track-visit",
+      {
+        body: {
+          event_type: eventType,
+          page_path: window.location.pathname,
+          user_agent: navigator.userAgent || "",
+          referrer: document.referrer
+            ? document.referrer.toLowerCase()
+            : "",
+          is_webdriver: Boolean(navigator.webdriver),
+          ...payload,
+        },
+      }
+    );
+
+    if (error) {
+      throw error;
+    }
+
+    return data;
+  };
+
+  // ---------------------------------------------------------------------------
+  // Fetch likes, comments and shares
+  // ---------------------------------------------------------------------------
+  //
+
+  const fetchInteractions = useCallback(async () => {
     try {
-      const meta = await getInteractionMetadata();
-      const userIp = meta?.ip || '0.0.0.0';
+      if (!supabaseClient) return;
 
-      // Fetch likes, comments, and shares concurrently
-      const [likesResponse, commentsResponse, sharesResponse] = await Promise.all([
-        supabaseClient.from('location_likes').select('location_id, ip_address'),
-        supabaseClient.from('location_comments').select('*').order('created_at', { ascending: true }),
-        supabaseClient.from('location_shares').select('location_id')
+      const [
+        likesResponse,
+        commentsResponse,
+        sharesResponse,
+      ] = await Promise.all([
+        supabaseClient
+          .from("location_likes")
+          .select("location_id, ip_address"),
+
+        supabaseClient
+          .from("location_comments")
+          .select("*")
+          .order("created_at", {
+            ascending: true,
+          }),
+
+        supabaseClient
+          .from("location_shares")
+          .select("location_id"),
       ]);
 
-      // Throw errors if any query fails so they are caught in the catch block
-      if (likesResponse.error) throw likesResponse.error;
-      if (commentsResponse.error) throw commentsResponse.error;
-      if (sharesResponse.error) throw sharesResponse.error;
+      if (likesResponse.error) {
+        throw likesResponse.error;
+      }
 
-      // Structure likes count and check if current user IP liked
-      const structuredLikes = (likesResponse.data || []).reduce((acc, curr) => {
+      if (commentsResponse.error) {
+        throw commentsResponse.error;
+      }
+
+      if (sharesResponse.error) {
+        throw sharesResponse.error;
+      }
+
+      // -----------------------------------------------------------------------
+      // Structure likes
+      //
+
+      const structuredLikes = (
+        likesResponse.data || []
+      ).reduce((acc, curr) => {
         const locId = curr.location_id;
-        if (!acc[locId]) acc[locId] = { count: 0, isUserLiked: false };
+
+        if (!acc[locId]) {
+          acc[locId] = {
+            count: 0,
+            isUserLiked: false,
+          };
+        }
+
         acc[locId].count += 1;
-        if (curr.ip_address === userIp) acc[locId].isUserLiked = true;
+
         return acc;
       }, {});
 
+      // -----------------------------------------------------------------------
       // Group comments by location ID
-      const groupedComments = (commentsResponse.data || []).reduce((acc, curr) => {
-        if (!acc[curr.location_id]) acc[curr.location_id] = [];
+      // -----------------------------------------------------------------------
+
+      const groupedComments = (
+        commentsResponse.data || []
+      ).reduce((acc, curr) => {
+        if (!acc[curr.location_id]) {
+          acc[curr.location_id] = [];
+        }
+
         acc[curr.location_id].push(curr);
+
         return acc;
       }, {});
 
-      // Count total shares per location ID
-      const structuredShares = (sharesResponse.data || []).reduce((acc, curr) => {
+      // -----------------------------------------------------------------------
+      // Count shares by location ID
+      // -----------------------------------------------------------------------
+
+      const structuredShares = (
+        sharesResponse.data || []
+      ).reduce((acc, curr) => {
         const locId = curr.location_id;
+
         acc[locId] = (acc[locId] || 0) + 1;
+
         return acc;
       }, {});
 
-      // Update component state safely
+      // -----------------------------------------------------------------------
+      // Update component state
+      // -----------------------------------------------------------------------
+
       setLikes(structuredLikes);
       setComments(groupedComments);
       setShares(structuredShares);
+
     } catch (err) {
-      console.error("Interaction Fetch Error:", err);
+      console.error(
+        "Interaction Fetch Error:",
+        err
+      );
     }
-  };
+  }, []);
+
+  // ---------------------------------------------------------------------------
+  // Like / Unlike
+  // ---------------------------------------------------------------------------
+  //
 
   const handleLike = async (locationId) => {
-    const meta = await getInteractionMetadata();
-    const userIp = meta.ip;
-    const currentStatus = likes[locationId] || { count: 0, isUserLiked: false };
+    if (!locationId || !supabaseClient) return;
 
-    if (currentStatus.isUserLiked) {
-      const { error } = await supabaseClient
-        .from('location_likes')
-        .delete()
-        .match({ location_id: locationId, ip_address: userIp });
+    const currentStatus =
+      likes[locationId] || {
+        count: 0,
+        isUserLiked: false,
+      };
 
-      if (!error) {
-        setLikes(prev => ({
-          ...prev,
-          [locationId]: {
-            count: Math.max(0, (prev[locationId]?.count || 1) - 1),
-            isUserLiked: false
-          }
-        }));
-      }
-    } else {
-      const { error } = await supabaseClient
-        .from('location_likes')
-        .insert([{
+    try {
+      const result = await invokeInteractionEvent(
+        currentStatus.isUserLiked
+          ? "unlike"
+          : "like",
+        {
           location_id: locationId,
-          country: meta.country,
-          city: meta.city,
-          ip_address: userIp
-        }]);
+        }
+      );
 
-      if (!error) {
-        setLikes(prev => ({
-          ...prev,
-          [locationId]: {
-            count: (prev[locationId]?.count || 0) + 1,
-            isUserLiked: true
-          }
-        }));
-      }
+      const nextIsUserLiked =
+        typeof result?.isUserLiked === "boolean"
+          ? result.isUserLiked
+          : !currentStatus.isUserLiked;
+
+      const nextCount =
+        Number.isFinite(Number(result?.count))
+          ? Number(result.count)
+          : currentStatus.isUserLiked
+            ? Math.max(0, currentStatus.count - 1)
+            : currentStatus.count + 1;
+
+      setLikes((prev) => ({
+        ...prev,
+        [locationId]: {
+          count: nextCount,
+          isUserLiked: nextIsUserLiked,
+        },
+      }));
+
+    } catch (err) {
+      console.error(
+        "Like interaction failed:",
+        err
+      );
     }
   };
 
-  /**
- * Records a share event for an article or gallery, bypassing owner interactions.
- * 
- * @param {string} locationId - The UUID of the location.
- * @param {string} shareType - 'article' | 'gallery'
- */
-  const handleShareEvent = async (locationId, shareType = 'article') => {
-    // 1. Owner mode check & Localhost exclusion
-    const host = window.location.hostname;
-    if (host === 'localhost' || host === '127.0.0.1') return;
+  // ---------------------------------------------------------------------------
+  // Share event
+  // ---------------------------------------------------------------------------
+  //
+  // IP / country / city are resolved server-side by track-visit.
+  // ---------------------------------------------------------------------------
 
-    const urlParams = new URLSearchParams(window.location.search);
-    if (urlParams.get('mode') === 'owner') {
-      localStorage.setItem('owner_auth_token', 'owner');
+  const handleShareEvent = async (
+    locationId,
+    shareType = "article"
+  ) => {
+    // Localhost exclusion
+    const host = window.location.hostname;
+
+    if (
+      host === "localhost" ||
+      host === "127.0.0.1"
+    ) {
+      return;
     }
 
-    if (localStorage.getItem('owner_auth_token') === 'owner' || !supabaseClient || !locationId) {
-      return; // Exit silently for owners or missing dependencies
+    // Owner mode exclusion
+    const urlParams =
+      new URLSearchParams(
+        window.location.search
+      );
+
+    if (urlParams.get("mode") === "owner") {
+      localStorage.setItem(
+        "owner_auth_token",
+        "owner"
+      );
+    }
+
+    if (
+      localStorage.getItem(
+        "owner_auth_token"
+      ) === "owner" ||
+      !supabaseClient ||
+      !locationId
+    ) {
+      return;
     }
 
     try {
-      // 2. Fetch visitor geo-metadata (IP, country, city)
-      const geo = await getInteractionMetadata();
+      await invokeInteractionEvent(
+        "share",
+        {
+          location_id: locationId,
+          share_type: shareType,
+        }
+      );
 
-      // 3. Insert the share event payload
-      const { error } = await supabaseClient
-        .from('location_shares')
-        .insert([
-          {
-            location_id: locationId,
-            type: shareType,
-            country: geo.country,
-            city: geo.city,
-            ip_address: geo.ip,
-            // created_at defaults to now()
-          }
-        ]);
-
-      if (error) throw error;
+      // Keep the local share counter immediately responsive.
+      setShares((prev) => ({
+        ...prev,
+        [locationId]:
+          (prev[locationId] || 0) + 1,
+      }));
 
     } catch (err) {
-      console.error(`[Analytics] Failed to log ${shareType} share event:`, err);
+      console.error(
+        `[Analytics] Failed to log ${shareType} share event:`,
+        err
+      );
     }
   };
 
+  // ---------------------------------------------------------------------------
+  // Open comments
+  // ---------------------------------------------------------------------------
+
   const handleOpenComments = async (place) => {
-    // 1. Await your existing function to fetch the full article data
     await handleOpenArticle(place);
 
-    // 2. Wait for the React state to update and the modal to render/animate
     setTimeout(() => {
-      // 3. Target the comments section by ID and scroll it into view
-      const commentsSection = document.getElementById('comments-discussion-section');
+      const commentsSection =
+        document.getElementById(
+          "comments-discussion-section"
+        );
+
       if (commentsSection) {
-        commentsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        commentsSection.scrollIntoView({
+          behavior: "smooth",
+          block: "start",
+        });
       }
-    }, 400); // Adjust this delay slightly if your modal animation takes longer
+    }, 400);
   };
 
-  const submitComment = async (locationId, text) => {
-    const meta = await getInteractionMetadata();
-    const { data, error } = await supabaseClient
-      .from('location_comments')
-      .insert([{
-        location_id: locationId,
-        comment_text: text,
-        country: meta.country,
-        city: meta.city
-      }])
-      .select();
+  // ---------------------------------------------------------------------------
+  // Submit comment
+  // ---------------------------------------------------------------------------
+  //
+  // The comment itself is submitted through the Edge Function so that
+  // country/city/IP remain server-side.
+  //
+  // ---------------------------------------------------------------------------
 
-    if (error) return;
-    if (data?.length > 0) {
-      setComments(prev => ({
-        ...prev,
-        [locationId]: [...(prev[locationId] || []), data[0]]
-      }));
+  const submitComment = async (
+    locationId,
+    text
+  ) => {
+    if (
+      !locationId ||
+      !text?.trim() ||
+      !supabaseClient
+    ) {
+      return;
+    }
+
+    try {
+      const result =
+        await invokeInteractionEvent(
+          "comment",
+          {
+            location_id: locationId,
+            comment_text: text.trim(),
+          }
+        );
+
+      // The Edge Function should return the newly-created comment.
+      const newComment =
+        result?.comment || result?.data;
+
+      if (newComment) {
+        setComments((prev) => ({
+          ...prev,
+          [locationId]: [
+            ...(prev[locationId] || []),
+            newComment,
+          ],
+        }));
+      } else {
+        // Reload interaction state when the server does not return
+        // the inserted comment.
+        await fetchInteractions();
+      }
+
+    } catch (err) {
+      console.error(
+        "Comment submission failed:",
+        err
+      );
     }
   };
 
@@ -4472,7 +9677,7 @@ function App() {
   // ---------------------------------------------------------------------------
 
   const fetchRoutePlaceData = useCallback(async (coordsOrLat, optionalLng) => {
-    let normalizedCoords = [];
+    let normalizedCoords;
 
     // 1. Normalize Route Coordinates
     if (Array.isArray(coordsOrLat)) {
@@ -4765,66 +9970,15 @@ function App() {
     // GUARD: Stop API calls if user has disabled nearby search
     if (!isNearbySearchEnabled) return;
 
-    if (routeData?.coordinates && routeData.coordinates.length > 0) {
-      fetchRoutePlaceData(routeData.coordinates);
-
-      // Populate the un-used en-route bucket places state
-      setEnRouteBucketPlaces(getPlacesAlongRoute(places, routeData.coordinates));
-    }
-  }, [routeData, isNearbySearchEnabled, fetchRoutePlaceData, places, getPlacesAlongRoute]);
-
-  // 3. Meal and Lodging Suggestions Function
-  const fetchMealAndLodgingSuggestions = async (currentRouteData) => {
-    // GUARD: Early return if nearby search toggle is disabled
-    if (!isNearbySearchEnabled) return;
-
-    const milestones = calculateMealAndStayMilestones(currentRouteData);
-    if (!milestones || !window.google?.maps) return;
-
-    setIsCalculatingSuggestions(true);
-
-    try {
-      const { PlacesService } = await google.maps.importLibrary("places");
-      const service = new PlacesService(document.createElement('div'));
-
-      const searchNearCoord = (coord, type) => {
-        return new Promise((resolve) => {
-          service.nearbySearch(
-            {
-              location: new google.maps.LatLng(coord.lat, coord.lng),
-              radius: 4000,
-              type: type
-            },
-            (results, status) => {
-              if (status === google.maps.places.PlacesServiceStatus.OK && results) {
-                resolve(
-                  results.slice(0, 3).map((p) => ({
-                    id: p.place_id,
-                    name: p.name,
-                    rating: p.rating,
-                    vicinity: p.vicinity,
-                    lat: p.geometry.location.lat(),
-                    lng: p.geometry.location.lng()
-                  }))
-                );
-              } else {
-                resolve([]);
-              }
-            }
-          );
-        });
-      };
-
-      // ... milestone processing logic using searchNearCoord ...
-
-    } catch (err) {
-      console.error("Failed to fetch meal/stay suggestions:", err);
-    } finally {
-      setIsCalculatingSuggestions(false);
-    }
-  };
-
-
+    if (!routeData?.coordinates?.length) return;
+    let isCurrent = true;
+    queueMicrotask(() => {
+      if (isCurrent) void fetchRoutePlaceData(routeData.coordinates);
+    });
+    return () => {
+      isCurrent = false;
+    };
+  }, [routeData, isNearbySearchEnabled, fetchRoutePlaceData]);
 
   // ---------------------------------------------------------------------------
   // 3. Effects & Autocomplete Initialization [ LOCATION SEARCH GOOGLE MAPS GATE]
@@ -4837,7 +9991,7 @@ function App() {
       if (placeChangedListener) {
         try {
           placeChangedListener.remove?.();
-        } catch (e) {
+        } catch {
           // Safe cleanup
         }
         placeChangedListener = null;
@@ -4850,7 +10004,7 @@ function App() {
               autocompleteRef.current
             );
           }
-        } catch (e) {
+        } catch {
           // Safe cleanup
         }
 
@@ -4995,6 +10149,13 @@ function App() {
   // 4. Route Planning & Management Handlers
   // ---------------------------------------------------------------------------
 
+  const handleViewLocation = useCallback((location) => {
+    setSelectedLocation(location);
+    const level = String(location.restriction_level || "").trim().toLowerCase();
+    const shouldShowModal = ["high", "restricted"].includes(level);
+    if (shouldShowModal) setShowSafetyModal(true);
+  }, []);
+
   const toggleRoutePlace = useCallback((place) => {
     if (!place || !place.id) return;
 
@@ -5062,60 +10223,9 @@ function App() {
   }, [selectedRoute, userCoords, handleViewLocation, setSelectedRoute]);
 
 
-  const handleSelectSuggestion = useCallback((attr) => {
-    if (!attr) return;
-
-    const newLocation = {
-      ...attr,
-      id: attr.id,
-      place_name: attr.place_name || attr.name || 'Selected Place',
-      latitude: attr.latitude ?? attr.lat,
-      longitude: attr.longitude ?? attr.lng
-    };
-
-    setSelectedRoute(prev => {
-      if (prev.some(p => p.id === newLocation.id)) return prev;
-      return [...prev, newLocation];
-    });
-
-    if (typeof setIsPlannerOpen === 'function') {
-      setIsPlannerOpen(true);
-    }
-  }, []);
-
-  const handleSetDestination = useCallback((name, lat, lng) => {
-    const parsedLat = typeof lat === 'number' ? lat : parseFloat(lat);
-    const parsedLng = typeof lng === 'number' ? lng : parseFloat(lng);
-
-    if (isNaN(parsedLat) || isNaN(parsedLng)) return;
-
-    const destObj = {
-      id: `dest-${Date.now()}`,
-      place_name: name || 'Destination',
-      latitude: parsedLat,
-      longitude: parsedLng
-    };
-
-    setDestination(destObj);
-    setSelectedRoute([destObj]);
-
-    if (typeof fetchAttractions === 'function') {
-      fetchAttractions(parsedLat, parsedLng);
-    }
-  }, [fetchAttractions]);
-
-  const clearSelectedRoute = useCallback(() => {
-    if (window.confirm("Are you sure you want to clear all selected locations?")) {
-      setSelectedRoute([]);
-      if (setRouteData) setRouteData(null);
-      if (setRouteDistance) setRouteDistance(0);
-    }
-  }, [setRouteData, setRouteDistance]);
-
   const handleReset = useCallback(() => {
     // 1. Reset Inputs, Selections & UI Interactivity
     if (setPlannerSearch) setPlannerSearch('');
-    if (setDestination) setDestination(null);
     if (setHoveredPlaceId) setHoveredPlaceId(null);
     if (setSelectedLocation) setSelectedLocation(null);
 
@@ -5127,8 +10237,6 @@ function App() {
     // 3. Reset Extracted Spatial Data & Amenities
     if (setRouteAmenities) setRouteAmenities({ gas_stations: [], restaurants: [], lodgings: [] });
     if (setNearbyAttractions) setNearbyAttractions([]);
-    if (setEnRouteAttractions) setEnRouteAttractions([]);
-    if (setEnRouteBucketPlaces) setEnRouteBucketPlaces([]);
 
     // 4. Map Layer & Ref Cleanup
     const targetMap = mapInstanceRef?.current || mapRef?.current;
@@ -5169,7 +10277,6 @@ function App() {
     }
   }, [
     setPlannerSearch,
-    setDestination,
     setHoveredPlaceId,
     setSelectedLocation,
     setSelectedRoute,
@@ -5177,8 +10284,6 @@ function App() {
     setRouteDistance,
     setRouteAmenities,
     setNearbyAttractions,
-    setEnRouteAttractions,
-    setEnRouteBucketPlaces,
     mapInstanceRef,
     mapRef,
     routeLineRef,
@@ -5202,7 +10307,7 @@ function App() {
     const destination = `${selectedRoute[selectedRoute.length - 1].latitude},${selectedRoute[selectedRoute.length - 1].longitude}`;
     const waypoints = selectedRoute.slice(1, -1).map(p => `${p.latitude},${p.longitude}`).join('|');
     const url = `https://www.google.com/maps/dir/?api=1&origin=${origin}&destination=${destination}&waypoints=${waypoints}&travelmode=driving`;
-    window.open(url, '_blank');
+    window.open(url, '_blank', 'noopener,noreferrer');
   };
 
   const showQRCode = (points, name = "My Travel Route") => {
@@ -5210,21 +10315,33 @@ function App() {
     if (!universalUrl) return;
 
     const existing = document.getElementById('qr-modal-overlay');
-    if (existing) existing.remove();
+    if (existing) {
+      existing.__qrCleanup?.();
+      existing.remove();
+    }
 
     const overlay = document.createElement('div');
+    let qrRoot = null;
+    let renderTimer = null;
+    const closeOverlay = () => {
+      if (renderTimer) window.clearTimeout(renderTimer);
+      qrRoot?.unmount();
+      qrRoot = null;
+      overlay.remove();
+    };
+    overlay.__qrCleanup = closeOverlay;
     overlay.id = "qr-modal-overlay";
     overlay.className = "fixed inset-0 bg-slate-900/60 backdrop-blur-md z-[9999] flex items-center justify-center p-6";
 
     const modal = document.createElement('div');
     modal.className = "bg-white p-8 rounded-[2.5rem] shadow-2xl flex flex-col items-center gap-6 max-w-sm w-full border border-slate-100";
     modal.onclick = (e) => e.stopPropagation();
-    overlay.onclick = () => overlay.remove();
+    overlay.onclick = closeOverlay;
 
     modal.innerHTML = `
       <div class="text-center">
           <p class="text-[10px] font-black uppercase text-indigo-500 tracking-widest mb-1">Scan to Navigate</p>
-          <h3 class="text-sm font-black uppercase text-slate-800 leading-tight mb-4 px-4 line-clamp-2">${name}</h3>
+          <h3 class="text-sm font-black uppercase text-slate-800 leading-tight mb-4 px-4 line-clamp-2">${escapeHtml(name)}</h3>
       </div>
       <div class="p-5 bg-slate-50 rounded-[2.5rem] border border-slate-100 shadow-inner">
           <div id="qrcode-canvas"></div>
@@ -5239,25 +10356,31 @@ function App() {
     overlay.appendChild(modal);
     document.body.appendChild(overlay);
 
-    setTimeout(() => {
+    renderTimer = window.setTimeout(() => {
       const qrContainer = document.getElementById("qrcode-canvas");
       if (qrContainer) {
-        qrContainer.innerHTML = '';
-        const root = createRoot(qrContainer);
-        root.render(
+        qrRoot = createRoot(qrContainer);
+        qrRoot.render(
           <QRCodeSVG value={universalUrl} size={200} bgColor="#f8fafc" fgColor="#0f172a" level="H" includeMargin={false} />
         );
       }
     }, 50);
 
-    modal.querySelector('#close-qr-btn').onclick = () => overlay.remove();
+    modal.querySelector('#close-qr-btn').onclick = closeOverlay;
     modal.querySelector('#copy-link-btn').onclick = () => {
-      navigator.clipboard.writeText(universalUrl);
-      toast.success("Link copied to clipboard!");
+      const copyLink = async () => {
+        try {
+          await navigator.clipboard.writeText(universalUrl);
+          toast.success("Link copied to clipboard!");
+        } catch {
+          toast.error("Could not copy the route link.");
+        }
+      };
+      copyLink();
     };
     modal.querySelector('#whatsapp-modal-btn').onclick = () => {
       const text = encodeURIComponent(`Check out my travel route: ${universalUrl}`);
-      window.open(`https://wa.me/?text=${text}`, '_blank');
+      window.open(`https://wa.me/?text=${text}`, '_blank', 'noopener,noreferrer');
     };
   };
 
@@ -5301,7 +10424,7 @@ function App() {
       document.body.removeChild(link);
       URL.revokeObjectURL(url);
       toast.success(`Route exported as ${type.toUpperCase()}`);
-    } catch (err) {
+    } catch {
       toast.error("Download failed. Check browser permissions.");
     }
   };
@@ -5310,7 +10433,7 @@ function App() {
     if (e) e.stopPropagation();
     if (!place) return;
 
-    const slug = generateSlug(place.place_name);
+    const slug = getMediaSEOPlaceSlug(place);
     const url = `${window.location.origin}/${isGallery ? 'gallery' : 'place'}/${slug}`;
     const shareText = isGallery
       ? `Explore the photo gallery for ${place.place_name} on My Journal: ${url}`
@@ -5344,7 +10467,11 @@ function App() {
           url: url
         });
         return;
-      } catch { }
+      } catch (shareError) {
+        if (shareError?.name !== "AbortError") {
+          console.error("Native sharing failed.", shareError);
+        }
+      }
     }
 
     setSharingData({ name: place.place_name, url, text: shareText, isGallery });
@@ -5354,21 +10481,6 @@ function App() {
   // ---------------------------------------------------------------------------
   // 6. UI Helpers, Localization & Form Actions
   // ---------------------------------------------------------------------------
-  const handleAlbumClick = (albumUrl) => {
-    if (!albumUrl) {
-      toast.warning("No album link available for this location.");
-      return;
-    }
-    window.open(albumUrl, '_blank');
-  };
-
-  function handleViewLocation(location) {
-    setSelectedLocation(location);
-    const level = String(location.restriction_level || '').trim().toLowerCase();
-    const shouldShowModal = ['high', 'restricted'].includes(level);
-    if (shouldShowModal) setShowSafetyModal(true);
-  };
-
   const handleAddPlace = async (e) => {
     e.preventDefault();
     const isDuplicate = places.some(place =>
@@ -5400,17 +10512,13 @@ function App() {
   const getActiveContent = (field) =>
     translatedContent?.[field] || viewingArticle?.ai_article?.[field] || "";
 
-  const getLocalizedValue = (item, baseKey, currentLanguage = 'en') => {
-    if (!item) return '';
-    const lang = currentLanguage.split('-')[0].toLowerCase();
-    if (lang === 'en') return item[baseKey] || '';
-    const localizedKey = `${baseKey}_${lang}`;
-    return item[localizedKey] || item[baseKey] || '';
-  };
-
   const handleCloseLegalModal = () => {
     setIsPrivacyOpen(false);
-    window.history.pushState({}, '', window.location.pathname);
+    const path = window.location.pathname.toLowerCase().replace(/\/+$/, "") || "/";
+    const nextPath = ["/privacy", "/terms", "/about"].includes(path)
+      ? "/"
+      : window.location.pathname;
+    window.history.pushState({}, '', nextPath);
   };
 
   const handleAcceptCookies = () => {
@@ -5453,22 +10561,7 @@ function App() {
 
   useEffect(() => {
     if (i18n.language !== 'en') i18n.changeLanguage('en');
-  }, []);
-
-  useEffect(() => {
-    const findAllowedModels = async () => {
-      try {
-        const apiKey = import.meta.env.VITE_ARTICLE_KEY;
-        if (!apiKey) return;
-        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`);
-        const data = await response.json();
-        if (!response.ok) throw new Error(data.error?.message || "Failed to fetch model list");
-      } catch (err) {
-        console.error("CRITICAL: Your API Key cannot even list models:", err.message);
-      }
-    };
-    findAllowedModels();
-  }, []);
+  }, [i18n]);
 
   useEffect(() => {
     let isCurrent = true;
@@ -5479,8 +10572,6 @@ function App() {
     const shouldTranslate = isArticleOpen && content?.isFullContent && baseLang !== 'en';
 
     const runTranslation = async () => {
-      setIsTranslating(true);
-
       // Look up the full language name from your existing SUPPORTED_LANGUAGES object
       const targetLangName = SUPPORTED_LANGUAGES[baseLang] || baseLang.toUpperCase();
 
@@ -5488,138 +10579,164 @@ function App() {
       activeToastId = toast.loading(`Translating to ${targetLangName}`);
 
       try {
-        const { isFullContent, ...cleanContent } = content;
-        const result = await translateContentService(cleanContent, i18n.language, viewingArticle?.id);
+        const result = await translateContentService(content, i18n.language, viewingArticle?.id);
         if (isCurrent) {
           setTranslatedContent({ ...result, isFullContent: true });
           toast.success("Translation complete!", { id: activeToastId });
           activeToastId = null;
         }
-      } catch (e) {
+      } catch {
         if (isCurrent) {
           toast.error("Translation failed. Showing original.", { id: activeToastId });
           setTranslatedContent(null);
           activeToastId = null;
         }
-      } finally {
-        if (isCurrent) setIsTranslating(false);
       }
     };
 
     if (shouldTranslate) {
       runTranslation();
-    } else {
-      setTranslatedContent(null);
     }
 
     return () => {
       isCurrent = false;
       if (activeToastId) toast.dismiss(activeToastId);
     };
-  }, [viewingArticle?.id, viewingArticle?.ai_article?.isFullContent, i18n.language, isArticleOpen]);
+  }, [viewingArticle?.id, viewingArticle?.ai_article, i18n.language, i18n, isArticleOpen]);
+
 
   useEffect(() => {
     const watchId = getUserLocation(setUserCoords, toast);
 
-    fetchPlaces();
-    fetchInteractions();
+    let isMounted = true;
+    queueMicrotask(() => {
+      if (!isMounted) return;
+      void fetchPlaces();
+      void fetchInteractions();
+    });
     logVisit();
 
-    const urlParams = new URLSearchParams(window.location.search);
-    const viewParam = urlParams.get('view');
+    const pathname = window.location.pathname;
 
-    const normalizedPath = window.location.pathname
+    const normalizedPath = pathname
       .toLowerCase()
-      .replace(/\/$/, '');
+      .replace(/\/+$/, "") || "/";
 
-    const placeMatch = window.location.pathname.match(/\/place\/([^/]+)/i);
-    const galleryMatch = window.location.pathname.match(/\/gallery\/([^/]+)/i);
+    // =====================================================================
+    // ROUTE MATCHING
+    // =====================================================================
+
+    const placeMatch = pathname.match(
+      /^\/place\/([^/]+)$/i
+    );
+
+    const galleryMatch = pathname.match(
+      /^\/gallery\/([^/]+)$/i
+    );
+
+    const videoMatch = pathname.match(
+      /^\/videos\/([^/]+)$/i
+    );
 
     // =====================================================================
     // INITIAL ROUTE / DEEP-LINK HANDLING
     // =====================================================================
+    //
+    // Keep route detection separate from route resolution.
+    //
+    // The actual place/video records may not have loaded yet, so this effect
+    // only records the requested route in pendingRouteRef. The dedicated
+    // route-resolution effect can then resolve it once the relevant data
+    // becomes available.
+    //
+    // Supported crawlable routes:
+    //
+    //   /place/<slug>
+    //   /gallery/<slug>
+    //   /videos
+    //   /videos/<slug>
+    //
+    // =====================================================================
 
-    if (placeMatch && placeMatch[1]) {
+    if (placeMatch?.[1]) {
       // Direct Place URL:
       // /place/location-name
-      pendingRouteRef.current = {
-        type: 'place',
-        slug: placeMatch[1]
-      };
 
-    } else if (galleryMatch && galleryMatch[1]) {
+      pendingRouteRef.current = {
+        type: "place",
+        slug: safeDecodeURIComponent(placeMatch[1]),
+      };
+    } else if (galleryMatch?.[1]) {
       // Direct Photo Gallery URL:
       // /gallery/location-name
-      pendingRouteRef.current = {
-        type: 'gallery',
-        slug: galleryMatch[1]
-      };
 
-    } else if (normalizedPath === '/videos') {
+      pendingRouteRef.current = {
+        type: "gallery",
+        slug: safeDecodeURIComponent(galleryMatch[1]),
+      };
+    } else if (videoMatch?.[1]) {
+      // Direct Individual Video URL:
+      // /videos/video-slug
+      //
+      // IMPORTANT:
+      // This is intentionally different from /videos.
+      //
+      // /videos              -> video collection/gallery
+      // /videos/<slug>       -> individual crawlable video page
+
+      pendingRouteRef.current = {
+        type: "video",
+        slug: safeDecodeURIComponent(videoMatch[1]),
+      };
+    } else if (normalizedPath === "/videos") {
       // Direct Video Gallery URL:
       // /videos
       //
-      // The VideoGallery component is controlled by activeVideos,
-      // so load the library and populate activeVideos directly.
-      fetchVideoLibrary().then((videos) => {
-        if (videos.length > 0) {
-          setActiveVideos(videos);
-          hasHandledDeepLink.current = true;
-        } else {
-          console.warn('No active videos found in hub_videos.');
-        }
-      });
+      // Do NOT fetch the library here.
+      //
+      // The video-library loading effect already owns fetchVideoLibrary(),
+      // and the route-resolution effect will open the gallery once the
+      // library has finished loading.
+      //
+      // This prevents duplicate requests and keeps /videos and
+      // /videos/<slug> on the same routing path.
 
-    } else {
-      // ===================================================================
-      // LEGAL / UTILITY ROUTES
-      // ===================================================================
-
-      const activeLegalView = ['privacy', 'terms', 'about'].find(
-        (view) => viewParam === view || normalizedPath === `/${view}`
-      );
-
-      if (activeLegalView) {
-        setLegalView(activeLegalView);
-        setIsPrivacyOpen(true);
-
-      } else if (
-        viewParam === 'route_planner' ||
-        normalizedPath === '/route-planner'
-      ) {
-        setIsPlannerOpen(true);
-
-      } else if (
-        viewParam === 'suggest_spot' ||
-        normalizedPath === '/suggest-spot'
-      ) {
-        setIsAddOpen(true);
-      }
+      pendingRouteRef.current = {
+        type: "videos",
+      };
     }
 
     // =====================================================================
     // COOKIE CONSENT / CLARITY INITIALIZATION
     // =====================================================================
 
-    if (localStorage.getItem('myjournal_cookie_consent') === 'granted') {
+    if (
+      localStorage.getItem(
+        "myjournal_cookie_consent"
+      ) === "granted"
+    ) {
       initClarity();
 
-      if (typeof window !== 'undefined') {
+      if (typeof window !== "undefined") {
         window.dataLayer = window.dataLayer || [];
 
         window.dataLayer.push({
-          event: 'cookie_consent_granted'
+          event: "cookie_consent_granted",
         });
       }
     }
 
+    // =====================================================================
+    // CLEANUP
+    // =====================================================================
+
     return () => {
+      isMounted = false;
       if (watchId) {
         navigator.geolocation.clearWatch(watchId);
       }
     };
-
-  }, [setUserCoords, toast, fetchVideoLibrary]);
+  }, [setUserCoords, fetchPlaces, fetchInteractions]);
 
 
   // =======================================================================
@@ -5655,38 +10772,147 @@ function App() {
   useEffect(() => {
     if (hasHandledDeepLink.current) return;
 
-    const { type, slug } = pendingRouteRef.current || {};
-    if (!places.length || !type || !slug) return;
+    const { type, slug } =
+      pendingRouteRef.current || {};
 
-    try {
-      const decodedName = decodeURIComponent(slug).replace(/-/g, ' ');
+    if (!type) return;
 
-      const targetPlace = places.find(p =>
-        p.place_name?.toLowerCase() === decodedName.toLowerCase() ||
-        (typeof generateSlug === 'function' && generateSlug(p.place_name) === slug)
-      );
+    // =====================================================================
+    // VIDEO COLLECTION
+    // =====================================================================
 
-      if (!targetPlace) {
-        toast.error("Location not found.");
-        pendingRouteRef.current = { type: null, slug: null };
+    if (type === "videos") {
+      if (!hasLoadedVideoLibrary) return;
+
+      queueMicrotask(() => {
+        setActiveVideo(null);
+        setIsVideoDetailOpen(false);
+        setActiveVideos(videoLibrary);
+      });
+
+      hasHandledDeepLink.current = true;
+      pendingRouteRef.current = {
+        type: null,
+        slug: null,
+      };
+
+      return;
+    }
+
+    // =====================================================================
+    // INDIVIDUAL VIDEO
+    // =====================================================================
+
+    if (type === "video") {
+      if (!hasLoadedVideoLibrary) return;
+
+      const targetVideo =
+        videoLibrary.find(
+          (video, index) =>
+            buildAutomaticVideoSEO(
+              video,
+              index
+            ).slug === slug ||
+            generateSlug(video?.title) === slug
+        );
+
+      if (!targetVideo) {
+        toast.error("Video not found.");
+
+        window.history.replaceState(
+          {},
+          "",
+          "/videos"
+        );
+
+        setActiveVideo(null);
+        setIsVideoDetailOpen(false);
+        setActiveVideos(videoLibrary);
+
+        hasHandledDeepLink.current = true;
+        pendingRouteRef.current = {
+          type: null,
+          slug: null,
+        };
+
         return;
       }
 
-      if (type === 'gallery') {
+      setActiveVideos([]);
+      setActiveVideo(targetVideo);
+      setIsVideoDetailOpen(true);
+
+      hasHandledDeepLink.current = true;
+      pendingRouteRef.current = {
+        type: null,
+        slug: null,
+      };
+
+      return;
+    }
+
+    // =====================================================================
+    // PLACE / GALLERY
+    // =====================================================================
+
+    if (!places.length || !slug) return;
+
+    try {
+      const decodedName =
+        decodeURIComponent(slug)
+          .replace(/-/g, " ");
+
+      const targetPlace =
+        places.find(
+          (place) =>
+            getMediaSEOPlaceSlug(place) === slug ||
+            place.place_name?.toLowerCase() === decodedName.toLowerCase()
+        );
+
+      if (!targetPlace) {
+        toast.error("Location not found.");
+
+        pendingRouteRef.current = {
+          type: null,
+          slug: null,
+        };
+
+        return;
+      }
+
+      if (type === "gallery") {
         setActiveId(targetPlace.id);
-      } else if (type === 'place') {
-        // 👇 TRIGGER YOUR EXISTING FUNCTION INSTEAD OF MANUAL STATES
+      } else if (type === "place") {
         handleOpenArticle(targetPlace);
       }
 
       hasHandledDeepLink.current = true;
-      pendingRouteRef.current = { type: null, slug: null };
 
+      pendingRouteRef.current = {
+        type: null,
+        slug: null,
+      };
     } catch (err) {
-      toast.error("Invalid location link.");
-      pendingRouteRef.current = { type: null, slug: null };
+      console.error(
+        "Failed to resolve deep link:",
+        err
+      );
+
+      toast.error(
+        "Invalid location link."
+      );
+
+      pendingRouteRef.current = {
+        type: null,
+        slug: null,
+      };
     }
-  }, [places, setActiveId]);
+  }, [
+    places,
+    videoLibrary,
+    hasLoadedVideoLibrary,
+    handleOpenArticle,
+  ]);
 
   // =======================================================================
   // 34. MASTER DYNAMIC SEO & META TAG SYNCHRONIZER
@@ -5696,8 +10922,24 @@ function App() {
     if (pendingRouteRef.current.type && hasHandledDeepLink?.current === false) return;
 
     const activeGalleryPlace = activeId ? places.find(p => p.id === activeId) : null;
+    const normalizedPath = typeof window === "undefined"
+      ? "/"
+      : window.location.pathname.toLowerCase().replace(/\/+$/, "") || "/";
+    const isVideoGalleryActive =
+      !isVideoDetailOpen &&
+      (activeVideos.length > 0 || normalizedPath === "/videos");
 
-    if (activeGalleryPlace) {
+    if (isVideoDetailOpen && activeVideo) {
+      updateSEO(null, {
+        isVideo: true,
+        video: activeVideo,
+      });
+    } else if (isVideoGalleryActive) {
+      updateSEO(null, {
+        isVideoGallery: true,
+        galleryVideos: activeVideos,
+      });
+    } else if (activeGalleryPlace) {
       // 1. Active Photo Gallery View
       updateSEO(activeGalleryPlace, { isGallery: true });
     } else if (isArticleOpen && viewingArticle) {
@@ -5710,29 +10952,34 @@ function App() {
         searchTerm: debouncedSearch
       });
     }
-  }, [activeId, viewingArticle, isArticleOpen, places, filterTag, debouncedSearch]);
+  }, [
+    activeId,
+    viewingArticle,
+    isArticleOpen,
+    places,
+    filterTag,
+    debouncedSearch,
+    activeVideo,
+    isVideoDetailOpen,
+    activeVideos,
+  ]);
 
   // =======================================================================
   // 35. PAGINATION RESET ON FILTER CHANGE
   // =======================================================================
   useEffect(() => {
-    setVisibleCount(20);
-  }, [filterTag, debouncedSearch, statusFilter]);
-
-
-  useEffect(() => {
     // Reset the log flag and revert URL when the add panel is closed
     if (!isAddOpen) {
       hasLoggedAddOpen.current = false;
-      if (window.location.pathname === '/add') {
+      if (window.location.pathname === '/suggest-spot') {
         window.history.pushState({ modalOpen: false }, '', '/');
       }
     }
 
     if (isAddOpen) {
       // 1. Sync URL for the Add Function
-      if (window.location.pathname !== '/add') {
-        window.history.pushState({ modalOpen: true }, '', '/add');
+      if (window.location.pathname !== '/suggest-spot') {
+        window.history.pushState({ modalOpen: true }, '', '/suggest-spot');
       }
 
       // 2. Handle the browser back button to close the panel
@@ -5831,15 +11078,15 @@ function App() {
     if (!isPlannerOpen) {
       hasLoggedPlanOpen.current = false;
       // Revert URL when the planner is closed
-      if (window.location.pathname === '/plan') {
+      if (window.location.pathname === '/route-planner') {
         window.history.pushState({ modalOpen: false }, '', '/');
       }
       return;
     }
 
     // 1. Sync URL for the Plan Function
-    if (window.location.pathname !== '/plan') {
-      window.history.pushState({ modalOpen: true }, '', '/plan');
+    if (window.location.pathname !== '/route-planner') {
+      window.history.pushState({ modalOpen: true }, '', '/route-planner');
     }
 
     // 2. Handle the browser back button to close the planner
@@ -5861,13 +11108,19 @@ function App() {
         (name.includes(search) || locality.includes(search) || cat.includes(search));
     });
 
-    if (filteredForWeather.length > 0) fetchRouteWeather(filteredForWeather);
+    let isCurrent = true;
+    queueMicrotask(() => {
+      if (isCurrent && filteredForWeather.length > 0) {
+        void fetchRouteWeather(filteredForWeather);
+      }
+    });
 
     return () => {
+      isCurrent = false;
       // 3. Cleanup the event listener to prevent memory leaks during re-renders
       window.removeEventListener('popstate', handlePopState);
     };
-  }, [isPlannerOpen, debouncedPlannerSearch, places]);
+  }, [isPlannerOpen, debouncedPlannerSearch, places, fetchRouteWeather]);
 
 
 
@@ -5883,155 +11136,9 @@ function App() {
     return () => { if (currentSentinel) observer.unobserve(currentSentinel); };
   }, [visibleCount, filteredPlaces.length]);
 
-  useEffect(() => {
-    fetchPlaces();
-  }, [fetchPlaces]);
-
-  useEffect(() => {
-    if (places.length > 0 && !hasHandledDeepLink.current) {
-      const path = window.location.pathname;
-      let isGalleryRoute = false;
-      let slug = '';
-      if (path.startsWith('/place/')) {
-        slug = path.replace('/place/', '').replace(/\/$/, '');
-      } else if (path.startsWith('/gallery/')) {
-        isGalleryRoute = true;
-        slug = path.replace('/gallery/', '').replace(/\/$/, '');
-      }
-      if (slug) {
-        const decodedPlaceName = decodeURIComponent(slug).replace(/-/g, ' ');
-        const target = places.find(p => {
-          const dbName = p.place_name?.trim().toLowerCase();
-          return dbName === decodedPlaceName.toLowerCase() || dbName === slug.replace(/-/g, ' ').toLowerCase();
-        });
-        if (target) {
-          if (isGalleryRoute) {
-            setviewingArticle(target);
-            setSelectedLocation(target);
-            updateSEO(target, true);
-          } else {
-            handleOpenArticle(target);
-            updateSEO(target, false);
-          }
-          hasHandledDeepLink.current = true;
-        }
-      }
-    }
-  }, [places, handleOpenArticle]);
-
-  useEffect(() => {
-    if (isDark) {
-      document.documentElement.classList.add('dark');
-      localStorage.setItem('theme', 'dark');
-    } else {
-      document.documentElement.classList.remove('dark');
-      localStorage.setItem('theme', 'light');
-    }
-  }, [isDark]);
-
-  useEffect(() => {
-    const timer = setTimeout(() => setShowEngineHint(false), 6000);
-    return () => clearTimeout(timer);
-  }, []);
-
   // ============================================================================
   // 36. INTERNAL UI COMPONENTS (Overlays, Skeletons, Disclaimers)
   // ============================================================================
-
-  const ArticleSkeleton = () => (
-    <div className="animate-pulse space-y-6 p-4">
-      <div className="h-8 bg-slate-200 dark:bg-slate-800 rounded-md w-3/4 mb-4"></div>
-      <div className="flex gap-4">
-        <div className="h-4 bg-slate-200 dark:bg-slate-800 rounded w-24"></div>
-        <div className="h-4 bg-slate-200 dark:bg-slate-800 rounded w-32"></div>
-      </div>
-      <div className="space-y-3">
-        <div className="h-4 bg-slate-200 dark:bg-slate-800 rounded w-full"></div>
-        <div className="h-4 bg-slate-200 dark:bg-slate-800 rounded w-5/6"></div>
-        <div className="h-4 bg-slate-200 dark:bg-slate-800 rounded w-full"></div>
-        <div className="h-4 bg-slate-200 dark:bg-slate-800 rounded w-4/5"></div>
-      </div>
-      <div className="h-64 bg-slate-200 dark:bg-slate-800 rounded-[2rem] w-full mt-6"></div>
-    </div>
-  );
-
-  const SafetyOverlay = ({ location, isOpen, onClose }) => {
-    const { t, i18n } = useTranslation();
-    if (!isOpen || !location) return null;
-
-    const restrictionLevel = String(location.restriction_level || '').trim().toLowerCase();
-    const isHighRisk = ['high', 'restricted'].includes(restrictionLevel);
-    const currentLang = i18n.language || 'en';
-    const placeName = getLocalizedValue(location, 'place_name', currentLang);
-    const locality = getLocalizedValue(location, 'locality', currentLang);
-    const governingOrg = location.governing_org || t('safety_overlay.default_authority', { defaultValue: 'local administrative departments' });
-
-    const theme = {
-      headerBg: isHighRisk ? 'bg-orange-500' : 'bg-blue-600',
-      cardStyles: isHighRisk
-        ? 'bg-orange-50 border-orange-100 text-orange-900 dark:bg-orange-950/20 dark:border-orange-900/30 dark:text-orange-300'
-        : 'bg-slate-50 border-slate-100 text-slate-800 dark:bg-slate-800/40 dark:border-slate-800 dark:text-slate-300'
-    };
-
-    return (
-      <div className="fixed inset-0 z-[99999] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-200">
-        <div className="bg-white dark:bg-slate-900 rounded-2xl max-w-md w-full shadow-2xl overflow-hidden border border-slate-100 dark:border-slate-800 transform transition-all scale-100">
-          <div className={`p-4 flex items-center justify-between text-white ${theme.headerBg}`}>
-            <div className="flex items-center gap-2">
-              <AlertCircle size={20} />
-              <span className="font-black uppercase text-xs tracking-widest">{t('safety_overlay.title')}</span>
-            </div>
-            <button onClick={onClose} className="hover:bg-white/20 p-1.5 rounded-full transition-colors active:scale-95" aria-label="Close modal">
-              <X size={18} />
-            </button>
-          </div>
-          <div className="p-6">
-            <div className="mb-5">
-              <h2 className="text-xl font-extrabold text-slate-800 dark:text-white leading-snug">{placeName}</h2>
-              <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mt-0.5">{locality}</p>
-              <div className="mt-3"><RestrictionBadge level={location.restriction_level} /></div>
-            </div>
-            <div className="space-y-4 text-sm">
-              <div className={`p-4 rounded-xl border leading-relaxed ${theme.cardStyles}`}>
-                <p className="font-bold mb-1.5 flex items-center gap-2 text-xs uppercase tracking-wider opacity-90">
-                  <ShieldCheck size={16} className={isHighRisk ? 'text-orange-600 dark:text-orange-400' : 'text-blue-600 dark:text-blue-400'} />
-                  {t('safety_overlay.notice_title')}
-                </p>
-                <p className="text-sm">
-                  {placeName} {t('safety_overlay.jurisdiction')} <span className="font-bold text-slate-900 dark:text-white">{governingOrg}</span>.
-                  {isHighRisk ? (<span className="block mt-2 font-medium">{t('safety_overlay.controlled')}</span>) : (<span className="block mt-2 font-medium">{t('safety_overlay.guidelines')}</span>)}
-                </p>
-              </div>
-              <p className="text-[10px] leading-relaxed italic text-slate-400 dark:text-slate-500 pt-4 border-t border-slate-100 dark:border-slate-800/60">
-                {t('safety_overlay.footer_disclaimer')}
-              </p>
-            </div>
-            <button onClick={onClose} className="w-full mt-6 bg-slate-900 hover:bg-slate-800 dark:bg-indigo-600 dark:hover:bg-indigo-700 text-white py-3 rounded-xl font-bold text-xs uppercase tracking-widest active:scale-[0.98] transition-all duration-150 shadow-sm">
-              {t('safety_overlay.button')}
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  };
-
-  const GeneralDisclaimer = () => {
-    const { t } = useTranslation();
-    return (
-      <div className="bg-amber-50/50 dark:bg-amber-950/10 border-l-4 border-amber-500 p-6 my-8 rounded-r-xl shadow-sm border border-amber-100 dark:border-amber-900/20">
-        <div className="flex items-center gap-2 mb-3 text-amber-700 dark:text-amber-400">
-          <AlertCircle size={20} />
-          <h3 className="font-bold uppercase tracking-wide text-sm">{t('general_disclaimer.title')}</h3>
-        </div>
-        <div className="space-y-4 text-sm text-slate-700 dark:text-slate-300 leading-relaxed">
-          <p><strong>{t('general_disclaimer.risk_title')}:</strong> {t('general_disclaimer.risk_desc')}</p>
-          <p><strong>{t('general_disclaimer.accuracy_title')}:</strong> {t('general_disclaimer.accuracy_desc')}</p>
-          <p><strong>{t('general_disclaimer.drone_title')}:</strong> {t('general_disclaimer.drone_desc')}</p>
-          <p><strong>{t('general_disclaimer.liability_title')}:</strong> {t('general_disclaimer.liability_desc')}</p>
-        </div>
-      </div>
-    );
-  };
 
   // ============================================================================
   // 37. MAIN RENDER STARTS
@@ -6172,7 +11279,6 @@ function App() {
                       onClick={() => {
                         setIsSocialOpen(!isSocialOpen);
                         setIsEngineOpen(false);
-                        setIsVideoHubOpen?.(false);
                       }}
                       className={`relative z-10 w-14 h-14 shadow-lg flex items-center justify-center transition-all duration-300 rounded-full ${isSocialOpen
                         ? 'bg-rose-600 text-white'
@@ -6251,8 +11357,6 @@ function App() {
                       onClick={() => {
                         setIsEngineOpen(!isEngineOpen);
                         setIsSocialOpen(false);
-                        setIsVideoHubOpen?.(false);
-                        setShowEngineHint(false);
                       }}
                       className={`relative z-10 w-14 h-14 shadow-lg flex items-center justify-center transition-all duration-300 rounded-full ${isEngineOpen
                         ? 'bg-rose-600 text-white'
@@ -6283,7 +11387,7 @@ function App() {
               <div className="flex flex-col md:flex-row gap-3 mb-4 w-full">
                 <div className="flex-[2] relative">
                   <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-                  <input value={searchTerm} onChange={e => setSearchTerm(e.target.value)} placeholder={t('filters.search_placeholder')} className="w-full pl-11 pr-4 py-3 rounded-xl bg-slate-50 font-bold text-[11px] outline-none border border-transparent focus:border-slate-200 transition-all text-slate-800" />
+                  <input value={searchTerm} onChange={e => { setVisibleCount(20); setSearchTerm(e.target.value); }} placeholder={t('filters.search_placeholder')} className="w-full pl-11 pr-4 py-3 rounded-xl bg-slate-50 font-bold text-[11px] outline-none border border-transparent focus:border-slate-200 transition-all text-slate-800" />
                 </div>
                 <div className="relative flex-1">
                   <select value={sortBy} onChange={e => setSortBy(e.target.value)} className="w-full bg-slate-900 text-white border border-slate-900 rounded-xl px-4 py-3 text-[10px] font-black uppercase appearance-none focus:outline-none shadow-lg shadow-slate-900/20 cursor-pointer pr-10">
@@ -6299,7 +11403,7 @@ function App() {
                 {['All', ...VALID_CATEGORIES].map(tag => {
                   const normalizedKey = tag.toLowerCase().replace(/\s+/g, '_');
                   return (
-                    <button key={tag} onClick={() => setFilterTag(tag)} className={`px-3 py-1.5 rounded-lg text-[9px] font-black uppercase transition-all active:scale-95 ${filterTag === tag ? 'bg-slate-900 text-white shadow-lg' : 'bg-slate-100 text-slate-400 hover:bg-slate-200'}`}>
+                    <button key={tag} onClick={() => { setVisibleCount(20); setFilterTag(tag); }} className={`px-3 py-1.5 rounded-lg text-[9px] font-black uppercase transition-all active:scale-95 ${filterTag === tag ? 'bg-slate-900 text-white shadow-lg' : 'bg-slate-100 text-slate-400 hover:bg-slate-200'}`}>
                       {t(`categories.${normalizedKey}`, { defaultValue: tag })}
                     </button>
                   );
@@ -6510,7 +11614,10 @@ function App() {
                     <footer className="grid grid-cols-3 gap-2 mt-auto pt-4 border-t border-slate-100/60 dark:border-slate-800/60">
                       {place.google_maps_url && (
                         <button
-                          onClick={() => window.open(place.google_maps_url, "_blank")}
+                          onClick={() => {
+                            const mapsUrl = getSafeHttpUrl(place.google_maps_url);
+                            if (mapsUrl) window.open(mapsUrl, "_blank", "noopener,noreferrer");
+                          }}
                           className="flex flex-col items-center justify-center py-2 rounded-xl bg-slate-50 dark:bg-slate-800/50 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 active:scale-90 transition-all border border-slate-100/50 dark:border-slate-700/50"
                         >
                           <MapIcon className="w-4 h-4" />
@@ -6936,9 +12043,7 @@ function App() {
         // ================================================================
         // 2. ARTICLE CONTENT + TRANSLATION-AWARE PROSE FIELDS
         // ================================================================
-        const metrics = article.metrics || {};
         const about = article.about || {};
-        const highlights = article.highlights || [];
 
         /*
          * IMPORTANT:
@@ -7106,13 +12211,13 @@ function App() {
 
                     <button
                       type="button"
-                      onClick={() =>
-                        window.open(
+                      onClick={() => {
+                        const mapsUrl = getSafeHttpUrl(
                           viewingArticle.google_maps_url ||
-                          `https://www.google.com/maps/search/?api=1&query=${viewingArticle.latitude},${viewingArticle.longitude}`,
-                          '_blank'
-                        )
-                      }
+                          `https://www.google.com/maps/search/?api=1&query=${viewingArticle.latitude},${viewingArticle.longitude}`
+                        );
+                        if (mapsUrl) window.open(mapsUrl, "_blank", "noopener,noreferrer");
+                      }}
                       className="p-2 bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-xl transition-colors border border-slate-100 dark:border-slate-700/60"
                       title={t('article.view_maps', { defaultValue: 'View on Maps' })}
                     >
@@ -7549,9 +12654,6 @@ function App() {
                 // Nearby Places engine ONLY
                 isNearbySearchEnabled={isNearbySearchEnabled}
 
-                // Location Search → Google Maps Places ONLY
-                includeGooglePlaces={includeGooglePlaces}
-
                 mapInstanceRef={mapRef}
                 routeLineRef={routeLineRef}
                 handleOpenArticle={handleOpenArticle}
@@ -7691,11 +12793,6 @@ function App() {
                     <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">
                       Scope: {includeGooglePlaces ? 'Bucket List + Google Maps Places' : 'Bucket List Only'}
                     </span>
-                    {isSearching && (
-                      <span className="text-[9px] font-bold text-indigo-500 uppercase tracking-widest animate-pulse">
-                        Searching...
-                      </span>
-                    )}
                   </div>
                 </div>
               </div>

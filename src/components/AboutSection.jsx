@@ -1,5 +1,3 @@
-import React from 'react';
-
 const AboutSection = () => {
   const containerStyle = {
     maxWidth: '800px',

@@ -1,21 +1,36 @@
-// Helper function to generate standardized, clean, SEO-friendly URL slugs matching App.jsx and Sitemap
-function generateSlug(name) {
-  if (!name) return "";
-  return String(name)
+const DEFAULT_SITE_URL = "https://www.myjournalview.com";
+
+function generateSlug(value) {
+  if (!value) return "";
+  return String(value)
     .toLowerCase()
     .trim()
-    .normalize("NFD") // Decompose accented characters
-    .replace(/[\u0300-\u036f]/g, "") // Strip diacritic mark overlays
-    .replace(/[–—]/g, "-") // Convert En-dash & Em-dash to standard hyphens
-    .replace(/[^a-z0-9\s-]/g, "") // Keep only alphanumeric characters, spaces, and hyphens
-    .replace(/\s+/g, "-") // Replace spaces with single hyphens
-    .replace(/-+/g, "-") // Collapse multiple hyphens
-    .replace(/^-+|-+$/g, ""); // Strip leading and trailing hyphens
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[–—]/g, "-")
+    .replace(/[^a-z0-9\s-]/g, "")
+    .replace(/\s+/g, "-")
+    .replace(/-+/g, "-")
+    .replace(/^-+|-+$/g, "");
 }
 
-// Helper function to sanitize text for safe HTML attribute and tag insertion
-function escapeHtml(str = "") {
-  return String(str)
+function safeDecode(value) {
+  try {
+    return decodeURIComponent(value);
+  } catch {
+    return value;
+  }
+}
+
+function cleanText(value, fallback = "") {
+  if (value === null || value === undefined || value === "") {
+    return fallback;
+  }
+  return String(value).replace(/\s+/g, " ").replace(/[<>]/g, "").trim() || fallback;
+}
+
+function escapeHtml(value = "") {
+  return String(value)
     .replace(/&/g, "&amp;")
     .replace(/"/g, "&quot;")
     .replace(/'/g, "&#39;")
@@ -23,196 +38,361 @@ function escapeHtml(str = "") {
     .replace(/>/g, "&gt;");
 }
 
-export default async function handler(req, res) {
-  const { slug, type } = req.query;
-  const rawSlug = slug || "";
-
-  // Defensive URI decoding to prevent 500 crashes on malformed percent-encoding
-  let decodedName = "";
+function absoluteHttpUrl(value, fallback) {
   try {
-    decodedName = decodeURIComponent(rawSlug).replace(/-/g, " ");
-  } catch (err) {
-    decodedName = rawSlug.replace(/-/g, " ");
+    const parsed = new URL(String(value));
+    return ["http:", "https:"].includes(parsed.protocol) ? parsed.href : fallback;
+  } catch {
+    return fallback;
+  }
+}
+
+function truncateText(value, maxLength = 155) {
+  const text = cleanText(value);
+  if (text.length <= maxLength) return text;
+  const shortened = text.slice(0, maxLength);
+  const lastSpace = shortened.lastIndexOf(" ");
+  return `${lastSpace > 0 ? shortened.slice(0, lastSpace) : shortened}…`;
+}
+
+function buildVideoSlug(video) {
+  const title = cleanText(
+    video?.title || (video?.id ? `Sri Lanka Backcountry Video ${video.id}` : "Sri Lanka Backcountry Video"),
+    "Sri Lanka Backcountry Video",
+  );
+  const titleSlug = generateSlug(title) || "video";
+  const idSlug = generateSlug(video?.id);
+  return idSlug ? `${titleSlug}--${idSlug}` : titleSlug;
+}
+
+function getYouTubeId(value) {
+  if (!value) return null;
+  const text = String(value).trim();
+  if (/^[A-Za-z0-9_-]{11}$/.test(text)) return text;
+
+  let parsed;
+  try {
+    parsed = new URL(text.includes("://") ? text : `https://${text}`);
+  } catch {
+    return null;
   }
 
-  // 1. Fixed Base URL setup using environment variables to mitigate Host Header Injection
-  const baseUrl = (
-    process.env.NEXT_PUBLIC_SITE_URL ||
-    process.env.SITE_URL ||
-    "https://www.myjournalview.com"
-  ).replace(/\/$/, "");
+  const host = parsed.hostname.toLowerCase().replace(/^www\./, "");
+  let candidate = "";
+  if (host === "youtu.be") {
+    candidate = parsed.pathname.split("/").filter(Boolean)[0] || "";
+  } else if (["youtube.com", "m.youtube.com", "youtube-nocookie.com"].includes(host)) {
+    candidate = parsed.searchParams.get("v") || "";
+    if (!candidate) {
+      const [kind, id] = parsed.pathname.split("/").filter(Boolean);
+      if (["embed", "shorts", "live", "v"].includes(kind?.toLowerCase())) candidate = id || "";
+    }
+  }
+  return /^[A-Za-z0-9_-]{11}$/.test(candidate) ? candidate : null;
+}
 
-  // Force routeType to be strictly lowercase ("place" or "gallery")
-  const routeType = (type || "place").toLowerCase();
+function normalizeBaseUrl(value) {
+  const parsed = new URL(value || DEFAULT_SITE_URL);
+  if (!["https:", "http:"].includes(parsed.protocol)) {
+    throw new Error("Site URL must use HTTP or HTTPS.");
+  }
+  return parsed.origin;
+}
 
-  // Clean the slug using the uniform slugification utility
-  const cleanSlug = generateSlug(decodedName) || generateSlug(rawSlug);
-  const requestUrl = `${baseUrl}/${routeType}/${cleanSlug}`;
+async function fetchRows(supabaseUrl, supabaseKey, table, params) {
+  const url = `${supabaseUrl.replace(/\/+$/, "")}/rest/v1/${table}?${params.toString()}`;
+  const response = await fetch(url, {
+    headers: {
+      apikey: supabaseKey,
+      Authorization: `Bearer ${supabaseKey}`,
+      Accept: "application/json",
+    },
+  });
+  if (!response.ok) throw new Error(`Supabase ${table} lookup failed (${response.status}).`);
+  return response.json();
+}
 
-  // =======================================================================
-  // ACTION 1: 301 Redirect for Mixed-Case / Un-normalized URLs
-  // =======================================================================
-  // If a bot accesses "Place/Diyanagala Viewpoint", rawSlug won't match cleanSlug.
-  // We instantly issue a 301 redirect to "/place/diyanagala-viewpoint" before doing DB work.
-  if (rawSlug && rawSlug !== cleanSlug) {
-    res.setHeader("Location", requestUrl);
-    // Tell CDNs and bots to cache this permanent redirect
+function buildVideoSchema(video, videoId, title, description, imageUrl, canonicalUrl) {
+  const schema = {
+    "@context": "https://schema.org",
+    "@type": "VideoObject",
+    "@id": `${canonicalUrl}#video`,
+    name: title,
+    description,
+    thumbnailUrl: [imageUrl],
+    url: canonicalUrl,
+    embedUrl: `https://www.youtube-nocookie.com/embed/${videoId}`,
+    publisher: {
+      "@type": "Organization",
+      name: "My Journal",
+      url: DEFAULT_SITE_URL,
+      logo: {
+        "@type": "ImageObject",
+        url: `${DEFAULT_SITE_URL}/my-journal-logo.png`,
+      },
+    },
+    isFamilyFriendly: true,
+  };
+
+  const dateValue = video.upload_date || video.published_at || video.created_at;
+  if (dateValue) {
+    const date = new Date(dateValue);
+    if (!Number.isNaN(date.getTime())) schema.uploadDate = date.toISOString();
+  }
+  return schema;
+}
+
+function replaceRootElement(html, replacement) {
+  const rootOpen = /<div\b(?=[^>]*\bid\s*=\s*["']root["'])[^>]*>/i.exec(html);
+  if (!rootOpen) throw new Error("Index document does not have the expected root element.");
+
+  const tokenPattern = /<!--[\s\S]*?-->|<\/?div\b[^>]*>/gi;
+  tokenPattern.lastIndex = rootOpen.index + rootOpen[0].length;
+  let depth = 1;
+  let token;
+
+  while ((token = tokenPattern.exec(html))) {
+    if (token[0].startsWith("<!--")) continue;
+    if (/^<\/div/i.test(token[0])) {
+      depth -= 1;
+      if (depth === 0) {
+        return `${html.slice(0, rootOpen.index)}${replacement}${html.slice(tokenPattern.lastIndex)}`;
+      }
+    } else if (!/\/\s*>$/.test(token[0])) {
+      depth += 1;
+    }
+  }
+
+  throw new Error("Index document root element is not properly closed.");
+}
+
+export default async function handler(req, res) {
+  const method = String(req.method || "GET").toUpperCase();
+  if (!["GET", "HEAD"].includes(method)) {
+    res.setHeader("Allow", "GET, HEAD");
+    return res.status(405).end("Method Not Allowed");
+  }
+
+  const query = req.query || {};
+  const rawType = Array.isArray(query.type) ? query.type[0] : query.type;
+  const rawSlugValue = Array.isArray(query.slug) ? query.slug[0] : query.slug;
+  const routeType = String(rawType || "place").toLowerCase();
+  const rawSlug = typeof rawSlugValue === "string" ? rawSlugValue : "";
+  const videoGallery = routeType === "video-gallery";
+  const videoRoute = routeType === "videos" || routeType === "video";
+  const placeRoute = routeType === "place" || routeType === "gallery";
+
+  if ((!videoGallery && !rawSlug) || (!videoGallery && !videoRoute && !placeRoute)) {
+    return res.status(404).end("Not Found");
+  }
+
+  let baseUrl;
+  try {
+    baseUrl = normalizeBaseUrl(
+      process.env.NEXT_PUBLIC_SITE_URL || process.env.SITE_URL || DEFAULT_SITE_URL,
+    );
+  } catch {
+    return res.status(500).end("Site metadata configuration error.");
+  }
+
+  const pathType = videoRoute || videoGallery ? "videos" : routeType;
+  const decodedSlug = safeDecode(rawSlug);
+  const cleanSlug = videoRoute
+    ? decodedSlug.toLowerCase()
+    : generateSlug(decodedSlug);
+  const canonicalUrl = videoGallery
+    ? `${baseUrl}/videos`
+    : `${baseUrl}/${pathType}/${encodeURIComponent(cleanSlug)}`;
+
+  if (
+    (rawSlug && rawSlug !== cleanSlug) ||
+    (rawType && !videoGallery && String(rawType) !== pathType)
+  ) {
+    res.setHeader("Location", canonicalUrl);
     res.setHeader("Cache-Control", "s-maxage=31536000, immutable");
     return res.status(301).end();
   }
 
-  // 2. Set Baseline SEO Defaults
-  let title = decodedName
-    ? `${decodedName} | My Journal`
-    : "My Journal | Nature & Adventure Travel";
-  let description = decodedName
-    ? `Explore ${decodedName} and other remote Sri Lankan trails.`
-    : "Discover hidden waterfalls, scenic hikes, and immersive travel stories across Sri Lanka.";
-  let imageUrl = `${baseUrl}/my-journal-logo.png`;
-  let isNotFound = false;
-
-  // 3. Fetch Location Data from Supabase
-  try {
-    const SUPABASE_URL = process.env.SUPABASE_URL ||
-      process.env.VITE_SUPABASE_URL;
-    const SUPABASE_KEY = process.env.SUPABASE_KEY ||
-      process.env.VITE_SUPABASE_KEY ||
-      process.env.VITE_SUPABASE_ANON_KEY;
-
-    if (SUPABASE_URL && SUPABASE_KEY && (rawSlug || decodedName)) {
-      // Synchronized status filtering with case-insensitive ilike slug lookups
-      const statusFilter = "status=in.(done,Completed,Visited)";
-      const matchFilter = `or=(slug.ilike.${
-        encodeURIComponent(cleanSlug)
-      },slug.ilike.${encodeURIComponent(rawSlug)},place_name.ilike.${
-        encodeURIComponent(decodedName)
-      })`;
-      const queryUrl =
-        `${SUPABASE_URL}/rest/v1/travel_bucket_list?${statusFilter}&${matchFilter}&select=place_name,cover_photo_url,ai_article&limit=1`;
-
-      const response = await fetch(queryUrl, {
-        headers: {
-          apikey: SUPABASE_KEY,
-          Authorization: `Bearer ${SUPABASE_KEY}`,
-          "Content-Type": "application/json",
-        },
-      });
-
-      if (response.ok) {
-        const rows = await response.json();
-
-        if (rows && rows.length > 0) {
-          const place = rows[0];
-
-          title = routeType === "gallery"
-            ? `${place.place_name} Gallery | My Journal`
-            : `${place.place_name} | My Journal`;
-
-          if (place.ai_article?.story) {
-            description = place.ai_article.story.substring(0, 155).trim() +
-              "...";
-          }
-
-          if (place.cover_photo_url) {
-            imageUrl = place.cover_photo_url;
-            if (imageUrl.includes("googleusercontent.com")) {
-              imageUrl = `${imageUrl.split("=")[0].split("?")[0]}=w1200-h630-c`;
-            }
-          }
-        } else {
-          // Record not found in database: Set up 404 fallback metadata for crawlers
-          isNotFound = true;
-          title = "404 - Page Not Found | My Journal";
-          description =
-            "The requested adventure or gallery route could not be found on My Journal.";
-        }
-      }
-    }
-  } catch (err) {
-    console.error("API Metadata Supabase Fetch Error:", err);
+  const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
+  const supabaseKey = process.env.SUPABASE_KEY || process.env.VITE_SUPABASE_KEY || process.env.VITE_SUPABASE_ANON_KEY;
+  if (!supabaseUrl || !supabaseKey) {
+    res.setHeader("Cache-Control", "no-store");
+    return res.status(503).end("Metadata service is temporarily unavailable.");
   }
 
-  // 4. Fetch index.html & Inject Dynamic Metadata Block
+  const defaultImage = `${baseUrl}/my-journal-logo.png`;
+  let title = "My Journal | Nature & Adventure Travel";
+  let description = "Discover hidden waterfalls, scenic hikes, and immersive travel stories across Sri Lanka.";
+  let imageUrl = defaultImage;
+  let isNotFound = false;
+  let videoId = null;
+  let videoSchema = null;
+  let galleryImages = [];
+
   try {
-    const indexRes = await fetch(`${baseUrl}/index.html`);
-    let html = await indexRes.text();
+    if (videoGallery) {
+      title = "Aerial & Video Journal | My Journal";
+      description = "Watch aerial drone perspectives, backcountry video journals, terrain footage, trails, waterfalls and natural landscapes across Sri Lanka.";
+    } else if (videoRoute) {
+      const select = "id,url,title,description,custom_thumbnail_url,upload_date,published_at,created_at,is_active";
+      const idSeparator = cleanSlug.lastIndexOf("--");
+      let videos;
+
+      if (idSeparator >= 0) {
+        const idSlug = cleanSlug.slice(idSeparator + 2);
+        const params = new URLSearchParams({ select, id: `eq.${idSlug}`, is_active: "eq.true", limit: "1" });
+        videos = await fetchRows(supabaseUrl, supabaseKey, "hub_videos", params);
+      } else {
+        // Accept old title-only links while the ID-based links become established.
+        const params = new URLSearchParams({ select, is_active: "eq.true", limit: "1000" });
+        videos = await fetchRows(supabaseUrl, supabaseKey, "hub_videos", params);
+      }
+
+      const video = videos.find((item) =>
+        buildVideoSlug(item) === cleanSlug || generateSlug(item.title) === cleanSlug,
+      );
+      videoId = video ? getYouTubeId(video.url) : null;
+
+      if (!video || !videoId) {
+        isNotFound = true;
+      } else {
+        const videoTitle = cleanText(
+          video.title || `Sri Lanka Backcountry Video ${video.id}`,
+          "Sri Lanka Backcountry Video",
+        );
+        title = `${videoTitle} | My Journal`;
+        description = truncateText(
+          video.description || `Watch ${videoTitle} from My Journal's Sri Lanka backcountry video archive.`,
+        );
+        imageUrl = absoluteHttpUrl(
+          video.custom_thumbnail_url || `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`,
+          `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`,
+        );
+        videoSchema = buildVideoSchema(video, videoId, videoTitle, description, imageUrl, canonicalUrl);
+      }
+    } else {
+      const params = new URLSearchParams({
+        select: "place_name,slug,cover_photo_url,ai_article,description,album_photos",
+        status: "in.(done,Completed,Visited)",
+        slug: `ilike.${cleanSlug}`,
+        limit: "1",
+      });
+      let places = await fetchRows(supabaseUrl, supabaseKey, "travel_bucket_list", params);
+
+      if (!places.length) {
+        const decodedName = decodedSlug.replace(/-/g, " ").replace(/[\\%_]/g, "\\$&");
+        const fallbackParams = new URLSearchParams({
+          select: "place_name,slug,cover_photo_url,ai_article,description,album_photos",
+          status: "in.(done,Completed,Visited)",
+          place_name: `ilike.${decodedName}`,
+          limit: "1",
+        });
+        places = await fetchRows(supabaseUrl, supabaseKey, "travel_bucket_list", fallbackParams);
+      }
+
+      const place = places[0];
+      if (!place) {
+        isNotFound = true;
+      } else {
+        const placeName = cleanText(place.place_name, "Sri Lanka Backcountry Location");
+        const gallery = routeType === "gallery";
+        title = gallery ? `${placeName} Gallery | My Journal` : `${placeName} | My Journal`;
+        const article = place.ai_article && typeof place.ai_article === "object" ? place.ai_article : {};
+        const story = typeof place.ai_article === "string" ? place.ai_article : article.story;
+        description = truncateText(story || place.description || `Explore ${placeName} in Sri Lanka.`);
+        imageUrl = absoluteHttpUrl(place.cover_photo_url, defaultImage);
+        galleryImages = Array.isArray(place.album_photos)
+          ? place.album_photos.map((url) => absoluteHttpUrl(url, "")).filter(Boolean).slice(0, 8)
+          : [];
+      }
+    }
+  } catch (error) {
+    console.error("API metadata lookup failed:", error);
+    res.setHeader("Cache-Control", "no-store");
+    return res.status(503).end("Metadata service is temporarily unavailable.");
+  }
+
+  if (isNotFound) {
+    title = "404 - Page Not Found | My Journal";
+    description = "The requested location, gallery, or video could not be found on My Journal.";
+  }
+
+  try {
+    const indexResponse = await fetch(`${baseUrl}/index.html`);
+    if (!indexResponse.ok) throw new Error(`Index document fetch failed (${indexResponse.status}).`);
+    let html = await indexResponse.text();
 
     const safeTitle = escapeHtml(title);
     const safeDescription = escapeHtml(description);
     const safeImageUrl = escapeHtml(imageUrl);
-    const safeRequestUrl = escapeHtml(requestUrl);
-
-    // Dynamic Robots Meta Tag (Enforce noindex if record is missing)
+    const safeCanonicalUrl = escapeHtml(canonicalUrl);
     const robotsTag = isNotFound
-      ? `<meta name="robots" content="noindex, follow" />`
-      : `<meta name="robots" content="index, follow, max-image-preview:large" />`;
-
-    // =======================================================================
-    // ACTION 2: Canonical Tags Implemented
-    // =======================================================================
-    // Build complete Open Graph, Twitter, and Canonical meta tags block
-    const metaBlock = `
-      <!-- Dynamic SEO & Social Sharing Tags -->
+      ? '<meta name="robots" content="noindex, follow" />'
+      : '<meta name="robots" content="index, follow, max-image-preview:large" />';
+    const openGraphType = videoId ? "video.other" : placeRoute ? "article" : "website";
+    const videoTags = videoId
+      ? `<meta property="og:video" content="https://www.youtube-nocookie.com/embed/${escapeHtml(videoId)}" />
+         <meta property="og:video:secure_url" content="https://www.youtube-nocookie.com/embed/${escapeHtml(videoId)}" />
+         <meta property="og:video:type" content="text/html" />`
+      : "";
+    const metadata = `
       <title>${safeTitle}</title>
       <meta name="description" content="${safeDescription}" />
       ${robotsTag}
-      
-      <!-- Canonical correctly enforcing the normalized requestUrl -->
-      <link rel="canonical" href="${safeRequestUrl}" />
-
-      <!-- Open Graph / Facebook / WhatsApp -->
-      <meta property="og:type" content="article" />
-      <meta property="og:url" content="${safeRequestUrl}" />
+      <link rel="canonical" href="${safeCanonicalUrl}" />
+      <meta property="og:type" content="${openGraphType}" />
+      <meta property="og:site_name" content="My Journal" />
+      <meta property="og:url" content="${safeCanonicalUrl}" />
       <meta property="og:title" content="${safeTitle}" />
       <meta property="og:description" content="${safeDescription}" />
       <meta property="og:image" content="${safeImageUrl}" />
-
-      <!-- Twitter / X -->
+      ${videoTags}
       <meta name="twitter:card" content="summary_large_image" />
-      <meta name="twitter:url" content="${safeRequestUrl}" />
+      <meta name="twitter:url" content="${safeCanonicalUrl}" />
       <meta name="twitter:title" content="${safeTitle}" />
       <meta name="twitter:description" content="${safeDescription}" />
-      <meta name="twitter:image" content="${safeImageUrl}" />
-    `;
+      <meta name="twitter:image" content="${safeImageUrl}" />`;
 
-    // Strip legacy meta tags from index.html template to prevent duplicate injection
+    const schemaTag = videoSchema
+      ? `<script type="application/ld+json">${JSON.stringify(videoSchema).replace(/</g, "\\u003c")}</script>`
+      : "";
+
     html = html
-      .replace(/<title>[\s\S]*?<\/title>/gi, "")
+      .replace(/<title>[\s\S]*?<\/title>/i, "")
       .replace(/<meta\s+name=["']description["'][\s\S]*?>/gi, "")
       .replace(/<meta\s+name=["']robots["'][\s\S]*?>/gi, "")
       .replace(/<meta\s+property=["']og:[\s\S]*?>/gi, "")
       .replace(/<meta\s+name=["']twitter:[\s\S]*?>/gi, "")
       .replace(/<link\s+rel=["']canonical["'][\s\S]*?>/gi, "");
 
-    // Inject fresh metadata block before closing </head>
-    html = html.replace("</head>", `${metaBlock}\n</head>`);
+    if (!/<\/head>/i.test(html) || !/<div\b(?=[^>]*\bid\s*=["']root["'])[^>]*>/i.test(html)) {
+      throw new Error("Index document does not have the expected HTML shell.");
+    }
+    html = html.replace(/<\/head>/i, `${metadata}${schemaTag}\n</head>`);
 
-    // 5. Replace static body fallback content inside #root with route-specific DOM content
-    // Prevents duplicate content penalties by removing static index.html fallback text for dynamic paths
-    const crawlerBody = `
-      <div id="root">
-        <main style="max-width: 800px; margin: 0 auto; padding: 40px 24px; font-family: system-ui, -apple-system, sans-serif; color: #334155; line-height: 1.7;">
-          <header style="margin-bottom: 24px;">
-            <h1 style="font-size: 24px; font-weight: 800; color: #0f172a; margin: 0 0 12px 0;">${safeTitle}</h1>
-            <p style="font-size: 16px; color: #475569; margin: 0;">${safeDescription}</p>
-          </header>
-        </main>
-      </div>
-    `;
+    let mediaContent = "";
+    if (videoId) {
+      mediaContent = `<iframe src="https://www.youtube-nocookie.com/embed/${escapeHtml(videoId)}" title="${safeTitle}" loading="lazy" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>`;
+    } else if (galleryImages.length) {
+      mediaContent = galleryImages.map((url) =>
+        `<img src="${escapeHtml(url)}" alt="${safeTitle}" loading="lazy" />`,
+      ).join("");
+    } else if (imageUrl !== defaultImage) {
+      mediaContent = `<img src="${safeImageUrl}" alt="${safeTitle}" loading="lazy" />`;
+    }
 
-    html = html.replace(/<div id="root">[\s\S]*?<\/div>/gi, crawlerBody);
+    const crawlerBody = `<div id="root"><main style="max-width:800px;margin:0 auto;padding:40px 24px;font-family:system-ui,-apple-system,sans-serif;color:#334155;line-height:1.7"><article><h1>${safeTitle}</h1><p>${safeDescription}</p>${mediaContent}</article></main></div>`;
+    html = replaceRootElement(html, crawlerBody);
 
     res.setHeader("Content-Type", "text/html; charset=utf-8");
-    res.setHeader(
-      "Cache-Control",
-      "s-maxage=3600, stale-while-revalidate=86400",
-    );
-
-    // Return 404 status header if database record doesn't exist, otherwise 200
-    return res.status(isNotFound ? 404 : 200).send(html);
+    res.setHeader("Cache-Control", isNotFound
+      ? "s-maxage=300, stale-while-revalidate=600"
+      : "s-maxage=3600, stale-while-revalidate=86400");
+    const status = isNotFound ? 404 : 200;
+    return method === "HEAD" ? res.status(status).end() : res.status(status).send(html);
   } catch (error) {
-    console.error("HTML Injection Error:", error);
-    res.setHeader("Content-Type", "text/plain");
-    return res.status(500).send("Server Error fetching index.html");
+    console.error("HTML metadata response failed:", error);
+    res.setHeader("Cache-Control", "no-store");
+    return res.status(500).end("Unable to render page metadata.");
   }
 }
