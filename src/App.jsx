@@ -3443,7 +3443,11 @@ const fetchVisitorMetadata = async () => {
 
   if (!visitorMetadataPromise) {
     visitorMetadataPromise = supabaseClient.functions
-      .invoke('track-visit', { body: {} })
+      .invoke('track-visit', {
+        body: {
+          user_agent: navigator.userAgent || '',
+        },
+      })
       .then(({ data, error }) => {
         if (error) throw error;
         if (

@@ -21,6 +21,11 @@ Deno.serve(async (req) => {
   }
 
   try {
+    const body = await req.json().catch(() => ({}))
+    const clientUserAgent =
+      typeof body?.user_agent === 'string' ? body.user_agent.trim() : ''
+    const requestUserAgent = req.headers.get('user-agent')?.trim() || ''
+
     // Read visitor details from the request as seen by Supabase/Cloudflare.
     const forwardedFor = req.headers.get('x-forwarded-for')
     const ip_address =
@@ -28,7 +33,9 @@ Deno.serve(async (req) => {
       req.headers.get('x-real-ip')?.trim() ||
       forwardedFor?.split(',')[0].trim() ||
       '0.0.0.0'
-    const user_agent = req.headers.get('user-agent') || ''
+    // The browser UA is sent in the request body because some proxies replace
+    // or omit the User-Agent header before the request reaches the function.
+    const user_agent = clientUserAgent || requestUserAgent
 
     let countryCode = req.headers.get('cf-ipcountry') || 'Unknown'
     let city = req.headers.get('cf-ipcity') || 'Unknown'
