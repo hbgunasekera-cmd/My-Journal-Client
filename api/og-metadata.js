@@ -449,7 +449,9 @@ export default async function handler(req, res) {
       title = "Aerial & Video Journal | My Journal";
       description = "Watch aerial drone perspectives, backcountry video journals, terrain footage, trails, waterfalls and natural landscapes across Sri Lanka.";
       const videoParams = new URLSearchParams({
-        select: "id,url,title,description,custom_thumbnail_url,is_active",
+        // hub_videos does not have a description column. Keep this query
+        // aligned with the actual table so social crawlers don't get a 503.
+        select: "id,url,title,custom_thumbnail_url,is_active",
         is_active: "eq.true",
         limit: "100",
       });
@@ -482,7 +484,9 @@ export default async function handler(req, res) {
       if (videoGalleryItems[0]?.imageUrl) imageUrl = videoGalleryItems[0].imageUrl;
       pageSchema = buildVideoGallerySchema(videoGalleryItems, title, description, canonicalUrl);
     } else if (videoRoute) {
-      const select = "id,url,title,description,custom_thumbnail_url,is_active";
+      // The video description is optional metadata generated below; it is
+      // not a column in hub_videos.
+      const select = "id,url,title,custom_thumbnail_url,is_active";
       const idSeparator = cleanSlug.lastIndexOf("--");
       let videos;
 
