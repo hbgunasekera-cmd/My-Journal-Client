@@ -279,7 +279,7 @@ export default async function handler(req, res) {
       hasKey: Boolean(supabaseKey),
     });
     res.setHeader("Cache-Control", "no-store");
-    return res.status(503).end("Metadata service is temporarily unavailable.");
+    return res.status(503).end("Metadata service is unavailable: Supabase configuration is missing.");
   }
 
   const defaultImage = `${baseUrl}/my-journal-logo.png`;
@@ -380,7 +380,10 @@ export default async function handler(req, res) {
   } catch (error) {
     console.error("API metadata lookup failed:", error);
     res.setHeader("Cache-Control", "no-store");
-    return res.status(503).end("Metadata service is temporarily unavailable.");
+    const message = String(error?.message || "Supabase metadata lookup failed")
+      .replace(/[\r\n<>]/g, " ")
+      .slice(0, 350);
+    return res.status(503).end(`Metadata lookup failed: ${message}`);
   }
 
   if (isNotFound) {
