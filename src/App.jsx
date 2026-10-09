@@ -3507,6 +3507,19 @@ export const invokeInteractionEvent = async (eventType, payload = {}) => {
         region: metadata.region,
         city: metadata.city,
         ip_address: metadata.ip_address,
+        referrer: (
+          typeof payload.referrer === 'string'
+            ? payload.referrer
+            : document.referrer || ''
+        ).trim() || null,
+        utm_source: (
+          typeof payload.utm_source === 'string'
+            ? payload.utm_source
+            : new URLSearchParams(window.location.search).get('utm_source') || ''
+        ).trim() || null,
+        is_webdriver: typeof payload.is_webdriver === 'boolean'
+          ? payload.is_webdriver
+          : navigator.webdriver === true,
       }]);
 
     if (error) throw error;
@@ -3780,6 +3793,8 @@ export const logVisit = async (path = null) => {
       {
         page_path: loggingPath,
         utm_source: utmSource,
+        referrer: document.referrer || '',
+        is_webdriver: navigator.webdriver === true,
       }
     );
   } catch (err) {
