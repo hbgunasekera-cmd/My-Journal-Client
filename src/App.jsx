@@ -3761,12 +3761,26 @@ export const logVisit = async (path = null) => {
   ) {
     loggingPath = 'Main Page';
 
-    // Video routes
+  // Individual video visits
+  } else if (
+    /^\/videos\/[^/]+\/?$/i.test(normalizedPath)
+  ) {
+    const slug = normalizedPath
+      .slice('/videos/'.length)
+      .replace(/\/+$/, '');
+    const videoName = safeDecode(slug)
+      .replace(/--[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i, '')
+      .replace(/[-_]+/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+
+    if (videoName) loggingPath = `Videos/${videoName}`;
+
+  // Video hub visits
   } else if (
     lowerPath === '/video gallery' ||
     lowerPath === '/video hub' ||
     lowerPath === '/videos' ||
-    lowerPath.startsWith('/videos/') ||
     lowerPath === '/video-gallery' ||
     lowerPath.startsWith('/video-gallery/')
   ) {
@@ -8837,6 +8851,7 @@ function App() {
   // ============================================================================
   const lastLoggedArticleRef = useRef(null);
   const lastLoggedGalleryRef = useRef(null);
+  const lastLoggedVideoVisitRef = useRef(null);
   const mapRef = useRef(null);
   const tempMarkerRef = useRef(null);
   const markerRegistryRef = useRef({});
@@ -9189,6 +9204,7 @@ function App() {
     setActiveVideo(null);
     setIsVideoDetailOpen(false);
     setVideoGalleryInitialIndex(0);
+    lastLoggedVideoVisitRef.current = null;
   }, []);
 
   const handleCloseDeepLinkedVideoGallery = useCallback(() => {
@@ -9196,12 +9212,23 @@ function App() {
     setIsVideoDetailOpen(false);
     setActiveVideos([]);
     setVideoGalleryInitialIndex(0);
+    lastLoggedVideoVisitRef.current = null;
   }, []);
 
   const handleActiveVideoChange = useCallback((video, index) => {
     setActiveVideo(video);
     setVideoGalleryInitialIndex(index);
     setIsVideoDetailOpen(true);
+
+    const visitKey = video?.id || video?.url;
+    if (visitKey && lastLoggedVideoVisitRef.current !== visitKey) {
+      lastLoggedVideoVisitRef.current = visitKey;
+      const videoPath = new URL(
+        getVideoPageUrl(video, index),
+        window.location.origin
+      ).pathname;
+      void logVisit(videoPath);
+    }
   }, []);
 
 
@@ -11108,8 +11135,6 @@ function App() {
 
     if (type === "video") {
       if (!hasLoadedVideoLibrary) return;
-
-      logVisit('Video Hub');
 
       const targetVideoIndex =
         videoLibrary.findIndex(
