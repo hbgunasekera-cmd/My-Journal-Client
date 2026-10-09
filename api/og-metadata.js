@@ -334,7 +334,7 @@ export default async function handler(req, res) {
       }
     } else {
       const params = new URLSearchParams({
-        select: "place_name,slug,cover_photo_url,ai_article,description,album_photos",
+        select: "place_name,slug,cover_photo_url,ai_article,album_photos",
         status: "in.(done,Completed,Visited)",
         slug: `ilike.${cleanSlug}`,
         limit: "1",
@@ -344,7 +344,7 @@ export default async function handler(req, res) {
       if (!places.length) {
         const decodedName = decodedSlug.replace(/-/g, " ").replace(/[\\%_]/g, "\\$&");
         const fallbackParams = new URLSearchParams({
-          select: "place_name,slug,cover_photo_url,ai_article,description,album_photos",
+          select: "place_name,slug,cover_photo_url,ai_article,album_photos",
           status: "in.(done,Completed,Visited)",
           place_name: `ilike.${decodedName}`,
           limit: "1",
@@ -361,7 +361,7 @@ export default async function handler(req, res) {
         title = gallery ? `${placeName} Gallery | My Journal` : `${placeName} | My Journal`;
         const article = place.ai_article && typeof place.ai_article === "object" ? place.ai_article : {};
         const story = typeof place.ai_article === "string" ? place.ai_article : article.story;
-        description = truncateText(story || place.description || `Explore ${placeName} in Sri Lanka.`);
+        description = truncateText(story || `Explore ${placeName} in Sri Lanka.`);
         imageUrl = firstSocialImage(
           [
             place.cover_photo_url,
