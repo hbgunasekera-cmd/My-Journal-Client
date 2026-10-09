@@ -1,7 +1,5 @@
+import { getSupabaseServerConfig } from "../server/supabase-config.js";
 const DEFAULT_SITE_URL = "https://www.myjournalview.com";
-const DEFAULT_SUPABASE_URL = "https://vpslgikpaintiuayajmx.supabase.co";
-// Public key fallback for server-rendered crawler metadata; runtime env vars still override it.
-const DEFAULT_SUPABASE_PUBLISHABLE_KEY = "sb_publishable_rsbN_QlROV14EEzYjl9dTQ_Jxl-ra44";
 
 function generateSlug(value) {
   if (!value) return "";
@@ -30,6 +28,167 @@ function cleanText(value, fallback = "") {
     return fallback;
   }
   return String(value).replace(/\s+/g, " ").replace(/[<>]/g, "").trim() || fallback;
+}
+
+function parseArticle(value) {
+  if (value && typeof value === "object" && !Array.isArray(value)) return value;
+  if (typeof value !== "string" || !value.trim()) return {};
+
+  try {
+    const parsed = JSON.parse(value);
+    if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) return parsed;
+    if (typeof parsed === "string") return { story: parsed };
+  } catch {
+    // Older rows may store the article as plain prose rather than JSON.
+  }
+  return { story: value };
+}
+
+function humanizeFieldName(value) {
+  return String(value)
+    .replace(/([a-z0-9])([A-Z])/g, "$1 $2")
+    .replace(/[_-]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim()
+    .replace(/\b\w/g, (letter) => letter.toUpperCase());
+}
+
+function renderArticleContent(value) {
+  const budget = { remaining: 40000 };
+  const ignoredKeys = new Set([
+    "isFullContent",
+    "metrics",
+    "language",
+    "source_language",
+    "translation",
+    "translations",
+    "model",
+    "generated_at",
+  ]);
+
+  const renderValue = (current, depth = 0) => {
+    if (current === null || current === undefined || depth > 6 || budget.remaining <= 0) {
+      return "";
+    }
+
+    if (typeof current === "string") {
+      const text = current.replace(/\r\n?/g, "\n").trim();
+      if (!text) return "";
+      const visibleText = text.slice(0, budget.remaining);
+      budget.remaining -= visibleText.length;
+      return visibleText
+        .split(/\n{2,}/)
+        .map((paragraph) => `<p>${escapeHtml(paragraph).replace(/\n/g, "<br />")}</p>`)
+        .join("");
+    }
+
+    if (typeof current === "number" && Number.isFinite(current)) {
+      const text = String(current);
+      budget.remaining -= text.length;
+      return `<p>${escapeHtml(text)}</p>`;
+    }
+
+    if (Array.isArray(current)) {
+      const items = current
+        .map((item) => renderValue(item, depth + 1))
+        .filter(Boolean);
+      return items.length ? `<ul>${items.map((item) => `<li>${item}</li>`).join("")}</ul>` : "";
+    }
+
+    if (typeof current === "object") {
+      return Object.entries(current)
+        .filter(([key, item]) => !ignoredKeys.has(key) && item !== null && item !== undefined && item !== "")
+        .map(([key, item]) => {
+          const content = renderValue(item, depth + 1);
+          if (!content) return "";
+          const headingTag = depth === 0 ? "h2" : "h3";
+          return `<section><${headingTag}>${escapeHtml(humanizeFieldName(key))}</${headingTag}>${content}</section>`;
+        })
+        .join("");
+    }
+
+    return "";
+  };
+
+  return renderValue(value);
+}
+
+function buildPlaceSchema(placeName, title, description, imageUrl, canonicalUrl, isGallery, galleryImages = []) {
+  if (isGallery) {
+    const images = [
+      ...(imageUrl && !imageUrl.endsWith("/my-journal-logo.png")
+        ? [{ url: imageUrl, alt: title, caption: "" }]
+        : []),
+      ...galleryImages.filter((image) => image.url !== imageUrl),
+    ];
+    return {
+      "@context": "https://schema.org",
+      "@type": "CollectionPage",
+      "@id": `${canonicalUrl}#gallery`,
+      url: canonicalUrl,
+      name: title,
+      description,
+      mainEntity: {
+        "@type": "ItemList",
+        itemListElement: images.slice(0, 50).map((image, index) => ({
+          "@type": "ListItem",
+          position: index + 1,
+          item: {
+            "@type": "ImageObject",
+            contentUrl: image.url,
+            name: image.alt,
+            ...(image.caption ? { caption: image.caption } : {}),
+          },
+        })),
+      },
+    };
+  }
+
+  return {
+    "@context": "https://schema.org",
+    "@type": "Article",
+    "@id": `${canonicalUrl}#article`,
+    mainEntityOfPage: { "@type": "WebPage", "@id": canonicalUrl },
+    headline: title,
+    description,
+    image: [imageUrl],
+    about: { "@type": "Place", name: placeName },
+    author: { "@type": "Organization", name: "My Journal", url: DEFAULT_SITE_URL },
+    publisher: {
+      "@type": "Organization",
+      name: "My Journal",
+      url: DEFAULT_SITE_URL,
+      logo: { "@type": "ImageObject", url: `${DEFAULT_SITE_URL}/my-journal-logo.png` },
+    },
+    inLanguage: "en",
+  };
+}
+
+function buildVideoGallerySchema(items, title, description, canonicalUrl) {
+  return {
+    "@context": "https://schema.org",
+    "@type": "CollectionPage",
+    "@id": `${canonicalUrl}#videos`,
+    url: canonicalUrl,
+    name: title,
+    description,
+    mainEntity: {
+      "@type": "ItemList",
+      itemListElement: items.slice(0, 50).map((video, index) => ({
+        "@type": "ListItem",
+        position: index + 1,
+        url: video.pageUrl,
+        item: {
+          "@type": "VideoObject",
+          name: video.title,
+          description: video.description,
+          thumbnailUrl: [video.imageUrl],
+          url: video.pageUrl,
+          embedUrl: `https://www.youtube-nocookie.com/embed/${video.videoId}`,
+        },
+      })),
+    },
+  };
 }
 
 function escapeHtml(value = "") {
@@ -262,17 +421,7 @@ export default async function handler(req, res) {
     return res.status(301).end();
   }
 
-  const supabaseUrl =
-    process.env.SUPABASE_URL ||
-    process.env.VITE_SUPABASE_URL ||
-    DEFAULT_SUPABASE_URL;
-  const supabaseKey =
-    process.env.SUPABASE_PUBLISHABLE_KEY ||
-    process.env.SUPABASE_ANON_KEY ||
-    process.env.SUPABASE_KEY ||
-    process.env.VITE_SUPABASE_KEY ||
-    process.env.VITE_SUPABASE_ANON_KEY ||
-    DEFAULT_SUPABASE_PUBLISHABLE_KEY;
+  const { supabaseUrl, supabaseKey } = getSupabaseServerConfig();
   if (!supabaseUrl || !supabaseKey) {
     console.error("OG metadata Supabase configuration is missing.", {
       hasUrl: Boolean(supabaseUrl),
@@ -289,14 +438,51 @@ export default async function handler(req, res) {
   let isNotFound = false;
   let videoId = null;
   let videoSchema = null;
+  let pageSchema = null;
+  let articleContentHtml = "";
+  let videoDescriptionHtml = "";
+  let videoGalleryItems = [];
   let galleryImages = [];
 
   try {
     if (videoGallery) {
       title = "Aerial & Video Journal | My Journal";
       description = "Watch aerial drone perspectives, backcountry video journals, terrain footage, trails, waterfalls and natural landscapes across Sri Lanka.";
+      const videoParams = new URLSearchParams({
+        select: "id,url,title,description,custom_thumbnail_url,is_active",
+        is_active: "eq.true",
+        limit: "100",
+      });
+      const videos = await fetchRows(supabaseUrl, supabaseKey, "hub_videos", videoParams);
+      videoGalleryItems = videos
+        .map((video) => {
+          const itemVideoId = getYouTubeId(video.url);
+          if (!itemVideoId) return null;
+          const videoTitle = cleanText(
+            video.title || `Sri Lanka Backcountry Video ${video.id}`,
+            "Sri Lanka Backcountry Video",
+          );
+          const videoDescription = cleanText(
+            video.description || `Watch ${videoTitle} from My Journal's Sri Lanka backcountry video archive.`,
+          );
+          const itemImageUrl = socialImageUrl(
+            video.custom_thumbnail_url || `https://img.youtube.com/vi/${itemVideoId}/hqdefault.jpg`,
+            `https://img.youtube.com/vi/${itemVideoId}/hqdefault.jpg`,
+          );
+          const videoSlug = buildVideoSlug(video);
+          return {
+            videoId: itemVideoId,
+            title: videoTitle,
+            description: videoDescription,
+            imageUrl: itemImageUrl,
+            pageUrl: `${baseUrl}/videos/${encodeURIComponent(videoSlug)}`,
+          };
+        })
+        .filter(Boolean);
+      if (videoGalleryItems[0]?.imageUrl) imageUrl = videoGalleryItems[0].imageUrl;
+      pageSchema = buildVideoGallerySchema(videoGalleryItems, title, description, canonicalUrl);
     } else if (videoRoute) {
-      const select = "id,url,title,description,custom_thumbnail_url,upload_date,published_at,created_at,is_active";
+      const select = "id,url,title,description,custom_thumbnail_url,is_active";
       const idSeparator = cleanSlug.lastIndexOf("--");
       let videos;
 
@@ -323,9 +509,11 @@ export default async function handler(req, res) {
           "Sri Lanka Backcountry Video",
         );
         title = `${videoTitle} | My Journal`;
-        description = truncateText(
+        const fullVideoDescription = cleanText(
           video.description || `Watch ${videoTitle} from My Journal's Sri Lanka backcountry video archive.`,
         );
+        description = truncateText(fullVideoDescription);
+        videoDescriptionHtml = renderArticleContent({ description: fullVideoDescription });
         imageUrl = socialImageUrl(
           video.custom_thumbnail_url || `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`,
           `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`,
@@ -359,9 +547,10 @@ export default async function handler(req, res) {
         const placeName = cleanText(place.place_name, "Sri Lanka Backcountry Location");
         const gallery = routeType === "gallery";
         title = gallery ? `${placeName} Gallery | My Journal` : `${placeName} | My Journal`;
-        const article = place.ai_article && typeof place.ai_article === "object" ? place.ai_article : {};
-        const story = typeof place.ai_article === "string" ? place.ai_article : article.story;
+        const article = parseArticle(place.ai_article);
+        const story = article.story || article.seo_intro || article.why_visit?.summary;
         description = truncateText(story || `Explore ${placeName} in Sri Lanka.`, 120);
+        articleContentHtml = renderArticleContent(article);
         imageUrl = firstSocialImage(
           [
             place.cover_photo_url,
@@ -370,11 +559,22 @@ export default async function handler(req, res) {
           defaultImage,
         );
         galleryImages = Array.isArray(place.album_photos)
-          ? place.album_photos
-            .map((photo) => socialImageUrl(photo, ""))
+          ? place.album_photos.slice(0, 50)
+            .map((photo, index) => {
+              const photoRecord = photo && typeof photo === "object" ? photo : {};
+              const url = socialImageUrl(photo, "");
+              if (!url) return null;
+              const alt = cleanText(
+                photoRecord.alt || photoRecord.alt_text || photoRecord.title || `${placeName} landscape photo ${index + 1}`,
+              );
+              const caption = cleanText(
+                photoRecord.caption || photoRecord.description || photoRecord.title || "",
+              );
+              return { url, alt, caption };
+            })
             .filter(Boolean)
-            .slice(0, 8)
           : [];
+        pageSchema = buildPlaceSchema(placeName, title, description, imageUrl, canonicalUrl, gallery, galleryImages);
       }
     }
   } catch (error) {
@@ -430,8 +630,9 @@ export default async function handler(req, res) {
       <meta name="twitter:image" content="${safeImageUrl}" />
       <meta name="twitter:image:alt" content="${safeTitle}" />`;
 
-    const schemaTag = videoSchema
-      ? `<script type="application/ld+json">${JSON.stringify(videoSchema).replace(/</g, "\\u003c")}</script>`
+    const structuredData = videoSchema || pageSchema;
+    const schemaTag = structuredData
+      ? `<script type="application/ld+json">${JSON.stringify(structuredData).replace(/</g, "\\u003c")}</script>`
       : "";
 
     html = html
@@ -451,18 +652,25 @@ export default async function handler(req, res) {
     if (videoId) {
       mediaContent = `<iframe src="https://www.youtube-nocookie.com/embed/${escapeHtml(videoId)}" title="${safeTitle}" style="display:block;width:100%;aspect-ratio:16/9;border:0;border-radius:16px" loading="lazy" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>`;
     } else {
+      const heroAlt = galleryImages.find((photo) => photo.url === imageUrl)?.alt || title;
       const heroImage = imageUrl !== defaultImage
-        ? `<img src="${safeImageUrl}" alt="${safeTitle}" style="display:block;width:100%;height:auto;max-height:72vh;object-fit:contain;border-radius:16px" fetchpriority="high" />`
+        ? `<img src="${safeImageUrl}" alt="${escapeHtml(heroAlt)}" style="display:block;width:100%;height:auto;max-height:72vh;object-fit:contain;border-radius:16px" fetchpriority="high" />`
         : "";
       const additionalImages = galleryImages
-        .filter((url) => url !== imageUrl)
-        .slice(0, 7)
-        .map((url) => `<img src="${escapeHtml(url)}" alt="${safeTitle}" style="display:block;width:100%;height:auto;max-height:440px;object-fit:cover;border-radius:12px" loading="lazy" />`)
+        .filter((photo) => photo.url !== imageUrl)
+        .slice(0, 49)
+        .map((photo) => `<figure><img src="${escapeHtml(photo.url)}" alt="${escapeHtml(photo.alt)}" style="display:block;width:100%;height:auto;max-height:440px;object-fit:cover;border-radius:12px" loading="lazy" />${photo.caption ? `<figcaption>${escapeHtml(photo.caption)}</figcaption>` : ""}</figure>`)
         .join("");
       mediaContent = `${heroImage}${additionalImages ? `<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:16px;margin-top:20px">${additionalImages}</div>` : ""}`;
     }
 
-    const crawlerBody = `<div id="root"><main style="max-width:1100px;margin:0 auto;padding:28px 20px;font-family:system-ui,-apple-system,sans-serif;color:#334155;line-height:1.5"><article>${mediaContent}<h1 style="margin:20px 0 8px;font-size:clamp(24px,4vw,34px);line-height:1.2">${safeTitle}</h1><p style="max-width:760px;margin:0 auto;font-size:13px;line-height:1.5;color:#64748b">${safeDescription}</p></article></main></div>`;
+    const videoListContent = videoGalleryItems.map((video) =>
+      `<article><a href="${escapeHtml(video.pageUrl)}"><img src="${escapeHtml(video.imageUrl)}" alt="${escapeHtml(video.title)}" style="display:block;width:100%;height:auto;max-height:420px;object-fit:cover" loading="lazy" /><h2>${escapeHtml(video.title)}</h2></a><p>${escapeHtml(video.description)}</p></article>`,
+    ).join("");
+    const richTextContent = [articleContentHtml, videoDescriptionHtml, videoListContent]
+      .filter(Boolean)
+      .join("");
+    const crawlerBody = `<div id="root"><main style="max-width:1100px;margin:0 auto;padding:28px 20px;font-family:system-ui,-apple-system,sans-serif;color:#334155;line-height:1.5"><article>${mediaContent}<h1 style="margin:20px 0 8px;font-size:clamp(24px,4vw,34px);line-height:1.2">${safeTitle}</h1><p style="max-width:760px;margin:0 auto 24px;font-size:13px;line-height:1.5;color:#64748b">${safeDescription}</p>${richTextContent}</article></main></div>`;
     html = replaceRootElement(html, crawlerBody);
 
     res.setHeader("Content-Type", "text/html; charset=utf-8");

@@ -1,4 +1,5 @@
 import { createClient } from "@supabase/supabase-js";
+import { getSupabaseServerConfig } from "../server/supabase-config.js";
 
 function generateSlug(name) {
     if (!name) return "";
@@ -82,8 +83,7 @@ export default async function handler(req, res) {
         return res.status(500).end("Video sitemap configuration error.");
     }
 
-    const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
-    const supabaseKey = process.env.SUPABASE_KEY || process.env.VITE_SUPABASE_KEY || process.env.VITE_SUPABASE_ANON_KEY;
+    const { supabaseUrl, supabaseKey } = getSupabaseServerConfig();
 
     if (!supabaseUrl || !supabaseKey) {
         res.setHeader("Content-Type", "text/plain; charset=utf-8");

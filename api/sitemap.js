@@ -1,4 +1,5 @@
 import { createClient } from "@supabase/supabase-js";
+import { getSupabaseServerConfig } from "../server/supabase-config.js";
 
 // Helper to generate standardized, clean, SEO-friendly URL slugs matching App.jsx
 function generateSlug(name) {
@@ -76,10 +77,7 @@ export default async function handler(req, res) {
   }
 
   // 2. Safely load Supabase credentials
-  const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
-  const supabaseKey = process.env.SUPABASE_KEY ||
-    process.env.VITE_SUPABASE_KEY ||
-    process.env.VITE_SUPABASE_ANON_KEY;
+  const { supabaseUrl, supabaseKey } = getSupabaseServerConfig();
 
   if (!supabaseUrl || !supabaseKey) {
     res.setHeader("Content-Type", "text/plain");

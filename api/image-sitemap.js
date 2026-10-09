@@ -1,4 +1,5 @@
 import { createClient } from "@supabase/supabase-js";
+import { getSupabaseServerConfig } from "../server/supabase-config.js";
 
 function generateSlug(name) {
     if (!name) return "";
@@ -52,8 +53,7 @@ export default async function handler(req, res) {
         return res.status(500).end("Image sitemap configuration error.");
     }
 
-    const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
-    const supabaseKey = process.env.SUPABASE_KEY || process.env.VITE_SUPABASE_KEY || process.env.VITE_SUPABASE_ANON_KEY;
+    const { supabaseUrl, supabaseKey } = getSupabaseServerConfig();
 
     if (!supabaseUrl || !supabaseKey) {
         res.setHeader("Content-Type", "text/plain; charset=utf-8");
@@ -66,9 +66,9 @@ export default async function handler(req, res) {
         
         // Concurrent Fetch
         const [page1, page2, page3] = await Promise.all([
-            supabase.from("travel_bucket_list").select("slug, place_name, category, locality, album_photos, created_at").in("status", ["done", "Completed", "Visited"]).order("id", { ascending: true }).range(0, 999),
-            supabase.from("travel_bucket_list").select("slug, place_name, category, locality, album_photos, created_at").in("status", ["done", "Completed", "Visited"]).order("id", { ascending: true }).range(1000, 1999),
-            supabase.from("travel_bucket_list").select("slug, place_name, category, locality, album_photos, created_at").in("status", ["done", "Completed", "Visited"]).order("id", { ascending: true }).range(2000, 2999)
+            supabase.from("travel_bucket_list").select("slug, place_name, category, locality, cover_photo_url, album_photos, created_at").in("status", ["done", "Completed", "Visited"]).order("id", { ascending: true }).range(0, 999),
+            supabase.from("travel_bucket_list").select("slug, place_name, category, locality, cover_photo_url, album_photos, created_at").in("status", ["done", "Completed", "Visited"]).order("id", { ascending: true }).range(1000, 1999),
+            supabase.from("travel_bucket_list").select("slug, place_name, category, locality, cover_photo_url, album_photos, created_at").in("status", ["done", "Completed", "Visited"]).order("id", { ascending: true }).range(2000, 2999)
         ]);
 
         if (page1.error) throw page1.error;
@@ -81,7 +81,8 @@ export default async function handler(req, res) {
         xml += '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">\n';
 
         places.forEach((place) => {
-            if (!Array.isArray(place.album_photos) || place.album_photos.length === 0) return;
+            const albumPhotos = Array.isArray(place.album_photos) ? place.album_photos : [];
+            if (!place.cover_photo_url && albumPhotos.length === 0) return;
 
             const placeName = cleanText(place.place_name, "Sri Lanka Backcountry Location");
             const category = cleanText(place.category, "natural attraction");
@@ -93,7 +94,7 @@ export default async function handler(req, res) {
             const lastMod = formatDateOnly(place.created_at);
             const lastModTag = lastMod ? `<lastmod>${lastMod}</lastmod>` : "";
 
-            const images = [...new Set(place.album_photos.filter(Boolean).map((photo) => {
+            const images = [...new Set([place.cover_photo_url, ...albumPhotos].filter(Boolean).map((photo) => {
                 if (typeof photo === "string") return photo.trim();
                 return String(photo?.url || photo?.src || photo?.image_url || "").trim();
             }).filter(Boolean))];
