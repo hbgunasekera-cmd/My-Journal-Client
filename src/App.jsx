@@ -110,6 +110,43 @@ export const supabaseClient = (SUPABASE_URL && SUPABASE_KEY)
   ? createClient(SUPABASE_URL, SUPABASE_KEY)
   : null;
 
+function getPhotoSource(photo) {
+  if (typeof photo === "string") return photo.trim();
+  return String(photo?.url || photo?.src || photo?.image_url || "").trim();
+}
+
+function getGooglePhotoRouteKey(photo) {
+  const source = getPhotoSource(photo);
+  if (!source) return null;
+
+  try {
+    const image = new URL(source);
+    if (
+      image.hostname.toLowerCase() !== "lh3.googleusercontent.com" ||
+      !image.pathname.startsWith("/pw/")
+    ) {
+      return null;
+    }
+
+    return decodeURIComponent(image.pathname.slice("/pw/".length));
+  } catch {
+    return null;
+  }
+}
+
+function getGooglePhotoRouteKeyFromPath(pathname) {
+  const match = String(pathname || "").match(
+    /^\/(AP[A-Za-z0-9_-]{20,}(?:=[^/?#]+)?)\/?$/i
+  );
+  if (!match) return null;
+
+  try {
+    return decodeURIComponent(match[1]);
+  } catch {
+    return match[1];
+  }
+}
+
 // Global Leaflet attachment for routing compatibility
 if (typeof window !== 'undefined') {
   window.L = L;
@@ -4313,7 +4350,8 @@ export const PhotoGallery = React.memo(
     onClose,
     placeName,
     selectedLocation,
-    onShare
+    onShare,
+    initialImageUrl = null,
   }) => {
 
     // ==========================================================
@@ -4355,15 +4393,28 @@ export const PhotoGallery = React.memo(
 
     const normalizedPhotos = useMemo(() => {
       if (!Array.isArray(photos)) {
-        return [];
+        return initialImageUrl ? [initialImageUrl] : [];
       }
 
-      return [
-        ...new Set(
-          photos.filter(Boolean)
-        )
-      ];
-    }, [photos]);
+      const photoUrls = photos.map(getPhotoSource).filter(Boolean);
+      if (initialImageUrl && !photoUrls.includes(initialImageUrl)) {
+        photoUrls.unshift(initialImageUrl);
+      }
+      return [...new Set(photoUrls)];
+    }, [photos, initialImageUrl]);
+
+    useEffect(() => {
+      if (!initialImageUrl) return;
+
+      const initialPhotoKey = getGooglePhotoRouteKey(initialImageUrl);
+      const initialIndex = normalizedPhotos.findIndex((photo) =>
+        initialPhotoKey
+          ? getGooglePhotoRouteKey(photo) === initialPhotoKey
+          : photo === initialImageUrl
+      );
+
+      if (initialIndex >= 0) setActiveIndex(initialIndex);
+    }, [initialImageUrl, normalizedPhotos]);
 
 
     // ==========================================================
@@ -8726,7 +8777,7 @@ function App() {
   const hasLoggedPlanOpen = useRef(false);
   const pendingAddVisitTypeRef = useRef(initialAddVisitType);
   const hasLoggedMainPageRef = useRef(false);
-  const pendingRouteRef = useRef({ type: null, slug: null });
+  const pendingRouteRef = useRef({ type: null, slug: null, photoKey: null });
   const sentinelRef = useRef(null);
   const mapInstanceRef = useRef(null);
   const routeLineRef = useRef(null);
@@ -8956,6 +9007,7 @@ function App() {
 
   const [videoLibrary, setVideoLibrary] = useState([]);
   const [activeId, setActiveId] = useState(null);
+  const [initialGalleryImage, setInitialGalleryImage] = useState(null);
   const [activeVideos, setActiveVideos] = useState([]);
 
   // ---------------------------------------------------------------------------
@@ -9053,6 +9105,7 @@ function App() {
 
   const handleClosePhotoGallery = useCallback(() => {
     setActiveId(null);
+    setInitialGalleryImage(null);
   }, []);
 
   // ---------------------------------------------------------------------------
@@ -10786,6 +10839,7 @@ function App() {
     const videoMatch = pathname.match(
       /^\/videos\/([^/]+)$/i
     );
+    const photoKey = getGooglePhotoRouteKeyFromPath(pathname);
 
     // =====================================================================
     // INITIAL ROUTE / DEEP-LINK HANDLING
@@ -10856,6 +10910,12 @@ function App() {
       pendingRouteRef.current = {
         type: "videos",
       };
+    } else if (photoKey) {
+      // Direct Google Photos image link rewritten to this site's origin.
+      pendingRouteRef.current = {
+        type: "photo",
+        photoKey,
+      };
     }
 
     // =====================================================================
@@ -10924,7 +10984,7 @@ function App() {
   useEffect(() => {
     if (hasHandledDeepLink.current) return;
 
-    const { type, slug } =
+    const { type, slug, photoKey } =
       pendingRouteRef.current || {};
 
     if (!type) return;
@@ -11004,6 +11064,60 @@ function App() {
         slug: null,
       };
 
+      return;
+    }
+
+    // =====================================================================
+    // DIRECT GOOGLE PHOTOS IMAGE
+    // =====================================================================
+
+    if (type === "photo") {
+      if (!places.length || !photoKey) return;
+
+      let targetPlace = null;
+      let targetPhoto = null;
+
+      for (const place of places) {
+        const photos = [
+          place.cover_photo_url,
+          ...(Array.isArray(place.album_photos) ? place.album_photos : []),
+        ];
+        targetPhoto = photos.find(
+          (photo) => getGooglePhotoRouteKey(photo) === photoKey
+        );
+        if (targetPhoto) {
+          targetPlace = place;
+          break;
+        }
+      }
+
+      if (!targetPlace || !targetPhoto) {
+        toast.error("Photo not found.");
+        hasHandledDeepLink.current = true;
+        pendingRouteRef.current = { type: null, slug: null, photoKey: null };
+        return;
+      }
+
+      const galleryPath = `/gallery/${getMediaSEOPlaceSlug(targetPlace)}`;
+      window.history.replaceState(
+        {
+          ...(window.history.state || {}),
+          modalOpen: true,
+          gallery: true,
+          placeId: targetPlace.id,
+          photoDeepLink: true,
+        },
+        "",
+        galleryPath
+      );
+
+      setInitialGalleryImage({
+        placeId: targetPlace.id,
+        url: getPhotoSource(targetPhoto),
+      });
+      setActiveId(targetPlace.id);
+      hasHandledDeepLink.current = true;
+      pendingRouteRef.current = { type: null, slug: null, photoKey: null };
       return;
     }
 
@@ -13560,6 +13674,11 @@ function App() {
                 photos={activePlace.album_photos || []}
                 placeName={activePlace.place_name}
                 selectedLocation={activePlace}
+                initialImageUrl={
+                  initialGalleryImage?.placeId === activePlace.id
+                    ? initialGalleryImage.url
+                    : null
+                }
                 onClose={handleClosePhotoGallery}
                 onShare={(e, location) => handleShare(e, location, true)}
               />

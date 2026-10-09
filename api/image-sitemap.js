@@ -38,6 +38,25 @@ function getImageCaption(placeName, locality, category, index) {
     return cleanText(`${placeName} in ${locality || "Sri Lanka"}. Field photograph ${index + 1} documenting the surrounding ${category || "landscape"}.`, `${placeName} field photograph ${index + 1}`);
 }
 
+function getSiteImageUrl(imageUrl, baseUrl) {
+    const image = new URL(imageUrl, baseUrl);
+
+    // Google Photos URLs are represented by an app route so a direct visit
+    // opens the photo in My Journal's gallery/lightbox instead of leaving the
+    // site for lh3.googleusercontent.com.
+    if (
+        image.hostname.toLowerCase() === "lh3.googleusercontent.com" &&
+        image.pathname.startsWith("/pw/")
+    ) {
+        const photoPath = image.pathname.slice("/pw/".length);
+        image.protocol = new URL(baseUrl).protocol;
+        image.host = new URL(baseUrl).host;
+        image.pathname = `/${photoPath}`;
+    }
+
+    return image.href;
+}
+
 export default async function handler(req, res) {
     if (req.method !== "GET") {
         res.setHeader("Allow", "GET");
@@ -106,7 +125,7 @@ export default async function handler(req, res) {
             images.forEach((imageUrl, index) => {
                 let absoluteImageUrl;
                 try {
-                    absoluteImageUrl = new URL(imageUrl, baseUrl).href;
+                    absoluteImageUrl = getSiteImageUrl(imageUrl, baseUrl);
                 } catch {
                     return; // STRICT SKIP: Google strictly rejects sitemaps if relative URLs slip through
                 }
