@@ -60,25 +60,50 @@ Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
 
   try {
-    const { event_type, page_path, user_agent } = await req.json();
+    const {
+      event_type,
+      page_path,
+      user_agent,
+      location_id,
+      share_type,
+      comment_text,
+    } = await req.json();
 
-    // This function also receives interaction events from the client. Only
-    // explicit visits belong in page_visits; likes, shares, and comments must
-    // never be recorded as visits to the current URL.
-    if (event_type !== 'visit') {
+    const supportedEvents = ['visit', 'like', 'unlike', 'comment', 'share']
+    if (!supportedEvents.includes(event_type)) {
       return jsonResponse({ success: true, ignored: true })
     }
 
-    const normalizedPagePath = normalizeVisitPath(page_path)
-    if (!normalizedPagePath) {
-      return jsonResponse({ success: true, ignored: true })
+    let normalizedPagePath: string | null = null
+    if (event_type === 'visit') {
+      normalizedPagePath = normalizeVisitPath(page_path)
+      if (!normalizedPagePath) {
+        return jsonResponse({ success: true, ignored: true })
+      }
+    } else {
+      const isUuid = typeof location_id === 'string' &&
+        /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(location_id)
+      const validShareType = share_type === 'article' || share_type === 'gallery'
+      const validComment = typeof comment_text === 'string' && comment_text.trim().length > 0
+
+      if (
+        !isUuid ||
+        (event_type === 'share' && !validShareType) ||
+        (event_type === 'comment' && !validComment)
+      ) {
+        return jsonResponse({ error: 'Invalid interaction payload.' }, 400)
+      }
     }
 
     const safeUserAgent = typeof user_agent === 'string' ? user_agent : ''
 
     // 1. Extract the real User IP (Supabase/Cloudflare standard)
     const forwardedFor = req.headers.get("x-forwarded-for");
-    const ip_address = forwardedFor ? forwardedFor.split(',')[0].trim() : "0.0.0.0";
+    const ip_address =
+      req.headers.get("cf-connecting-ip")?.trim() ||
+      req.headers.get("x-real-ip")?.trim() ||
+      forwardedFor?.split(',')[0].trim() ||
+      "0.0.0.0";
 
     const supabase = createClient(
       Deno.env.get('SUPABASE_URL')!,
@@ -113,7 +138,85 @@ Deno.serve(async (req) => {
       countryName = displayNames.of(countryCode) || countryCode;
     } catch (e) {}
 
-    // 5. INSERT (Including IP and Full Geo)
+    if (event_type === 'share') {
+      // The location_shares table uses `type` for the article/gallery value.
+      const { error } = await supabase
+        .from('location_shares')
+        .insert([{
+          location_id,
+          type: share_type,
+          country: countryName,
+          city,
+          ip_address,
+        }]);
+
+      if (error) throw error;
+      return jsonResponse({ success: true })
+    }
+
+    if (event_type === 'like' || event_type === 'unlike') {
+      const { data: existingLike, error: lookupError } = await supabase
+        .from('location_likes')
+        .select('location_id')
+        .eq('location_id', location_id)
+        .eq('ip_address', ip_address)
+        .limit(1)
+        .maybeSingle()
+
+      if (lookupError) throw lookupError;
+
+      if (event_type === 'like' && !existingLike) {
+        const { error } = await supabase
+          .from('location_likes')
+          .insert([{
+            location_id,
+            country: countryName,
+            city,
+            ip_address,
+          }]);
+
+        if (error) throw error;
+      } else if (event_type === 'unlike' && existingLike) {
+        const { error } = await supabase
+          .from('location_likes')
+          .delete()
+          .eq('location_id', location_id)
+          .eq('ip_address', ip_address)
+
+        if (error) throw error;
+      }
+
+      const { count, error: countError } = await supabase
+        .from('location_likes')
+        .select('location_id', { count: 'exact', head: true })
+        .eq('location_id', location_id)
+
+      if (countError) throw countError;
+
+      return jsonResponse({
+        success: true,
+        isUserLiked: event_type === 'like',
+        count: count || 0,
+      })
+    }
+
+    if (event_type === 'comment') {
+      const { data, error } = await supabase
+        .from('location_comments')
+        .insert([{
+          location_id,
+          comment_text: comment_text.trim(),
+          country: countryName,
+          city,
+        }])
+        .select('*')
+        .single()
+
+      if (error) throw error;
+      return jsonResponse({ success: true, comment: data })
+    }
+
+    // Visits only are inserted into page_visits.
     const { error } = await supabase
       .from('page_visits')
       .insert([{

@@ -3435,14 +3435,13 @@ export const initClarity = () => {
  * endpoint and is responsible for obtaining the request IP and any
  * server-side geolocation metadata required by the event.
  *
- * This endpoint is reserved for page visits. Interaction events must not
- * pass through it because its backing table is page_visits.
+ * The endpoint routes visits, likes, comments, and shares to their own tables.
  */
 export const invokeInteractionEvent = async (
   eventType,
   payload = {}
 ) => {
-  if (eventType !== 'visit') {
+  if (!['visit', 'like', 'unlike', 'comment', 'share'].includes(eventType)) {
     return { success: true, ignored: true };
   }
 
@@ -9320,9 +9319,9 @@ function App() {
   // ---------------------------------------------------------------------------
 
   const invokeInteractionEvent = async (eventType, payload = {}) => {
-    // track-visit writes to page_visits, so social actions must never send
-    // the current pathname through this endpoint.
-    if (eventType !== "visit") {
+    // The Edge Function stores each supported interaction in its own table;
+    // unsupported event types must never become page visit rows.
+    if (!["visit", "like", "unlike", "comment", "share"].includes(eventType)) {
       return { success: true, ignored: true };
     }
 
