@@ -3435,19 +3435,17 @@ export const initClarity = () => {
  * endpoint and is responsible for obtaining the request IP and any
  * server-side geolocation metadata required by the event.
  *
- * Supported event types:
- *   - visit
- *   - like
- *   - unlike
- *   - share
- *   - comment
- *
- * The Edge Function should return the appropriate event result.
+ * This endpoint is reserved for page visits. Interaction events must not
+ * pass through it because its backing table is page_visits.
  */
 export const invokeInteractionEvent = async (
   eventType,
   payload = {}
 ) => {
+  if (eventType !== 'visit') {
+    return { success: true, ignored: true };
+  }
+
   if (!supabaseClient) {
     throw new Error('Supabase client is unavailable.');
   }
@@ -9322,6 +9320,12 @@ function App() {
   // ---------------------------------------------------------------------------
 
   const invokeInteractionEvent = async (eventType, payload = {}) => {
+    // track-visit writes to page_visits, so social actions must never send
+    // the current pathname through this endpoint.
+    if (eventType !== "visit") {
+      return { success: true, ignored: true };
+    }
+
     if (!supabaseClient) {
       throw new Error("Supabase client is unavailable.");
     }
@@ -9514,7 +9518,6 @@ function App() {
   // Share event
   // ---------------------------------------------------------------------------
   //
-  // IP / country / city are resolved server-side by track-visit.
   // ---------------------------------------------------------------------------
 
   const handleShareEvent = async (
