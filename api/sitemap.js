@@ -162,6 +162,21 @@ export default async function handler(req, res) {
     <priority>0.5</priority>
   </url>`;
 
+    const destinationCategories = [
+      "Waterfall", "Mountain", "Trail", "Viewpoint", "Beach", "Park",
+      "Plateaus", "Reserved Forest", "Monastery", "Archaeology", "Reservoir",
+      "Pool", "Stream", "Location",
+    ];
+
+    destinationCategories.forEach((category) => {
+      xml += `
+  <url>
+    <loc>${xmlBaseUrl}/?category=${encodeURIComponent(category.toLowerCase())}</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>`;
+    });
+
     // 5. Append dynamic routes based on database records
     if (places.length > 0) {
       places.forEach((place) => {

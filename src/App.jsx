@@ -462,6 +462,56 @@ const safeDecodeURIComponent = (value) => {
   }
 };
 
+const Breadcrumbs = ({ items = [], className = "" }) => {
+  const visibleItems = items.filter((item) => item?.label);
+  if (visibleItems.length === 0) return null;
+
+  return (
+    <nav aria-label="Breadcrumb" className={className}>
+      <ol
+        className="flex flex-wrap items-center gap-x-2 gap-y-1"
+        itemScope
+        itemType="https://schema.org/BreadcrumbList"
+      >
+        {visibleItems.map((item, index) => {
+          const isCurrent = index === visibleItems.length - 1;
+          return (
+            <li
+              key={`${item.href || item.label}-${index}`}
+              className="inline-flex items-center gap-2"
+              itemProp="itemListElement"
+              itemScope
+              itemType="https://schema.org/ListItem"
+            >
+              {item.href && !isCurrent ? (
+                <a
+                  href={item.href}
+                  itemProp="item"
+                  className="hover:text-indigo-600 dark:hover:text-indigo-300 transition-colors"
+                >
+                  <span itemProp="name">{item.label}</span>
+                </a>
+              ) : (
+                <span
+                  itemProp="name"
+                  aria-current={isCurrent ? "page" : undefined}
+                  className={isCurrent ? "font-semibold" : ""}
+                >
+                  {item.label}
+                </span>
+              )}
+              <meta itemProp="position" content={String(index + 1)} />
+              {!isCurrent && (
+                <ChevronRight aria-hidden="true" className="h-3 w-3 opacity-50" />
+              )}
+            </li>
+          );
+        })}
+      </ol>
+    </nav>
+  );
+};
+
 const getLocalizedValue = (item, baseKey, currentLanguage = "en") => {
   if (!item) return "";
   const lang = currentLanguage.split("-")[0].toLowerCase();
@@ -506,6 +556,17 @@ const getInitialAppRouteState = () => {
     return { ...initialState, isAddOpen: true };
   }
   return initialState;
+};
+
+const getCategoryFromSearch = (search = "") => {
+  const requestedCategory = new URLSearchParams(search)
+    .get("category")
+    ?.trim()
+    .toLowerCase();
+
+  return VALID_CATEGORIES.find(
+    (category) => category.toLowerCase() === requestedCategory,
+  ) || "All";
 };
 
 const escapeHtml = (value) =>
@@ -5334,6 +5395,20 @@ export const PhotoGallery = React.memo(
           className="flex-1 overflow-y-auto overscroll-y-contain touch-pan-y p-4 md:p-10 custom-scrollbar"
         >
 
+          <div className="max-w-5xl mx-auto mb-6 text-sm text-slate-500">
+            <Breadcrumbs
+              items={[
+                { label: "My Journal", href: "/" },
+                { label: "Destinations", href: "/#destinations" },
+                {
+                  label: getMediaSEOPlaceName(gallerySEOPlace),
+                  href: `/place/${gallerySlug}`,
+                },
+                { label: "Gallery" },
+              ]}
+            />
+          </div>
+
           <div className="max-w-5xl mx-auto grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
 
             {normalizedPhotos.map(
@@ -6246,26 +6321,14 @@ export const VideoDetailPage = React.memo(
         <main className="min-h-screen bg-slate-950 text-white p-10">
           <div className="max-w-4xl mx-auto">
 
-            <nav
-              aria-label="Breadcrumb"
+            <Breadcrumbs
               className="mb-8 text-sm text-white/60"
-            >
-              <a
-                href="/"
-                className="hover:text-white"
-              >
-                My Journal
-              </a>
-
-              {" / "}
-
-              <a
-                href="/videos"
-                className="hover:text-white"
-              >
-                Videos
-              </a>
-            </nav>
+              items={[
+                { label: "My Journal", href: "/" },
+                { label: "Videos", href: "/videos" },
+                { label: "Video not found" },
+              ]}
+            />
 
 
             <h1 className="text-3xl font-black">
@@ -6306,35 +6369,14 @@ export const VideoDetailPage = React.memo(
               BREADCRUMB
           ========================================================= */}
 
-          <nav
-            aria-label="Breadcrumb"
+          <Breadcrumbs
             className="mb-6 text-sm text-white/60"
-          >
-            <a
-              href="/"
-              className="hover:text-white"
-            >
-              My Journal
-            </a>
-
-            {" / "}
-
-            <a
-              href="/videos"
-              className="hover:text-white"
-            >
-              Videos
-            </a>
-
-            {" / "}
-
-            <span
-              className="text-white/80"
-              aria-current="page"
-            >
-              {seo?.title || "Video"}
-            </span>
-          </nav>
+            items={[
+              { label: "My Journal", href: "/" },
+              { label: "Videos", href: "/videos" },
+              { label: seo?.title || "Video" },
+            ]}
+          />
 
 
           {/* =========================================================
@@ -6963,7 +7005,15 @@ export const VideoGallery =
 
           <header className="flex justify-between items-center p-6 border-b border-white/10 shrink-0">
 
-            <div>
+            <div className="min-w-0">
+
+              <Breadcrumbs
+                className="mb-2 text-[10px] text-white/60"
+                items={[
+                  { label: "My Journal", href: "/" },
+                  { label: "Videos" },
+                ]}
+              />
 
               <h3 className="text-white font-black uppercase tracking-widest text-xs">
                 Video Journal
@@ -8396,6 +8446,17 @@ export const LegalAndAboutModal = ({ isOpen, onClose, currentView, setView }) =>
         </div>
 
         <div className="flex-1 overflow-y-auto overscroll-y-contain touch-pan-y p-8 custom-scrollbar space-y-8 text-slate-600 dark:text-slate-300">
+          <Breadcrumbs
+            className="text-xs text-slate-500 dark:text-slate-400"
+            items={[
+              { label: t('common.title', 'My Journal'), href: '/' },
+              {
+                label: currentView === 'about'
+                  ? t('footer.about', 'About')
+                  : t(`legal.${currentView}_title`, currentView === 'terms' ? 'Terms of Service' : 'Privacy Policy'),
+              },
+            ]}
+          />
           {currentView === 'about' ? (
             <>
               <section className="space-y-3 animate-in fade-in slide-in-from-bottom-3 duration-300">
@@ -8743,7 +8804,9 @@ function App() {
   const [places, setPlaces] = useState([]);
   const [visibleCount, setVisibleCount] = useState(20);
   const [searchTerm, setSearchTerm] = useState('');
-  const [filterTag, setFilterTag] = useState('All');
+  const [filterTag, setFilterTag] = useState(() =>
+    typeof window === "undefined" ? "All" : getCategoryFromSearch(window.location.search),
+  );
   const statusFilter = 'done';
   const [sortBy, setSortBy] = useState('recent');
   const [selectedLocation, setSelectedLocation] = useState(null);
@@ -10547,6 +10610,15 @@ function App() {
   // ============================================================================
 
   useEffect(() => {
+    const syncCategoryFromLocation = () => {
+      setFilterTag(getCategoryFromSearch(window.location.search));
+    };
+
+    window.addEventListener("popstate", syncCategoryFromLocation);
+    return () => window.removeEventListener("popstate", syncCategoryFromLocation);
+  }, []);
+
+  useEffect(() => {
     if (typeof window === 'undefined') return;
     const hasSeenPrompt = localStorage.getItem('myjournal_newsletter_prompted');
     if (hasSeenPrompt) return;
@@ -11429,7 +11501,25 @@ function App() {
                     {['All', ...VALID_CATEGORIES].map(tag => {
                       const normalizedKey = tag.toLowerCase().replace(/\s+/g, '_');
                       return (
-                        <button key={tag} onClick={() => { setVisibleCount(20); setFilterTag(tag); }} className={`px-3 py-1.5 rounded-lg text-[9px] font-black uppercase transition-all active:scale-95 ${filterTag === tag ? 'bg-slate-900 text-white shadow-lg' : 'bg-slate-100 text-slate-400 hover:bg-slate-200'}`}>
+                        <button
+                          key={tag}
+                          onClick={() => {
+                            setVisibleCount(20);
+                            setFilterTag(tag);
+                            const nextUrl = new URL(window.location.href);
+                            if (tag === "All") {
+                              nextUrl.searchParams.delete("category");
+                            } else {
+                              nextUrl.searchParams.set("category", tag.toLowerCase());
+                            }
+                            window.history.pushState(
+                              { category: tag },
+                              "",
+                              `${nextUrl.pathname}${nextUrl.search}${nextUrl.hash}`,
+                            );
+                          }}
+                          className={`px-3 py-1.5 rounded-lg text-[9px] font-black uppercase transition-all active:scale-95 ${filterTag === tag ? 'bg-slate-900 text-white shadow-lg' : 'bg-slate-100 text-slate-400 hover:bg-slate-200'}`}
+                        >
                           {t(`categories.${normalizedKey}`, { defaultValue: tag })}
                         </button>
                       );
@@ -11469,8 +11559,25 @@ function App() {
 
           <div
             ref={locationGridScrollRef}
+            id="destinations"
             className="location-grid-scroll native-scroll-y flex-1 px-4 md:px-10 pb-20 no-scrollbar"
           >
+
+            {filterTag !== "All" && (
+              <div className="pt-2 pb-3">
+                <Breadcrumbs
+                  className="text-xs text-slate-500 dark:text-slate-400"
+                  items={[
+                    { label: "My Journal", href: "/" },
+                    {
+                      label: t(`categories.${filterTag.toLowerCase().replace(/\s+/g, '_')}`, {
+                        defaultValue: filterTag,
+                      }),
+                    },
+                  ]}
+                />
+              </div>
+            )}
 
             {/* 1. Main Grid: Location Cards */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6 pt-2">
@@ -11538,10 +11645,24 @@ function App() {
                           </span>
                         </div>
 
-                        <div className="absolute bottom-3 left-4 pr-4 pointer-events-none">
-                          <h3 className="text-white text-xs md:text-sm font-extrabold uppercase tracking-tight">
-                            {auditLocationName(place.place_name)}
-                          </h3>
+                        <div className="absolute bottom-3 left-4 pr-4">
+                          {place.status === "done" ? (
+                            <a
+                              href={`/place/${getMediaSEOPlaceSlug(place)}`}
+                              onClick={(event) => {
+                                event.preventDefault();
+                                event.stopPropagation();
+                                handleOpenArticle(place);
+                              }}
+                              className="text-white text-xs md:text-sm font-extrabold uppercase tracking-tight hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-white"
+                            >
+                              {auditLocationName(place.place_name)}
+                            </a>
+                          ) : (
+                            <h3 className="text-white text-xs md:text-sm font-extrabold uppercase tracking-tight">
+                              {auditLocationName(place.place_name)}
+                            </h3>
+                          )}
                         </div>
                       </header>
 
@@ -11651,13 +11772,18 @@ function App() {
                             </button>
                           )}
                           {hasPhotos && (
-                            <button
-                              onClick={(e) => { e.preventDefault(); e.stopPropagation(); setActiveId(place.id); }}
+                            <a
+                              href={`/gallery/${getMediaSEOPlaceSlug(place)}`}
+                              onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                setActiveId(place.id);
+                              }}
                               className="flex flex-col items-center justify-center py-2 rounded-xl bg-orange-50 dark:bg-orange-950/30 text-orange-600 dark:text-orange-400 hover:bg-orange-100 dark:hover:bg-orange-900/40 border border-orange-100/50 dark:border-orange-900/30"
                             >
                               <ImageIcon className="w-3.5 h-3.5" />
                               <span className="text-[8px] font-black uppercase mt-1 tracking-tighter">{t('places.labels.gallery', { defaultValue: 'Gallery' })}</span>
-                            </button>
+                            </a>
                           )}
                           {place.ai_article?.story && (
                             <button
@@ -11816,6 +11942,85 @@ function App() {
                   </div>
                 </div>
 
+                <nav
+                  aria-label="Explore My Journal"
+                  className="border-t border-slate-100 dark:border-slate-800 py-6 space-y-3"
+                >
+                  <h4 className="text-center text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">
+                    Explore
+                  </h4>
+                  <div className="flex flex-wrap justify-center gap-x-6 gap-y-3 text-[10px] font-black uppercase tracking-widest">
+                    <a
+                      href="/videos"
+                      className="text-indigo-600 hover:text-indigo-800 dark:text-indigo-400 dark:hover:text-indigo-300"
+                    >
+                      Videos
+                    </a>
+                    <a
+                      href="/route-planner"
+                      onClick={(event) => {
+                        event.preventDefault();
+                        setIsPlannerOpen(true);
+                      }}
+                      className="text-slate-600 hover:text-indigo-600 dark:text-slate-300 dark:hover:text-indigo-400"
+                    >
+                      Route Planner
+                    </a>
+                    <a
+                      href="/suggest-spot"
+                      onClick={(event) => {
+                        event.preventDefault();
+                        setIsAddOpen(true);
+                      }}
+                      className="text-slate-600 hover:text-indigo-600 dark:text-slate-300 dark:hover:text-indigo-400"
+                    >
+                      Suggest a Spot
+                    </a>
+                    <a
+                      href="/#destinations"
+                      className="text-slate-600 hover:text-indigo-600 dark:text-slate-300 dark:hover:text-indigo-400"
+                    >
+                      Destinations
+                    </a>
+                  </div>
+                  <div className="border-t border-slate-100 dark:border-slate-800 pt-4 space-y-3">
+                    <h5 className="text-center text-[9px] font-black uppercase tracking-[0.18em] text-slate-400 dark:text-slate-500">
+                      Destination Hubs
+                    </h5>
+                    <div className="flex flex-wrap justify-center gap-x-4 gap-y-2 px-4 text-[9px] font-bold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                      {VALID_CATEGORIES.map((category) => (
+                        <a
+                          key={`footer-category-${category}`}
+                          href={`/?category=${encodeURIComponent(category.toLowerCase())}`}
+                          className="hover:text-indigo-600 dark:hover:text-indigo-400"
+                        >
+                          {t(`categories.${category.toLowerCase().replace(/\s+/g, '_')}`, {
+                            defaultValue: category,
+                          })}
+                        </a>
+                      ))}
+                    </div>
+                  </div>
+                  <div className="flex flex-wrap justify-center gap-x-4 gap-y-2 px-4 text-[9px] font-bold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                    {places
+                      .filter((place) => place.status === "done")
+                      .slice(0, 8)
+                      .map((place) => (
+                        <a
+                          key={`footer-place-${place.id}`}
+                          href={`/place/${getMediaSEOPlaceSlug(place)}`}
+                          onClick={(event) => {
+                            event.preventDefault();
+                            handleOpenArticle(place);
+                          }}
+                          className="hover:text-indigo-600 dark:hover:text-indigo-400"
+                        >
+                          {getLocalizedValue(place, "place_name", i18n.language)}
+                        </a>
+                      ))}
+                  </div>
+                </nav>
+
                 {/* ============================================================================
               LOCATION 4: RENDER THE NEWSLETTER COMPONENT (FULLY FUNCTIONAL)
               ============================================================================ */}
@@ -11857,7 +12062,7 @@ function App() {
 
                 {/* Compliance Navigation Links */}
                 <div className="flex flex-col items-center border-t border-slate-100 dark:border-slate-800 pt-8 gap-6">
-                  <div className="flex flex-wrap justify-center gap-x-8 gap-y-4">
+                  <nav aria-label="Site information" className="flex flex-wrap justify-center gap-x-8 gap-y-4">
 
                     {/* Privacy Policy Route */}
                     <a
@@ -11912,10 +12117,10 @@ function App() {
                     >
                       {t('footer.contact_support')}
                     </a>
-                  </div>
+                  </nav>
 
                   {/* Social & Community Links */}
-                  <div className="flex flex-wrap justify-center items-center gap-x-2 gap-y-1.5 text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed px-4">
+                  <nav aria-label="Social and community links" className="flex flex-wrap justify-center items-center gap-x-2 gap-y-1.5 text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed px-4">
                     <a href="https://web.facebook.com/profile.php?id=61571059524746" target="_blank" rel="noopener noreferrer" className="hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors">Facebook</a>
                     <span className="text-slate-300 dark:text-slate-700">|</span>
                     <a href="https://www.youtube.com/@myjournalview" target="_blank" rel="noopener noreferrer" className="hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors">YouTube</a>
@@ -11941,7 +12146,7 @@ function App() {
                     <a href="https://discord.gg/gV3ez5sHe" target="_blank" rel="noopener noreferrer" className="hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors">Discord</a>
                     <span className="text-slate-300 dark:text-slate-700">|</span>
                     <a href="https://surf.social/feed/surf%2Fcustom%2F01krgmm2q431csk9w5550n1b9k" target="_blank" rel="noopener noreferrer" className="hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors">Surf</a>
-                  </div>
+                  </nav>
 
                   {/* Branding & Digital Rights Footer Metadata */}
                   <div className="text-center">
@@ -12194,6 +12399,21 @@ function App() {
                     ref={articleWindowScrollRef}
                     className="article-window-scroll native-scroll-y p-8 scrollable-list no-scrollbar bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100"
                   >
+
+                    <Breadcrumbs
+                      className="mb-5 text-xs text-slate-500 dark:text-slate-400"
+                      items={[
+                        { label: "My Journal", href: "/" },
+                        { label: "Destinations", href: "/#destinations" },
+                        {
+                          label: getLocalizedValue(
+                            viewingArticle,
+                            'place_name',
+                            i18n.language
+                          ),
+                        },
+                      ]}
+                    />
 
                     {/* ============================================================
               META BAR
@@ -12740,6 +12960,13 @@ function App() {
                         <h2 className="text-lg font-black uppercase tracking-tighter italic text-slate-900 dark:text-slate-100 leading-none truncate">
                           Route Planner
                         </h2>
+                        <Breadcrumbs
+                          className="mt-2 text-[9px] text-slate-500 dark:text-slate-400"
+                          items={[
+                            { label: "My Journal", href: "/" },
+                            { label: "Route Planner" },
+                          ]}
+                        />
                         <div className="flex flex-wrap items-center gap-2 mt-2">
                           <span className="text-[9px] font-bold text-slate-500 uppercase tracking-widest bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded-lg">
                             {selectedRoute.length} Stops
@@ -13108,6 +13335,13 @@ function App() {
                       <p className="text-[9px] text-slate-400 font-bold uppercase tracking-widest mt-0.5">
                         Auto-Sync with Google Places & Map
                       </p>
+                      <Breadcrumbs
+                        className="mt-2 text-[9px] text-slate-500 dark:text-slate-400"
+                        items={[
+                          { label: "My Journal", href: "/" },
+                          { label: "Suggest a Spot" },
+                        ]}
+                      />
                     </div>
                     <button
                       type="button"
