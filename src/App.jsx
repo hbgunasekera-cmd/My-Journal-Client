@@ -3427,62 +3427,173 @@ export const initClarity = () => {
 };
 
 /**
- * Invokes the Supabase telemetry Edge Function.
- *
- * IMPORTANT:
- * Do not perform IP/geolocation lookups from the browser.
- * The track-visit Edge Function is the single server-side telemetry
- * endpoint and is responsible for obtaining the request IP and any
- * server-side geolocation metadata required by the event.
- *
- * The endpoint routes visits, likes, comments, and shares to their own tables.
+ * Gets visitor metadata from the Supabase Edge Function. The browser then
+ * writes each event to its destination table using the Supabase client.
  */
-export const invokeInteractionEvent = async (
-  eventType,
-  payload = {}
-) => {
-  if (!['visit', 'like', 'unlike', 'comment', 'share'].includes(eventType)) {
-    return { success: true, ignored: true };
-  }
+let visitorMetadataPromise = null;
 
+const fetchVisitorMetadata = async () => {
   if (!supabaseClient) {
     throw new Error('Supabase client is unavailable.');
   }
 
   if (typeof window === 'undefined') {
-    throw new Error('Telemetry requires a browser environment.');
+    throw new Error('Visitor metadata requires a browser environment.');
   }
 
-  const { data, error } =
-    await supabaseClient.functions.invoke(
-      'track-visit',
-      {
-        body: {
-          event_type: eventType,
-          page_path: window.location.pathname || '/',
-          user_agent: navigator.userAgent || '',
-          referrer: document.referrer
-            ? document.referrer.toLowerCase()
-            : '',
-          is_webdriver: Boolean(navigator.webdriver),
-          ...payload,
-        },
+  if (!visitorMetadataPromise) {
+    visitorMetadataPromise = supabaseClient.functions
+      .invoke('track-visit', { body: {} })
+      .then(({ data, error }) => {
+        if (error) throw error;
+        if (
+          !data?.success ||
+          typeof data.ip_address !== 'string' ||
+          typeof data.country !== 'string' ||
+          typeof data.region !== 'string' ||
+          typeof data.city !== 'string' ||
+          typeof data.user_agent !== 'string'
+        ) {
+          throw new Error('Supabase did not return complete visitor metadata.');
+        }
+        return data;
+      })
+      .catch((error) => {
+        visitorMetadataPromise = null;
+        throw error;
+      });
+  }
+
+  return visitorMetadataPromise;
+};
+
+/**
+ * Fetches server-derived visitor details, then writes the event from the
+ * frontend to its destination table.
+ */
+export const invokeInteractionEvent = async (eventType, payload = {}) => {
+  const supportedEvents = ['visit', 'like', 'unlike', 'comment', 'share'];
+  if (!supportedEvents.includes(eventType)) {
+    return { success: true, ignored: true };
+  }
+
+  const metadata = await fetchVisitorMetadata();
+  const locationId = payload.location_id;
+
+  if (eventType === 'visit') {
+    const { error } = await supabaseClient
+      .from('page_visits')
+      .insert([{
+        page_path: payload.page_path || window.location.pathname || '/',
+        user_agent: metadata.user_agent,
+        country: metadata.country,
+        region: metadata.region,
+        city: metadata.city,
+        ip_address: metadata.ip_address,
+      }]);
+
+    if (error) throw error;
+    return { success: true };
+  }
+
+  if (!locationId) {
+    throw new Error(`A location_id is required for ${eventType} events.`);
+  }
+
+  if (eventType === 'share') {
+    const shareType = payload.share_type;
+    if (shareType !== 'article' && shareType !== 'gallery') {
+      throw new Error('Share type must be article or gallery.');
+    }
+
+    const { error } = await supabaseClient
+      .from('location_shares')
+      .insert([{
+        location_id: locationId,
+        type: shareType,
+        country: metadata.country,
+        city: metadata.city,
+        ip_address: metadata.ip_address,
+      }]);
+
+    if (error) throw error;
+    return { success: true };
+  }
+
+  if (eventType === 'like' || eventType === 'unlike') {
+    if (eventType === 'like') {
+      const { data: existingLike, error: lookupError } = await supabaseClient
+        .from('location_likes')
+        .select('location_id')
+        .eq('location_id', locationId)
+        .eq('ip_address', metadata.ip_address)
+        .limit(1)
+        .maybeSingle();
+
+      if (lookupError) throw lookupError;
+
+      if (!existingLike) {
+        const { error } = await supabaseClient
+          .from('location_likes')
+          .insert([{
+            location_id: locationId,
+            country: metadata.country,
+            city: metadata.city,
+            ip_address: metadata.ip_address,
+          }]);
+
+        if (error) throw error;
       }
-    );
+    } else {
+      const { error } = await supabaseClient
+        .from('location_likes')
+        .delete()
+        .eq('location_id', locationId)
+        .eq('ip_address', metadata.ip_address);
 
-  if (error) {
-    throw error;
+      if (error) throw error;
+    }
+
+    const { count, error: countError } = await supabaseClient
+      .from('location_likes')
+      .select('location_id', { count: 'exact', head: true })
+      .eq('location_id', locationId);
+
+    if (countError) throw countError;
+    return {
+      success: true,
+      isUserLiked: eventType === 'like',
+      count: count || 0,
+    };
   }
 
-  return data;
+  const commentText = typeof payload.comment_text === 'string'
+    ? payload.comment_text.trim()
+    : '';
+  if (!commentText) {
+    throw new Error('Comment text is required.');
+  }
+
+  const { data, error } = await supabaseClient
+    .from('location_comments')
+    .insert([{
+      location_id: locationId,
+      comment_text: commentText,
+      country: metadata.country,
+      city: metadata.city,
+    }])
+    .select('*')
+    .single();
+
+  if (error) throw error;
+  return { success: true, comment: data };
 };
 
 /**
  * Logs a page visit through the Supabase backend tracking function.
  *
- * IP address and visitor geolocation are intentionally NOT obtained
- * in the browser. The track-visit Edge Function handles those values
- * server-side from the incoming request.
+ * Visitor details come from the Edge Function; this frontend function writes
+ * the returned details and page path to the page_visits table.
  */
 export const logVisit = async (path = null) => {
   // -------------------------------------------------------------------
@@ -9318,40 +9429,6 @@ function App() {
   // C. Social Interactions Handlers (Likes & Comments)
   // ---------------------------------------------------------------------------
 
-  const invokeInteractionEvent = async (eventType, payload = {}) => {
-    // The Edge Function stores each supported interaction in its own table;
-    // unsupported event types must never become page visit rows.
-    if (!["visit", "like", "unlike", "comment", "share"].includes(eventType)) {
-      return { success: true, ignored: true };
-    }
-
-    if (!supabaseClient) {
-      throw new Error("Supabase client is unavailable.");
-    }
-
-    const { data, error } = await supabaseClient.functions.invoke(
-      "track-visit",
-      {
-        body: {
-          event_type: eventType,
-          page_path: window.location.pathname,
-          user_agent: navigator.userAgent || "",
-          referrer: document.referrer
-            ? document.referrer.toLowerCase()
-            : "",
-          is_webdriver: Boolean(navigator.webdriver),
-          ...payload,
-        },
-      }
-    );
-
-    if (error) {
-      throw error;
-    }
-
-    return data;
-  };
-
   // ---------------------------------------------------------------------------
   // Fetch likes, comments and shares
   // ---------------------------------------------------------------------------
@@ -9365,6 +9442,7 @@ function App() {
         likesResponse,
         commentsResponse,
         sharesResponse,
+        visitorMetadata,
       ] = await Promise.all([
         supabaseClient
           .from("location_likes")
@@ -9380,6 +9458,11 @@ function App() {
         supabaseClient
           .from("location_shares")
           .select("location_id"),
+
+        fetchVisitorMetadata().catch((error) => {
+          console.error("Visitor metadata fetch failed:", error);
+          return null;
+        }),
       ]);
 
       if (likesResponse.error) {
@@ -9411,6 +9494,12 @@ function App() {
         }
 
         acc[locId].count += 1;
+        if (
+          visitorMetadata?.ip_address &&
+          curr.ip_address === visitorMetadata.ip_address
+        ) {
+          acc[locId].isUserLiked = true;
+        }
 
         return acc;
       }, {});
@@ -9606,8 +9695,8 @@ function App() {
   // Submit comment
   // ---------------------------------------------------------------------------
   //
-  // The comment itself is submitted through the Edge Function so that
-  // country/city/IP remain server-side.
+  // The frontend submits the comment with country and city returned by the
+  // Edge Function; visitor metadata itself is never looked up in the browser.
   //
   // ---------------------------------------------------------------------------
 
