@@ -268,8 +268,6 @@ export const CATEGORY_DESCRIPTIONS = {
 // 9. UTILITY HELPERS & HOOKS
 // =======================================================================
 
-const recentLogsCache = new Map();
-
 /**
  * Custom React hook to debounce state updates
  */
@@ -3562,7 +3560,7 @@ export const logVisit = async (path = null) => {
   const lowerPath =
     normalizedPath.toLowerCase();
 
-  let loggingPath;
+  let loggingPath = null;
 
   // Main page
   if (
@@ -3575,18 +3573,26 @@ export const logVisit = async (path = null) => {
     // Video routes
   } else if (
     lowerPath === '/video gallery' ||
-    lowerPath.startsWith('/videos') ||
-    lowerPath.startsWith('/video-gallery')
+    lowerPath === '/video hub' ||
+    lowerPath === '/videos' ||
+    lowerPath.startsWith('/videos/') ||
+    lowerPath === '/video-gallery' ||
+    lowerPath.startsWith('/video-gallery/')
   ) {
-    loggingPath = 'Video Gallery';
+    loggingPath = 'Video Hub';
 
-    // Add function
+    // Add / suggest functions
   } else if (
     lowerPath === '/add function' ||
-    lowerPath === '/add' ||
-    lowerPath === '/suggest-spot'
+    lowerPath === '/add'
   ) {
     loggingPath = 'Add Function';
+
+  } else if (
+    lowerPath === '/suggest-spot' ||
+    lowerPath === '/suggest spot'
+  ) {
+    loggingPath = 'Suggest Spot';
 
     // Plan function
   } else if (
@@ -3598,7 +3604,7 @@ export const logVisit = async (path = null) => {
 
     // Place detail
   } else if (
-    lowerPath.startsWith('/place/')
+    /^\/place\/[^/]+\/?$/i.test(normalizedPath)
   ) {
     const slug = normalizedPath
       .slice('/place/'.length)
@@ -3615,7 +3621,7 @@ export const logVisit = async (path = null) => {
 
     // Photo gallery
   } else if (
-    lowerPath.startsWith('/gallery/')
+    /^\/gallery\/[^/]+\/?$/i.test(normalizedPath)
   ) {
     const slug = normalizedPath
       .slice('/gallery/'.length)
@@ -3630,70 +3636,18 @@ export const logVisit = async (path = null) => {
 
     loggingPath = `gallery/${formattedSlug}`;
 
-    // Generic route
-  } else if (
-    normalizedPath.startsWith('/')
-  ) {
-    loggingPath = safeDecode(
-      normalizedPath.split('?')[0]
-    )
-      .toLowerCase()
-      .replace(/^\/+|\/+$/g, '');
-
-  } else {
-    loggingPath = rawPath;
   }
 
-  // -------------------------------------------------------------------
-  // 5. In-memory rate limiting
-  //    Prevent duplicate requests within 10 seconds per route.
-  // -------------------------------------------------------------------
-
-  const now = Date.now();
-
-  const lastLoggedTime =
-    recentLogsCache.get(loggingPath);
-
-  if (
-    lastLoggedTime &&
-    now - lastLoggedTime < 10000
-  ) {
+  // Only record the public page types that are useful visit metrics.
+  // Unknown routes (such as legal pages) are intentionally
+  // excluded instead of being added as arbitrary page_visit rows.
+  if (!loggingPath) {
     return;
   }
 
-  recentLogsCache.set(
-    loggingPath,
-    now
-  );
-
-  // Remove stale entries.
-  recentLogsCache.forEach(
-    (timestamp, key) => {
-      if (now - timestamp > 60000) {
-        recentLogsCache.delete(key);
-      }
-    }
-  );
-
-  // -------------------------------------------------------------------
-  // 6. Session-level deduplication
-  // -------------------------------------------------------------------
-
-  const sessionKey =
-    `logged_visit_${loggingPath}`;
-
-  if (sessionStorage.getItem(sessionKey)) {
-    return;
-  }
-
-  sessionStorage.setItem(
-    sessionKey,
-    'true'
-  );
-
-  // -------------------------------------------------------------------
-  // 7. Send visit event to server
-  // -------------------------------------------------------------------
+  // Send one event for each explicit page opening. The owning route/view
+  // effects guard against duplicate triggers; a time-based key here would
+  // incorrectly hide a fast but legitimate revisit to the same feature.
 
   try {
     await invokeInteractionEvent(
@@ -3704,10 +3658,6 @@ export const logVisit = async (path = null) => {
       }
     );
   } catch (err) {
-    // Allow a failed telemetry request to be retried.
-    sessionStorage.removeItem(sessionKey);
-    recentLogsCache.delete(loggingPath);
-
     console.error(
       'Logging failed:',
       err
@@ -6835,16 +6785,6 @@ export const VideoGallery =
         );
 
 
-        if (
-          typeof logVisit ===
-          "function"
-        ) {
-          logVisit(
-            "Video Gallery"
-          );
-        }
-
-
         // ---------------------------------------------------------------
         // IMPORTANT:
         //
@@ -8634,6 +8574,15 @@ function SafetyOverlay({ location, isOpen, onClose }) {
 
 function App() {
   const [initialRouteState] = useState(getInitialAppRouteState);
+  const initialPath = typeof window === 'undefined'
+    ? '/'
+    : window.location.pathname.toLowerCase().replace(/\/+$/, '') || '/';
+  const initialAddVisitType = initialRouteState.isAddOpen
+    ? initialPath === '/add'
+      ? 'Add Function'
+      : 'Suggest Spot'
+    : null;
+  const [locationRevision, setLocationRevision] = useState(0);
 
   // ============================================================================
   // 18. MUTABLE APPLICATION REFERENCES (DOM & MAP INSTANCE REGISTRIES)
@@ -8647,8 +8596,10 @@ function App() {
   const searchInputRef = useRef(null);
   const nearbyMarkersRef = useRef([]);
   const hasHandledDeepLink = useRef(false);
-  const hasLoggedPlanOpen = useRef(false);
   const hasLoggedAddOpen = useRef(false);
+  const hasLoggedPlanOpen = useRef(false);
+  const pendingAddVisitTypeRef = useRef(initialAddVisitType);
+  const hasLoggedMainPageRef = useRef(false);
   const pendingRouteRef = useRef({ type: null, slug: null });
   const sentinelRef = useRef(null);
   const mapInstanceRef = useRef(null);
@@ -10612,6 +10563,7 @@ function App() {
   useEffect(() => {
     const syncCategoryFromLocation = () => {
       setFilterTag(getCategoryFromSearch(window.location.search));
+      setLocationRevision((revision) => revision + 1);
     };
 
     window.addEventListener("popstate", syncCategoryFromLocation);
@@ -10692,8 +10644,6 @@ function App() {
       void fetchPlaces();
       void fetchInteractions();
     });
-    logVisit();
-
     const pathname = window.location.pathname;
 
     const normalizedPath = pathname
@@ -10766,7 +10716,10 @@ function App() {
         type: "video",
         slug: safeDecodeURIComponent(videoMatch[1]),
       };
-    } else if (normalizedPath === "/videos") {
+    } else if (
+      normalizedPath === "/videos" ||
+      normalizedPath === "/video-gallery"
+    ) {
       // Direct Video Gallery URL:
       // /videos
       //
@@ -10862,6 +10815,8 @@ function App() {
     if (type === "videos") {
       if (!hasLoadedVideoLibrary) return;
 
+      logVisit('Video Hub');
+
       queueMicrotask(() => {
         setActiveVideo(null);
         setIsVideoDetailOpen(false);
@@ -10883,6 +10838,8 @@ function App() {
 
     if (type === "video") {
       if (!hasLoadedVideoLibrary) return;
+
+      logVisit('Video Hub');
 
       const targetVideo =
         videoLibrary.find(
@@ -11049,6 +11006,7 @@ function App() {
     // Reset the log flag and revert URL when the add panel is closed
     if (!isAddOpen) {
       hasLoggedAddOpen.current = false;
+      pendingAddVisitTypeRef.current = null;
       if (window.location.pathname === '/suggest-spot') {
         window.history.pushState({ modalOpen: false }, '', '/');
       }
@@ -11066,7 +11024,8 @@ function App() {
 
       // Analytics logging (fires once per modal open)
       if (!hasLoggedAddOpen.current) {
-        logVisit('Add Function');
+        logVisit(pendingAddVisitTypeRef.current || 'Add Function');
+        pendingAddVisitTypeRef.current = null;
         hasLoggedAddOpen.current = true;
       }
 
@@ -11171,7 +11130,7 @@ function App() {
     const handlePopState = () => setIsPlannerOpen(false);
     window.addEventListener('popstate', handlePopState);
 
-    if (isPlannerOpen && places.length > 0 && !hasLoggedPlanOpen.current) {
+    if (!hasLoggedPlanOpen.current) {
       logVisit('Plan Function');
       hasLoggedPlanOpen.current = true;
     }
@@ -11199,6 +11158,35 @@ function App() {
       window.removeEventListener('popstate', handlePopState);
     };
   }, [isPlannerOpen, debouncedPlannerSearch, places, fetchRouteWeather]);
+
+
+  useEffect(() => {
+    const pathname = window.location.pathname.toLowerCase().replace(/\/+$/, '') || '/';
+    const isHomePage = pathname === '/' &&
+      !isArticleOpen &&
+      activeId === null &&
+      activeVideos.length === 0 &&
+      !activeVideo &&
+      !isVideoDetailOpen &&
+      !isAddOpen &&
+      !isPlannerOpen &&
+      !isPrivacyOpen;
+
+    if (isHomePage && !hasLoggedMainPageRef.current) {
+      logVisit('Main Page');
+      hasLoggedMainPageRef.current = true;
+    }
+  }, [
+    locationRevision,
+    isArticleOpen,
+    activeId,
+    activeVideos.length,
+    activeVideo,
+    isVideoDetailOpen,
+    isAddOpen,
+    isPlannerOpen,
+    isPrivacyOpen,
+  ]);
 
 
 
@@ -11406,6 +11394,7 @@ function App() {
 
                           // Videos are already preloaded — open immediately
                           if (videoLibrary.length > 0) {
+                            logVisit('Video Hub');
                             setActiveVideos(videoLibrary);
                             return;
                           }
@@ -11414,6 +11403,7 @@ function App() {
                           const videos = await fetchVideoLibrary();
 
                           if (videos.length > 0) {
+                            logVisit('Video Hub');
                             setActiveVideos(videos);
                           } else {
                             console.warn("No active videos found in hub_videos.");
@@ -11434,7 +11424,11 @@ function App() {
                       <div className={`flex flex-col gap-2 transition-all duration-400 ${isEngineOpen ? 'opacity-100 translate-x-0 scale-100' : 'opacity-0 translate-x-10 scale-90 pointer-events-none absolute'
                         }`}>
                         <button
-                          onClick={() => { setIsAddOpen(true); setIsEngineOpen(false); }}
+                          onClick={() => {
+                            pendingAddVisitTypeRef.current = 'Add Function';
+                            setIsAddOpen(true);
+                            setIsEngineOpen(false);
+                          }}
                           className="flex items-center justify-end gap-2 bg-white text-slate-900 p-1.5 pr-2 rounded-2xl shadow-lg border border-slate-100"
                         >
                           <span className="font-black uppercase text-[8px] tracking-tighter ml-2">{t('hub.add', { defaultValue: 'Add' })}</span>
@@ -11970,6 +11964,7 @@ function App() {
                       href="/suggest-spot"
                       onClick={(event) => {
                         event.preventDefault();
+                        pendingAddVisitTypeRef.current = 'Suggest Spot';
                         setIsAddOpen(true);
                       }}
                       className="text-slate-600 hover:text-indigo-600 dark:text-slate-300 dark:hover:text-indigo-400"
