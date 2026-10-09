@@ -1421,7 +1421,7 @@ export const buildAutomaticVideoSEO = (
 
   const videoSlug =
     generateSlug(video?.id)
-      ? `${baseVideoSlug}--${generateSlug(video.id)}`
+      ? `${baseVideoSlug}-${generateSlug(video.id)}`
       : baseVideoSlug;
 
 
@@ -3769,7 +3769,7 @@ export const logVisit = async (path = null) => {
       .slice('/videos/'.length)
       .replace(/\/+$/, '');
     const videoName = safeDecode(slug)
-      .replace(/--[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i, '')
+      .replace(/--?[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i, '')
       .replace(/[-_]+/g, ' ')
       .replace(/\s+/g, ' ')
       .trim();
@@ -11186,14 +11186,17 @@ function App() {
       if (!hasLoadedVideoLibrary) return;
 
       const targetVideoIndex =
-        videoLibrary.findIndex(
-          (video, index) =>
-            buildAutomaticVideoSEO(
-              video,
-              index
-            ).slug === slug ||
-            generateSlug(video?.title) === slug
-        );
+        videoLibrary.findIndex((video, index) => {
+          const videoSlug = buildAutomaticVideoSEO(video, index).slug;
+          const legacyVideoSlug = videoSlug.replace(
+            /-([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})$/i,
+            "--$1"
+          );
+
+          return videoSlug === slug ||
+            legacyVideoSlug === slug ||
+            generateSlug(video?.title) === slug;
+        });
       const targetVideo =
         targetVideoIndex >= 0
           ? videoLibrary[targetVideoIndex]

@@ -265,7 +265,14 @@ function buildVideoSlug(video) {
   );
   const titleSlug = generateSlug(title) || "video";
   const idSlug = generateSlug(video?.id);
-  return idSlug ? `${titleSlug}--${idSlug}` : titleSlug;
+  return idSlug ? `${titleSlug}-${idSlug}` : titleSlug;
+}
+
+function buildLegacyVideoSlug(video) {
+  return buildVideoSlug(video).replace(
+    /-([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})$/i,
+    "--$1",
+  );
 }
 
 function getYouTubeId(value) {
@@ -487,11 +494,13 @@ export default async function handler(req, res) {
       // The video description is optional metadata generated below; it is
       // not a column in hub_videos.
       const select = "id,url,title,custom_thumbnail_url,is_active";
-      const idSeparator = cleanSlug.lastIndexOf("--");
+      const idSuffix = cleanSlug.match(
+        /--?([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})$/i,
+      );
       let videos;
 
-      if (idSeparator >= 0) {
-        const idSlug = cleanSlug.slice(idSeparator + 2);
+      if (idSuffix) {
+        const idSlug = idSuffix[1];
         const params = new URLSearchParams({ select, id: `eq.${idSlug}`, is_active: "eq.true", limit: "1" });
         videos = await fetchRows(supabaseUrl, supabaseKey, "hub_videos", params);
       } else {
@@ -501,13 +510,22 @@ export default async function handler(req, res) {
       }
 
       const video = videos.find((item) =>
-        buildVideoSlug(item) === cleanSlug || generateSlug(item.title) === cleanSlug,
+        buildVideoSlug(item) === cleanSlug ||
+        buildLegacyVideoSlug(item) === cleanSlug ||
+        generateSlug(item.title) === cleanSlug,
       );
       videoId = video ? getYouTubeId(video.url) : null;
 
       if (!video || !videoId) {
         isNotFound = true;
       } else {
+        const canonicalVideoSlug = buildVideoSlug(video);
+        if (cleanSlug !== canonicalVideoSlug) {
+          res.setHeader("Location", `${baseUrl}/videos/${encodeURIComponent(canonicalVideoSlug)}`);
+          res.setHeader("Cache-Control", "s-maxage=31536000, stale-while-revalidate=86400");
+          return res.status(301).end();
+        }
+
         const videoTitle = cleanText(
           video.title || `Sri Lanka Backcountry Video ${video.id}`,
           "Sri Lanka Backcountry Video",

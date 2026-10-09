@@ -83,7 +83,7 @@ function buildVideoSlug(video) {
     const rawTitle = cleanText(video?.title || video?.name || `Sri Lanka Backcountry Video ${video?.id || ""}`, `Sri Lanka Backcountry Video`);
     const baseSlug = generateSlug(rawTitle) || "video";
     const idSlug = generateSlug(video?.id);
-    return idSlug ? `${baseSlug}--${idSlug}` : baseSlug;
+    return idSlug ? `${baseSlug}-${idSlug}` : baseSlug;
 }
 
 export default async function handler(req, res) {
