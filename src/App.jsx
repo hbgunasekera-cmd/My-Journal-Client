@@ -11976,12 +11976,6 @@ function App() {
                     >
                       Suggest a Spot
                     </a>
-                    <a
-                      href="/#destinations"
-                      className="text-slate-600 hover:text-indigo-600 dark:text-slate-300 dark:hover:text-indigo-400"
-                    >
-                      Destinations
-                    </a>
                   </div>
                   <div className="border-t border-slate-100 dark:border-slate-800 pt-4 space-y-3">
                     <h5 className="text-center text-[9px] font-black uppercase tracking-[0.18em] text-slate-400 dark:text-slate-500">
