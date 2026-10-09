@@ -1,4 +1,7 @@
 const DEFAULT_SITE_URL = "https://www.myjournalview.com";
+const DEFAULT_SUPABASE_URL = "https://vpslgikpaintiuayajmx.supabase.co";
+// Public key fallback for server-rendered crawler metadata; runtime env vars still override it.
+const DEFAULT_SUPABASE_PUBLISHABLE_KEY = "sb_publishable_rsbN_QlROV14EEzYjl9dTQ_Jxl-ra44";
 
 function generateSlug(value) {
   if (!value) return "";
@@ -148,7 +151,13 @@ async function fetchRows(supabaseUrl, supabaseKey, table, params) {
       Accept: "application/json",
     },
   });
-  if (!response.ok) throw new Error(`Supabase ${table} lookup failed (${response.status}).`);
+  if (!response.ok) {
+    const responseBody = await response.text().catch(() => "");
+    const diagnostic = responseBody.replace(/\s+/g, " ").trim().slice(0, 300);
+    throw new Error(
+      `Supabase ${table} lookup failed (${response.status})${diagnostic ? `: ${diagnostic}` : ""}.`,
+    );
+  }
   return response.json();
 }
 
@@ -253,9 +262,22 @@ export default async function handler(req, res) {
     return res.status(301).end();
   }
 
-  const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
-  const supabaseKey = process.env.SUPABASE_KEY || process.env.VITE_SUPABASE_KEY || process.env.VITE_SUPABASE_ANON_KEY;
+  const supabaseUrl =
+    process.env.SUPABASE_URL ||
+    process.env.VITE_SUPABASE_URL ||
+    DEFAULT_SUPABASE_URL;
+  const supabaseKey =
+    process.env.SUPABASE_PUBLISHABLE_KEY ||
+    process.env.SUPABASE_ANON_KEY ||
+    process.env.SUPABASE_KEY ||
+    process.env.VITE_SUPABASE_KEY ||
+    process.env.VITE_SUPABASE_ANON_KEY ||
+    DEFAULT_SUPABASE_PUBLISHABLE_KEY;
   if (!supabaseUrl || !supabaseKey) {
+    console.error("OG metadata Supabase configuration is missing.", {
+      hasUrl: Boolean(supabaseUrl),
+      hasKey: Boolean(supabaseKey),
+    });
     res.setHeader("Cache-Control", "no-store");
     return res.status(503).end("Metadata service is temporarily unavailable.");
   }
