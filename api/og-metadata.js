@@ -47,6 +47,47 @@ function absoluteHttpUrl(value, fallback) {
   }
 }
 
+function extractImageUrl(value) {
+  if (typeof value === "string") return value;
+  if (!value || typeof value !== "object") return "";
+  return value.url || value.src || value.image_url || "";
+}
+
+function socialImageUrl(value, fallback) {
+  const source = extractImageUrl(value);
+  const safeUrl = absoluteHttpUrl(source, "");
+  if (!safeUrl) return fallback;
+
+  try {
+    const parsed = new URL(safeUrl);
+    const host = parsed.hostname.toLowerCase();
+
+    // Photos share pages are HTML documents, not usable og:image assets.
+    if (host === "photos.google.com" || host === "photos.app.goo.gl") {
+      return fallback;
+    }
+
+    // Match the direct Google Photos image URL format used by the React app.
+    // Remove an old size/query suffix so social crawlers get a large image.
+    if (host === "googleusercontent.com" || host.endsWith(".googleusercontent.com")) {
+      const imageBase = `${parsed.origin}${parsed.pathname.split("=")[0]}`;
+      return `${imageBase}=w1200-rw`;
+    }
+
+    return parsed.href;
+  } catch {
+    return fallback;
+  }
+}
+
+function firstSocialImage(values, fallback) {
+  for (const value of values) {
+    const imageUrl = socialImageUrl(value, "");
+    if (imageUrl) return imageUrl;
+  }
+  return fallback;
+}
+
 function truncateText(value, maxLength = 155) {
   const text = cleanText(value);
   if (text.length <= maxLength) return text;
@@ -104,7 +145,6 @@ async function fetchRows(supabaseUrl, supabaseKey, table, params) {
   const response = await fetch(url, {
     headers: {
       apikey: supabaseKey,
-      Authorization: `Bearer ${supabaseKey}`,
       Accept: "application/json",
     },
   });
@@ -264,7 +304,7 @@ export default async function handler(req, res) {
         description = truncateText(
           video.description || `Watch ${videoTitle} from My Journal's Sri Lanka backcountry video archive.`,
         );
-        imageUrl = absoluteHttpUrl(
+        imageUrl = socialImageUrl(
           video.custom_thumbnail_url || `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`,
           `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`,
         );
@@ -300,9 +340,18 @@ export default async function handler(req, res) {
         const article = place.ai_article && typeof place.ai_article === "object" ? place.ai_article : {};
         const story = typeof place.ai_article === "string" ? place.ai_article : article.story;
         description = truncateText(story || place.description || `Explore ${placeName} in Sri Lanka.`);
-        imageUrl = absoluteHttpUrl(place.cover_photo_url, defaultImage);
+        imageUrl = firstSocialImage(
+          [
+            place.cover_photo_url,
+            ...(Array.isArray(place.album_photos) ? place.album_photos : []),
+          ],
+          defaultImage,
+        );
         galleryImages = Array.isArray(place.album_photos)
-          ? place.album_photos.map((url) => absoluteHttpUrl(url, "")).filter(Boolean).slice(0, 8)
+          ? place.album_photos
+            .map((photo) => socialImageUrl(photo, ""))
+            .filter(Boolean)
+            .slice(0, 8)
           : [];
       }
     }
@@ -346,12 +395,15 @@ export default async function handler(req, res) {
       <meta property="og:title" content="${safeTitle}" />
       <meta property="og:description" content="${safeDescription}" />
       <meta property="og:image" content="${safeImageUrl}" />
+      <meta property="og:image:secure_url" content="${safeImageUrl}" />
+      <meta property="og:image:alt" content="${safeTitle}" />
       ${videoTags}
       <meta name="twitter:card" content="summary_large_image" />
       <meta name="twitter:url" content="${safeCanonicalUrl}" />
       <meta name="twitter:title" content="${safeTitle}" />
       <meta name="twitter:description" content="${safeDescription}" />
-      <meta name="twitter:image" content="${safeImageUrl}" />`;
+      <meta name="twitter:image" content="${safeImageUrl}" />
+      <meta name="twitter:image:alt" content="${safeTitle}" />`;
 
     const schemaTag = videoSchema
       ? `<script type="application/ld+json">${JSON.stringify(videoSchema).replace(/</g, "\\u003c")}</script>`
