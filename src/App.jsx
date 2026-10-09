@@ -2670,6 +2670,8 @@ export const updateSEO = (
     isGallery = false,
     isVideoGallery = false,
     isVideo = false,
+    isSuggestSpot = false,
+    isPlanner = false,
     video = null,
     videoIndex = 0,
     galleryPhotos = [],
@@ -2760,6 +2762,20 @@ export const updateSEO = (
 
     isNoIndex =
       true;
+  }
+
+  else if (isSuggestSpot) {
+    title = `Suggest a Spot${BRAND_SUFFIX}`;
+    ogTitle = "Suggest a Spot on My Journal";
+    description = "Suggest a place for the My Journal travel map and backcountry guide.";
+    rawCanonicalUrl = `${BASE_URL}/suggest-spot`;
+  }
+
+  else if (isPlanner) {
+    title = `Plan Your Journey${BRAND_SUFFIX}`;
+    ogTitle = "Plan Your Sri Lanka Journey";
+    description = "Plan a Sri Lanka journey with mapped destinations, route information, and travel details from My Journal.";
+    rawCanonicalUrl = `${BASE_URL}/route-planner`;
   }
 
   // ---------------------------------------------------------------------
@@ -6808,6 +6824,7 @@ export const VideoGallery =
       videos,
       initialIndex = 0,
       onClose,
+      onActiveVideoChange,
       preserveCurrentPath = false,
     }) => {
 
@@ -6941,12 +6958,9 @@ export const VideoGallery =
               }
             } else if (preserveCurrentPath && isIndividualVideoPath) {
               window.history.replaceState(
-                {
-                  modalOpen: true,
-                  videoGallery: true,
-                },
+                { modalOpen: false },
                 "",
-                "/videos"
+                "/"
               );
             }
 
@@ -7000,7 +7014,7 @@ export const VideoGallery =
           window.history.pushState(
             {
               modalOpen: true,
-              videoGallery: true
+              videoGallery: true,
             },
             "",
             "/videos"
@@ -7092,6 +7106,42 @@ export const VideoGallery =
         onClose,
         preserveCurrentPath,
         videoList.length
+      ]);
+
+      useEffect(() => {
+        if (!currentVideo) return;
+
+        const currentPath =
+          window.location.pathname.replace(/\/+$/, "") || "/";
+        const isSupportedVideoPath =
+          currentPath === "/videos" || /^\/videos\/[^/]+$/i.test(currentPath);
+
+        if (isSupportedVideoPath) {
+          const videoPath = new URL(
+            getVideoPageUrl(currentVideo, safeActiveIndex),
+            window.location.origin
+          ).pathname;
+
+          if (currentPath !== videoPath) {
+            const previousState = window.history.state || {};
+            window.history.replaceState(
+              {
+                ...previousState,
+                modalOpen: true,
+                videoGallery: true,
+                activeVideoId: currentVideo.id || null,
+              },
+              "",
+              videoPath
+            );
+          }
+        }
+
+        onActiveVideoChange?.(currentVideo, safeActiveIndex);
+      }, [
+        currentVideo,
+        safeActiveIndex,
+        onActiveVideoChange,
       ]);
 
 
@@ -9136,20 +9186,23 @@ function App() {
 
   const handleCloseVideoGallery = useCallback(() => {
     setActiveVideos([]);
-  }, []);
-
-  const handleCloseDeepLinkedVideoGallery = useCallback((closeEvent = {}) => {
     setActiveVideo(null);
     setIsVideoDetailOpen(false);
+    setVideoGalleryInitialIndex(0);
+  }, []);
 
-    if (closeEvent.source === "popstate") {
-      setActiveVideos([]);
-      setVideoGalleryInitialIndex(0);
-      return;
-    }
+  const handleCloseDeepLinkedVideoGallery = useCallback(() => {
+    setActiveVideo(null);
+    setIsVideoDetailOpen(false);
+    setActiveVideos([]);
+    setVideoGalleryInitialIndex(0);
+  }, []);
 
-    setActiveVideos(videoLibrary);
-  }, [videoLibrary]);
+  const handleActiveVideoChange = useCallback((video, index) => {
+    setActiveVideo(video);
+    setVideoGalleryInitialIndex(index);
+    setIsVideoDetailOpen(true);
+  }, []);
 
 
   // ============================================================================
@@ -11241,7 +11294,11 @@ function App() {
       !isVideoDetailOpen &&
       (activeVideos.length > 0 || normalizedPath === "/videos");
 
-    if (isVideoDetailOpen && activeVideo) {
+    if (isAddOpen) {
+      updateSEO(null, { isSuggestSpot: true });
+    } else if (isPlannerOpen) {
+      updateSEO(null, { isPlanner: true });
+    } else if (isVideoDetailOpen && activeVideo) {
       updateSEO(null, {
         isVideo: true,
         video: activeVideo,
@@ -11271,6 +11328,8 @@ function App() {
     places,
     filterTag,
     debouncedSearch,
+    isAddOpen,
+    isPlannerOpen,
     activeVideo,
     isVideoDetailOpen,
     activeVideos,
@@ -11514,6 +11573,7 @@ function App() {
             initialIndex={videoGalleryInitialIndex}
             preserveCurrentPath
             onClose={handleCloseDeepLinkedVideoGallery}
+            onActiveVideoChange={handleActiveVideoChange}
           />
         ) : (
           <main
@@ -13737,6 +13797,7 @@ function App() {
               videos={activeVideos}
               initialIndex={videoGalleryInitialIndex}
               onClose={handleCloseVideoGallery}
+              onActiveVideoChange={handleActiveVideoChange}
             />
           )}
 
