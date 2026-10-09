@@ -4285,8 +4285,7 @@ export const PhotoGallery = React.memo(
     onClose,
     placeName,
     selectedLocation,
-    onShare,
-    handleShareEvent
+    onShare
   }) => {
 
     // ==========================================================
@@ -5224,19 +5223,6 @@ export const PhotoGallery = React.memo(
               onClick={(e) => {
 
                 e.stopPropagation();
-
-                if (
-                  selectedLocation?.id &&
-                  typeof handleShareEvent ===
-                  "function"
-                ) {
-
-                  handleShareEvent(
-                    selectedLocation.id,
-                    "gallery"
-                  );
-
-                }
 
                 if (
                   typeof onShare ===
@@ -9603,6 +9589,7 @@ function App() {
         "Like interaction failed:",
         err
       );
+      toast.error("Couldn't update your like. Please try again.");
     }
   };
 
@@ -9670,6 +9657,7 @@ function App() {
         `[Analytics] Failed to log ${shareType} share event:`,
         err
       );
+      toast.error("Couldn't record this share. Please try again.");
     }
   };
 
@@ -9713,7 +9701,7 @@ function App() {
       !text?.trim() ||
       !supabaseClient
     ) {
-      return;
+      return false;
     }
 
     try {
@@ -9726,7 +9714,7 @@ function App() {
           }
         );
 
-      // The Edge Function should return the newly-created comment.
+      // The frontend insert returns the newly-created comment row.
       const newComment =
         result?.comment || result?.data;
 
@@ -9744,11 +9732,15 @@ function App() {
         await fetchInteractions();
       }
 
+      return true;
+
     } catch (err) {
       console.error(
         "Comment submission failed:",
         err
       );
+      toast.error("Couldn't save your comment. Please try again.");
+      return false;
     }
   };
 
@@ -10545,6 +10537,12 @@ function App() {
   const handleShare = async (e, place, isGallery = false) => {
     if (e) e.stopPropagation();
     if (!place) return;
+
+    // Log the share from the shared entry point so article, gallery, and
+    // card share controls all record exactly one event.
+    if (place.id) {
+      void handleShareEvent(place.id, isGallery ? "gallery" : "article");
+    }
 
     const slug = getMediaSEOPlaceSlug(place);
     const url = `${window.location.origin}/${isGallery ? 'gallery' : 'place'}/${slug}`;
@@ -11826,9 +11824,6 @@ function App() {
                             <button
                               onClick={(e) => {
                                 e.stopPropagation();
-                                if (place?.id && typeof handleShareEvent === "function") {
-                                  handleShareEvent(place.id, "article");
-                                }
                                 if (typeof handleShare === "function") {
                                   handleShare(e, place);
                                 }
@@ -12932,17 +12927,19 @@ function App() {
                           className="w-full bg-slate-100 dark:bg-slate-800 border-2 border-transparent focus:border-slate-900 dark:focus:border-slate-100 focus:bg-white dark:focus:bg-slate-900 rounded-2xl px-5 py-4 text-xs font-bold text-slate-900 dark:text-slate-100 placeholder-slate-400 transition-all outline-none pr-12"
                           onKeyDown={async (e) => {
                             if (e.key === 'Enter' && newCommentText.trim()) {
+                              e.preventDefault();
                               const text = newCommentText;
-                              setnewCommentText('');
-                              await submitComment(viewingArticle.id, text);
+                              const saved = await submitComment(viewingArticle.id, text);
+                              if (saved) setnewCommentText('');
                             }
                           }}
                         />
                         <button
                           type="button"
-                          onClick={() => {
-                            if (newCommentText.trim()) submitComment(viewingArticle.id, newCommentText);
-                            setnewCommentText('');
+                          onClick={async () => {
+                            const text = newCommentText;
+                            const saved = await submitComment(viewingArticle.id, text);
+                            if (saved) setnewCommentText('');
                           }}
                           className="absolute right-4 top-1/2 -translate-y-1/2 p-2 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-xl transition-colors"
                         >
@@ -13537,7 +13534,6 @@ function App() {
                 selectedLocation={activePlace}
                 onClose={handleClosePhotoGallery}
                 onShare={(e, location) => handleShare(e, location, true)}
-                handleShareEvent={handleShareEvent}
               />
             );
           })()}
