@@ -6839,6 +6839,7 @@ export const VideoGallery =
       initialIndex = 0,
       onClose,
       onActiveVideoChange,
+      onShare,
       preserveCurrentPath = false,
     }) => {
 
@@ -7508,14 +7509,20 @@ export const VideoGallery =
 
 
                   return (
-                    <a
+                    <div
                       key={
                         item.id ||
                         item.url ||
                         index
                       }
-                      href={videoPageUrl}
-                      onClick={(event) => {
+                      className={`group flex items-start gap-3 w-full text-left p-2 rounded-xl transition-all ${isActive
+                        ? "bg-white/10 border border-indigo-500"
+                        : "hover:bg-white/5 border border-transparent"
+                        }`}
+                    >
+                      <a
+                        href={videoPageUrl}
+                        onClick={(event) => {
 
                         /*
                          * Preserve the existing modal playlist UX.
@@ -7530,22 +7537,19 @@ export const VideoGallery =
                          * modal video instead of navigating away.
                          */
 
-                        event.preventDefault();
+                          event.preventDefault();
 
-                        setActiveIndex(
-                          index
-                        );
-                      }}
-                      className={`group flex items-start gap-3 w-full text-left p-2 rounded-xl transition-all ${isActive
-                        ? "bg-white/10 border border-indigo-500"
-                        : "hover:bg-white/5 border border-transparent"
-                        }`}
-                      aria-current={
-                        isActive
-                          ? "true"
-                          : undefined
-                      }
-                    >
+                          setActiveIndex(
+                            index
+                          );
+                        }}
+                        className="flex flex-1 min-w-0 items-start gap-3 text-left"
+                        aria-current={
+                          isActive
+                            ? "true"
+                            : undefined
+                        }
+                      >
 
                       {/* =================================================
                           THUMBNAIL
@@ -7623,7 +7627,22 @@ export const VideoGallery =
 
                       </div>
 
-                    </a>
+                      </a>
+
+                      <button
+                        type="button"
+                        aria-label={`Share ${itemSEO?.title || "video"}`}
+                        title="Share this video"
+                        onClick={(event) => {
+                          event.preventDefault();
+                          event.stopPropagation();
+                          onShare?.(event, item, index);
+                        }}
+                        className="shrink-0 self-center p-2 rounded-lg text-slate-400 hover:text-white hover:bg-indigo-600/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400 transition-colors"
+                      >
+                        <Share2 className="w-4 h-4" />
+                      </button>
+                    </div>
                   );
                 }
               )}
@@ -10785,6 +10804,30 @@ function App() {
     setIsShareModalOpen(true);
   };
 
+  const handleShareVideo = (event, video, index = 0) => {
+    if (event) event.stopPropagation();
+    if (!video) return;
+
+    const videoSEO = buildAutomaticVideoSEO(video, index);
+    const name =
+      videoSEO?.seoTitle ||
+      videoSEO?.title ||
+      video?.title ||
+      "My Journal video";
+    const url = new URL(
+      getVideoPageUrl(video, index),
+      window.location.origin
+    ).href;
+
+    setSharingData({
+      name,
+      url,
+      text: `Watch ${name} on My Journal:`,
+      type: "video",
+    });
+    setIsShareModalOpen(true);
+  };
+
   // ---------------------------------------------------------------------------
   // 6. UI Helpers, Localization & Form Actions
   // ---------------------------------------------------------------------------
@@ -11599,6 +11642,7 @@ function App() {
             preserveCurrentPath
             onClose={handleCloseDeepLinkedVideoGallery}
             onActiveVideoChange={handleActiveVideoChange}
+            onShare={handleShareVideo}
           />
         ) : (
           <main
@@ -12514,89 +12558,7 @@ function App() {
               </div>
             </footer>
 
-            {/* 5. SHARE DIALOG SYSTEM maintained */}
-            {isShareModalOpen && sharingData && (
-              <div className="fixed inset-0 z-[15000] flex items-center justify-center p-4">
-                <div
-                  className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm"
-                  onClick={() => setIsShareModalOpen(false)}
-                ></div>
 
-                <div className="relative bg-white w-full max-w-sm rounded-[2.5rem] p-8 shadow-2xl animate-in zoom-in-95 duration-200">
-                  <div className="text-center mb-8">
-                    <div className="w-16 h-16 bg-indigo-50 text-indigo-600 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                      <Share2 className="w-8 h-8" />
-                    </div>
-                    <h3 className="text-xl font-black text-slate-900 italic uppercase tracking-tighter">
-                      {sharingData.isGallery ? 'Share Gallery' : 'Share Journey'}
-                    </h3>
-                    <p className="text-slate-500 text-[10px] font-bold uppercase tracking-widest mt-1">
-                      {sharingData.name}
-                    </p>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-4">
-                    {/* WhatsApp: Supports Text + Link */}
-                    <a
-                      href={`https://api.whatsapp.com/send?text=${encodeURIComponent(sharingData.text + " " + sharingData.url)}`}
-                      target="_blank" rel="noopener noreferrer"
-                      className="flex flex-col items-center gap-2 p-4 rounded-2xl bg-emerald-50 hover:bg-emerald-100 transition-colors group text-center"
-                    >
-                      <div className="w-10 h-10 bg-emerald-500 text-white rounded-full flex items-center justify-center shadow-lg shadow-emerald-200 group-hover:scale-110 transition-transform">
-                        <MessageCircle className="w-5 h-5 fill-current" />
-                      </div>
-                      <span className="text-[9px] font-black text-emerald-700 uppercase tracking-tighter">WhatsApp</span>
-                    </a>
-
-                    {/* Facebook: ONLY URL (Facebook handles the preview via your SEO tags) */}
-                    <a
-                      href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(sharingData.url)}`}
-                      target="_blank" rel="noopener noreferrer"
-                      className="flex flex-col items-center gap-2 p-4 rounded-2xl bg-blue-50 hover:bg-blue-100 transition-colors group text-center"
-                    >
-                      <div className="w-10 h-10 bg-blue-600 text-white rounded-full flex items-center justify-center shadow-lg shadow-blue-200 group-hover:scale-110 transition-transform">
-                        <span className="font-black text-lg">f</span>
-                      </div>
-                      <span className="text-[9px] font-black text-blue-700 uppercase tracking-tighter">Facebook</span>
-                    </a>
-
-                    {/* X (Twitter): Supports Text + Link */}
-                    <a
-                      href={`https://twitter.com/intent/tweet?text=${encodeURIComponent(sharingData.text)}&url=${encodeURIComponent(sharingData.url)}`}
-                      target="_blank" rel="noopener noreferrer"
-                      className="flex flex-col items-center gap-2 p-4 rounded-2xl bg-slate-50 hover:bg-slate-200 transition-colors group text-center"
-                    >
-                      <div className="w-10 h-10 bg-black text-white rounded-full flex items-center justify-center shadow-lg shadow-slate-300 group-hover:scale-110 transition-transform">
-                        <X className="w-4 h-4" />
-                      </div>
-                      <span className="text-[9px] font-black text-slate-700 uppercase tracking-tighter">Twitter (X)</span>
-                    </a>
-
-                    {/* Copy Link: The most reliable way for Instagram/Stories */}
-                    <button
-                      onClick={() => {
-                        navigator.clipboard.writeText(sharingData.url);
-                        toast.success("Link ready to paste!");
-                        setIsShareModalOpen(false);
-                      }}
-                      className="flex flex-col items-center gap-2 p-4 rounded-2xl bg-indigo-50 hover:bg-indigo-100 transition-colors group text-center"
-                    >
-                      <div className="w-10 h-10 bg-indigo-600 text-white rounded-full flex items-center justify-center shadow-lg shadow-indigo-200 group-hover:scale-110 transition-transform">
-                        <ImageIcon className="w-4 h-4" />
-                      </div>
-                      <span className="text-[9px] font-black text-indigo-700 uppercase tracking-tighter">Copy Link</span>
-                    </button>
-                  </div>
-
-                  <button
-                    onClick={() => setIsShareModalOpen(false)}
-                    className="w-full mt-8 py-4 text-slate-400 text-[10px] font-black uppercase tracking-[0.2em] hover:text-slate-900 transition-colors"
-                  >
-                    Dismiss
-                  </button>
-                </div>
-              </div>
-            )}
 
           </div>
 
@@ -13823,6 +13785,7 @@ function App() {
               initialIndex={videoGalleryInitialIndex}
               onClose={handleCloseVideoGallery}
               onActiveVideoChange={handleActiveVideoChange}
+              onShare={handleShareVideo}
             />
           )}
 
@@ -14003,6 +13966,94 @@ function App() {
 
         </>
       )}
+
+            {/* 5. SHARE DIALOG SYSTEM maintained */}
+            {isShareModalOpen && sharingData && (
+              <div className="fixed inset-0 z-[15000] flex items-center justify-center p-4">
+                <div
+                  className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm"
+                  onClick={() => setIsShareModalOpen(false)}
+                ></div>
+
+                <div className="relative bg-white w-full max-w-sm rounded-[2.5rem] p-8 shadow-2xl animate-in zoom-in-95 duration-200">
+                  <div className="text-center mb-8">
+                    <div className="w-16 h-16 bg-indigo-50 text-indigo-600 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                      <Share2 className="w-8 h-8" />
+                    </div>
+                    <h3 className="text-xl font-black text-slate-900 italic uppercase tracking-tighter">
+                      {sharingData.type === 'video'
+                        ? 'Share Video'
+                        : sharingData.isGallery
+                          ? 'Share Gallery'
+                          : 'Share Journey'}
+                    </h3>
+                    <p className="text-slate-500 text-[10px] font-bold uppercase tracking-widest mt-1">
+                      {sharingData.name}
+                    </p>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    {/* WhatsApp: Supports Text + Link */}
+                    <a
+                      href={`https://api.whatsapp.com/send?text=${encodeURIComponent(sharingData.text + " " + sharingData.url)}`}
+                      target="_blank" rel="noopener noreferrer"
+                      className="flex flex-col items-center gap-2 p-4 rounded-2xl bg-emerald-50 hover:bg-emerald-100 transition-colors group text-center"
+                    >
+                      <div className="w-10 h-10 bg-emerald-500 text-white rounded-full flex items-center justify-center shadow-lg shadow-emerald-200 group-hover:scale-110 transition-transform">
+                        <MessageCircle className="w-5 h-5 fill-current" />
+                      </div>
+                      <span className="text-[9px] font-black text-emerald-700 uppercase tracking-tighter">WhatsApp</span>
+                    </a>
+
+                    {/* Facebook: ONLY URL (Facebook handles the preview via your SEO tags) */}
+                    <a
+                      href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(sharingData.url)}`}
+                      target="_blank" rel="noopener noreferrer"
+                      className="flex flex-col items-center gap-2 p-4 rounded-2xl bg-blue-50 hover:bg-blue-100 transition-colors group text-center"
+                    >
+                      <div className="w-10 h-10 bg-blue-600 text-white rounded-full flex items-center justify-center shadow-lg shadow-blue-200 group-hover:scale-110 transition-transform">
+                        <span className="font-black text-lg">f</span>
+                      </div>
+                      <span className="text-[9px] font-black text-blue-700 uppercase tracking-tighter">Facebook</span>
+                    </a>
+
+                    {/* X (Twitter): Supports Text + Link */}
+                    <a
+                      href={`https://twitter.com/intent/tweet?text=${encodeURIComponent(sharingData.text)}&url=${encodeURIComponent(sharingData.url)}`}
+                      target="_blank" rel="noopener noreferrer"
+                      className="flex flex-col items-center gap-2 p-4 rounded-2xl bg-slate-50 hover:bg-slate-200 transition-colors group text-center"
+                    >
+                      <div className="w-10 h-10 bg-black text-white rounded-full flex items-center justify-center shadow-lg shadow-slate-300 group-hover:scale-110 transition-transform">
+                        <X className="w-4 h-4" />
+                      </div>
+                      <span className="text-[9px] font-black text-slate-700 uppercase tracking-tighter">Twitter (X)</span>
+                    </a>
+
+                    {/* Copy Link: The most reliable way for Instagram/Stories */}
+                    <button
+                      onClick={() => {
+                        navigator.clipboard.writeText(sharingData.url);
+                        toast.success("Link ready to paste!");
+                        setIsShareModalOpen(false);
+                      }}
+                      className="flex flex-col items-center gap-2 p-4 rounded-2xl bg-indigo-50 hover:bg-indigo-100 transition-colors group text-center"
+                    >
+                      <div className="w-10 h-10 bg-indigo-600 text-white rounded-full flex items-center justify-center shadow-lg shadow-indigo-200 group-hover:scale-110 transition-transform">
+                        <ImageIcon className="w-4 h-4" />
+                      </div>
+                      <span className="text-[9px] font-black text-indigo-700 uppercase tracking-tighter">Copy Link</span>
+                    </button>
+                  </div>
+
+                  <button
+                    onClick={() => setIsShareModalOpen(false)}
+                    className="w-full mt-8 py-4 text-slate-400 text-[10px] font-black uppercase tracking-[0.2em] hover:text-slate-900 transition-colors"
+                  >
+                    Dismiss
+                  </button>
+                </div>
+              </div>
+            )}
 
     </div>
 
