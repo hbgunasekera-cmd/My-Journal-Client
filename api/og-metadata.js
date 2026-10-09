@@ -361,7 +361,7 @@ export default async function handler(req, res) {
         title = gallery ? `${placeName} Gallery | My Journal` : `${placeName} | My Journal`;
         const article = place.ai_article && typeof place.ai_article === "object" ? place.ai_article : {};
         const story = typeof place.ai_article === "string" ? place.ai_article : article.story;
-        description = truncateText(story || `Explore ${placeName} in Sri Lanka.`);
+        description = truncateText(story || `Explore ${placeName} in Sri Lanka.`, 120);
         imageUrl = firstSocialImage(
           [
             place.cover_photo_url,
@@ -449,16 +449,20 @@ export default async function handler(req, res) {
 
     let mediaContent = "";
     if (videoId) {
-      mediaContent = `<iframe src="https://www.youtube-nocookie.com/embed/${escapeHtml(videoId)}" title="${safeTitle}" loading="lazy" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>`;
-    } else if (galleryImages.length) {
-      mediaContent = galleryImages.map((url) =>
-        `<img src="${escapeHtml(url)}" alt="${safeTitle}" loading="lazy" />`,
-      ).join("");
-    } else if (imageUrl !== defaultImage) {
-      mediaContent = `<img src="${safeImageUrl}" alt="${safeTitle}" loading="lazy" />`;
+      mediaContent = `<iframe src="https://www.youtube-nocookie.com/embed/${escapeHtml(videoId)}" title="${safeTitle}" style="display:block;width:100%;aspect-ratio:16/9;border:0;border-radius:16px" loading="lazy" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>`;
+    } else {
+      const heroImage = imageUrl !== defaultImage
+        ? `<img src="${safeImageUrl}" alt="${safeTitle}" style="display:block;width:100%;height:auto;max-height:72vh;object-fit:contain;border-radius:16px" fetchpriority="high" />`
+        : "";
+      const additionalImages = galleryImages
+        .filter((url) => url !== imageUrl)
+        .slice(0, 7)
+        .map((url) => `<img src="${escapeHtml(url)}" alt="${safeTitle}" style="display:block;width:100%;height:auto;max-height:440px;object-fit:cover;border-radius:12px" loading="lazy" />`)
+        .join("");
+      mediaContent = `${heroImage}${additionalImages ? `<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:16px;margin-top:20px">${additionalImages}</div>` : ""}`;
     }
 
-    const crawlerBody = `<div id="root"><main style="max-width:800px;margin:0 auto;padding:40px 24px;font-family:system-ui,-apple-system,sans-serif;color:#334155;line-height:1.7"><article><h1>${safeTitle}</h1><p>${safeDescription}</p>${mediaContent}</article></main></div>`;
+    const crawlerBody = `<div id="root"><main style="max-width:1100px;margin:0 auto;padding:28px 20px;font-family:system-ui,-apple-system,sans-serif;color:#334155;line-height:1.5"><article>${mediaContent}<h1 style="margin:20px 0 8px;font-size:clamp(24px,4vw,34px);line-height:1.2">${safeTitle}</h1><p style="max-width:760px;margin:0 auto;font-size:13px;line-height:1.5;color:#64748b">${safeDescription}</p></article></main></div>`;
     html = replaceRootElement(html, crawlerBody);
 
     res.setHeader("Content-Type", "text/html; charset=utf-8");
