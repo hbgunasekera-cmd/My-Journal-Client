@@ -7214,7 +7214,13 @@ export const VideoGallery =
                 className="mb-2 text-[10px] text-white/60"
                 items={[
                   { label: "My Journal", href: "/" },
-                  { label: "Videos" },
+                  { label: "Videos", href: "/videos" },
+                  {
+                    label:
+                      currentVideoSEO?.title ||
+                      currentVideo?.title ||
+                      "Video Clip",
+                  },
                 ]}
               />
 
@@ -12726,6 +12732,7 @@ function App() {
                             i18n.language
                           ),
                         },
+                        { label: "Article" },
                       ]}
                     />
 
