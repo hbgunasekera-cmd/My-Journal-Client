@@ -3450,15 +3450,10 @@ const fetchVisitorMetadata = async () => {
       })
       .then(({ data, error }) => {
         if (error) throw error;
-        if (
-          !data?.success ||
-          typeof data.ip_address !== 'string' ||
-          typeof data.country !== 'string' ||
-          typeof data.region !== 'string' ||
-          typeof data.city !== 'string' ||
-          typeof data.user_agent !== 'string'
-        ) {
-          throw new Error('Supabase did not return complete visitor metadata.');
+        if (data?.success !== true || data?.ignored) {
+          throw new Error(
+            'track-visit did not return visitor metadata. Deploy the metadata-only Supabase function.'
+          );
         }
         return data;
       })
@@ -3482,6 +3477,24 @@ export const invokeInteractionEvent = async (eventType, payload = {}) => {
   }
 
   const metadata = await fetchVisitorMetadata();
+  const requiredMetadataFields = eventType === 'visit'
+    ? ['ip_address', 'country', 'region', 'city', 'user_agent']
+    : eventType === 'comment'
+      ? ['country', 'city']
+      : ['ip_address', 'country', 'city'];
+  const missingMetadataFields = requiredMetadataFields.filter(
+    (field) =>
+      typeof metadata[field] !== 'string' ||
+      metadata[field].trim().length === 0
+  );
+
+  if (missingMetadataFields.length > 0) {
+    visitorMetadataPromise = null;
+    throw new Error(
+      `Visitor metadata is missing required field(s): ${missingMetadataFields.join(', ')}.`
+    );
+  }
+
   const locationId = payload.location_id;
 
   if (eventType === 'visit') {
