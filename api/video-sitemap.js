@@ -24,6 +24,24 @@ function cleanText(value, fallback = "") {
     return String(value).replace(/\s+/g, " ").replace(/[<>]/g, "").trim();
 }
 
+function sanitizeSitemapText(value, fallback = "") {
+    if (value === null || value === undefined || value === "") return fallback;
+
+    // Keep readable text and ordinary punctuation, but delete emoji, symbols,
+    // and other special characters in place. Do not substitute a space or dash;
+    // URL slugs continue to use buildVideoSlug() so they match the app routes.
+    const sanitized = Array.from(String(value))
+        .filter((character) =>
+            /^[\p{L}\p{M}\p{N}\s.,!?"'():;-]$/u.test(character) &&
+            !/[\uFE0E\uFE0F\u20E3]/u.test(character)
+        )
+        .join("")
+        .replace(/\s+/g, " ")
+        .trim();
+
+    return sanitized || fallback;
+}
+
 function parseDate(value) {
     if (!value) return null;
     const date = new Date(value);
@@ -128,14 +146,19 @@ export default async function handler(req, res) {
             const youtubeId = getYouTubeId(video.url);
             if (!youtubeId) return;
 
-            const title = cleanText(video.title || `Sri Lanka Backcountry Video ${video.id}`, "Sri Lanka Backcountry Video");
+            const rawTitle = cleanText(video.title || `Sri Lanka Backcountry Video ${video.id}`, "Sri Lanka Backcountry Video");
+            const title = sanitizeSitemapText(rawTitle, "Sri Lanka Backcountry Video");
             const slug = buildVideoSlug(video);
             if (!slug) return;
 
             const watchPageUrl = `${baseUrl}/videos/${slug}`;
             const defaultThumbnail = `https://img.youtube.com/vi/${youtubeId}/hqdefault.jpg`;
             const thumbnail = getHttpUrl(video.custom_thumbnail_url, defaultThumbnail);
-            const description = cleanText(video.description || `Watch ${title}. A My Journal visual field recording documenting Sri Lanka's backcountry landscapes, trails, terrain and natural attractions.`, `Watch ${title} from My Journal's Sri Lanka backcountry video archive.`).slice(0, 2048);
+            const rawDescription = cleanText(video.description || `Watch ${rawTitle}. A My Journal visual field recording documenting Sri Lanka's backcountry landscapes, trails, terrain and natural attractions.`, `Watch ${rawTitle} from My Journal's Sri Lanka backcountry video archive.`);
+            const description = sanitizeSitemapText(
+                rawDescription,
+                `Watch ${title} from My Journal's Sri Lanka backcountry video archive.`,
+            ).slice(0, 2048);
             
             const publicationDate = video.upload_date || video.published_at || video.created_at;
             const parsedPublicationDate = parseDate(publicationDate);
