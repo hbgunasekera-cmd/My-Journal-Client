@@ -6807,7 +6807,8 @@ export const VideoGallery =
     ({
       videos,
       initialIndex = 0,
-      onClose
+      onClose,
+      preserveCurrentPath = false,
     }) => {
 
       // -----------------------------------------------------------------
@@ -6918,10 +6919,12 @@ export const VideoGallery =
               event.stopPropagation();
             }
 
-            if (
-              window.location.pathname ===
-              "/videos"
-            ) {
+            const currentPath =
+              window.location.pathname.replace(/\/+$/, "") || "/";
+            const isIndividualVideoPath =
+              /^\/videos\/[^/]+$/i.test(currentPath);
+
+            if (currentPath === "/videos") {
               if (
                 window.history.length >
                 1
@@ -6936,16 +6939,28 @@ export const VideoGallery =
                   "/"
                 );
               }
+            } else if (preserveCurrentPath && isIndividualVideoPath) {
+              window.history.replaceState(
+                {
+                  modalOpen: true,
+                  videoGallery: true,
+                },
+                "",
+                "/videos"
+              );
             }
 
             if (
               typeof onClose ===
               "function"
             ) {
-              onClose();
+              onClose({
+                source: "button",
+                isIndividualVideoPath,
+              });
             }
           },
-          [onClose]
+          [onClose, preserveCurrentPath]
         );
 
 
@@ -6973,9 +6988,14 @@ export const VideoGallery =
         //
         // ---------------------------------------------------------------
 
+        const currentPath =
+          window.location.pathname.replace(/\/+$/, "") || "/";
+        const isIndividualVideoPath =
+          /^\/videos\/[^/]+$/i.test(currentPath);
+
         if (
-          window.location.pathname !==
-          "/videos"
+          currentPath !== "/videos" &&
+          !(preserveCurrentPath && isIndividualVideoPath)
         ) {
           window.history.pushState(
             {
@@ -7031,7 +7051,7 @@ export const VideoGallery =
               typeof onClose ===
               "function"
             ) {
-              onClose();
+              onClose({ source: "popstate" });
             }
           };
 
@@ -7070,6 +7090,7 @@ export const VideoGallery =
       }, [
         handleClose,
         onClose,
+        preserveCurrentPath,
         videoList.length
       ]);
 
@@ -9016,6 +9037,7 @@ function App() {
 
   const [activeVideo, setActiveVideo] = useState(null);
   const [isVideoDetailOpen, setIsVideoDetailOpen] = useState(false);
+  const [videoGalleryInitialIndex, setVideoGalleryInitialIndex] = useState(0);
   const [hasLoadedVideoLibrary, setHasLoadedVideoLibrary] = useState(false);
 
   const isVideoDetailRoute =
@@ -9115,6 +9137,19 @@ function App() {
   const handleCloseVideoGallery = useCallback(() => {
     setActiveVideos([]);
   }, []);
+
+  const handleCloseDeepLinkedVideoGallery = useCallback((closeEvent = {}) => {
+    setActiveVideo(null);
+    setIsVideoDetailOpen(false);
+
+    if (closeEvent.source === "popstate") {
+      setActiveVideos([]);
+      setVideoGalleryInitialIndex(0);
+      return;
+    }
+
+    setActiveVideos(videoLibrary);
+  }, [videoLibrary]);
 
 
   // ============================================================================
@@ -11001,6 +11036,7 @@ function App() {
       queueMicrotask(() => {
         setActiveVideo(null);
         setIsVideoDetailOpen(false);
+        setVideoGalleryInitialIndex(0);
         setActiveVideos(videoLibrary);
       });
 
@@ -11022,8 +11058,8 @@ function App() {
 
       logVisit('Video Hub');
 
-      const targetVideo =
-        videoLibrary.find(
+      const targetVideoIndex =
+        videoLibrary.findIndex(
           (video, index) =>
             buildAutomaticVideoSEO(
               video,
@@ -11031,6 +11067,10 @@ function App() {
             ).slug === slug ||
             generateSlug(video?.title) === slug
         );
+      const targetVideo =
+        targetVideoIndex >= 0
+          ? videoLibrary[targetVideoIndex]
+          : null;
 
       if (!targetVideo) {
         toast.error("Video not found.");
@@ -11043,6 +11083,7 @@ function App() {
 
         setActiveVideo(null);
         setIsVideoDetailOpen(false);
+        setVideoGalleryInitialIndex(0);
         setActiveVideos(videoLibrary);
 
         hasHandledDeepLink.current = true;
@@ -11055,6 +11096,7 @@ function App() {
       }
 
       setActiveVideos([]);
+      setVideoGalleryInitialIndex(targetVideoIndex);
       setActiveVideo(targetVideo);
       setIsVideoDetailOpen(true);
 
@@ -11467,9 +11509,11 @@ function App() {
 
       {isVideoDetailRoute ? (
         activeVideo && isVideoDetailOpen ? (
-          <VideoDetailPage
-            video={activeVideo}
-            allVideos={videoLibrary}
+          <VideoGallery
+            videos={videoLibrary}
+            initialIndex={videoGalleryInitialIndex}
+            preserveCurrentPath
+            onClose={handleCloseDeepLinkedVideoGallery}
           />
         ) : (
           <main
@@ -11630,6 +11674,7 @@ function App() {
                           // Videos are already preloaded — open immediately
                           if (videoLibrary.length > 0) {
                             logVisit('Video Hub');
+                            setVideoGalleryInitialIndex(0);
                             setActiveVideos(videoLibrary);
                             return;
                           }
@@ -11639,6 +11684,7 @@ function App() {
 
                           if (videos.length > 0) {
                             logVisit('Video Hub');
+                            setVideoGalleryInitialIndex(0);
                             setActiveVideos(videos);
                           } else {
                             console.warn("No active videos found in hub_videos.");
@@ -13689,7 +13735,7 @@ function App() {
           {activeVideos.length > 0 && (
             <VideoGallery
               videos={activeVideos}
-              initialIndex={0}
+              initialIndex={videoGalleryInitialIndex}
               onClose={handleCloseVideoGallery}
             />
           )}
