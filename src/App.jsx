@@ -497,6 +497,18 @@ const safeDecodeURIComponent = (value) => {
   }
 };
 
+const getCategoryBreadcrumb = (category, t) => {
+  const normalizedCategory = String(category || "").trim();
+  if (!normalizedCategory) return null;
+
+  return {
+    label: t(`categories.${normalizedCategory.toLowerCase().replace(/\s+/g, "_")}`, {
+      defaultValue: normalizedCategory,
+    }),
+    href: `/?category=${encodeURIComponent(normalizedCategory.toLowerCase())}#destinations`,
+  };
+};
+
 const Breadcrumbs = ({ items = [], className = "" }) => {
   const visibleItems = items.filter((item) => item?.label);
   if (visibleItems.length === 0) return null;
@@ -4384,6 +4396,8 @@ export const PhotoGallery = React.memo(
     initialImageUrl = null,
   }) => {
 
+    const { t, i18n } = useTranslation();
+
     // ==========================================================
     // STATE
     // ==========================================================
@@ -5557,8 +5571,13 @@ export const PhotoGallery = React.memo(
               items={[
                 { label: "My Journal", href: "/" },
                 { label: "Destinations", href: "/#destinations" },
+                getCategoryBreadcrumb(gallerySEOPlace?.category, t),
                 {
-                  label: getMediaSEOPlaceName(gallerySEOPlace),
+                  label: getLocalizedValue(
+                    gallerySEOPlace,
+                    "place_name",
+                    i18n.language,
+                  ) || getMediaSEOPlaceName(gallerySEOPlace),
                   href: `/place/${gallerySlug}`,
                 },
                 { label: "Gallery" },
@@ -12728,6 +12747,7 @@ function App() {
                       items={[
                         { label: "My Journal", href: "/" },
                         { label: "Destinations", href: "/#destinations" },
+                        getCategoryBreadcrumb(viewingArticle.category, t),
                         {
                           label: getLocalizedValue(
                             viewingArticle,
