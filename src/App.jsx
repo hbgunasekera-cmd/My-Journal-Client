@@ -18,6 +18,11 @@ import { createClient } from '@supabase/supabase-js';
 import { QRCodeSVG } from 'qrcode.react';
 import { useTranslation } from 'react-i18next';
 import toast, { Toaster } from 'react-hot-toast';
+import {
+  buildConciseImageSchemaDescription,
+  buildConciseLocationSchemaDescription,
+  buildConciseVideoSchemaDescription,
+} from './utils/schemaDescriptions.js';
 
 // =======================================================================
 // 3. DRAG AND DROP ENGINE
@@ -1103,20 +1108,17 @@ export const buildAutomaticImageSEO = (
       ? metrics.elevation_m
       : undefined;
 
-  const elevationText =
-    elevation !== undefined
-      ? ` Elevation is approximately ${elevation} metres.`
-      : "";
-
   // ---------------------------------------------------------------------
   // Automatic description
   // ---------------------------------------------------------------------
 
-  const description = seoCleanText(
-    suppliedDescription ||
-    `${caption}${elevationText} This image is part of the My Journal visual field archive for ${placeName}.`,
-    caption
-  );
+  const description = buildConciseImageSchemaDescription({
+    description: suppliedDescription,
+    caption,
+    placeName,
+    locality,
+    category,
+  });
 
   // ---------------------------------------------------------------------
   // Optimized image URL
@@ -1691,8 +1693,10 @@ export const buildVideoObjectSchema = (
       "My Journal Video",
 
     description:
-      seo.seoDescription ||
-      "Sri Lanka backcountry video from My Journal.",
+      buildConciseVideoSchemaDescription(
+        video,
+        seo.title || seo.seoTitle
+      ) || "Sri Lanka video from My Journal.",
 
     thumbnailUrl:
       seo.thumbnailUrl,
@@ -2217,21 +2221,14 @@ export const injectJSONLDSchema = (
   // 12.8 Place description
   // ---------------------------------------------------------------------
 
-  const placeDescription =
-    seoCleanText(
-      about?.overview ||
-      article?.story ||
-      legacyStory ||
-      place.description ||
-      (
-        locality
-          ? `Explore ${placeName} in ${locality}.`
-          : `Explore ${placeName} in Sri Lanka.`
-      ),
-      locality
-        ? `Explore ${placeName} in ${locality}.`
-        : `Explore ${placeName} in Sri Lanka.`
-    );
+  const placeDescription = buildConciseLocationSchemaDescription(
+    place,
+    place.ai_article ?? {
+      ...article,
+      story: article.story || legacyStory,
+      about,
+    }
+  );
 
   // ---------------------------------------------------------------------
   // 12.9 Image Gallery schema
@@ -2262,13 +2259,7 @@ export const injectJSONLDSchema = (
         place
       );
 
-    const galleryDescription =
-      seoCleanText(
-        locality
-          ? `High-resolution photo gallery and aerial drone perspectives of ${placeName}, a ${category} in ${locality}, Sri Lanka. Dedicated visual field notes and landscape photography.`
-          : `High-resolution photo gallery and aerial drone perspectives of ${placeName}, a ${category} in Sri Lanka. Dedicated visual field notes and landscape photography.`,
-        `Photo gallery of ${placeName}, Sri Lanka.`
-      );
+    const galleryDescription = placeDescription;
 
     const gallerySchema = {
       "@context":
@@ -2810,11 +2801,6 @@ export const updateSEO = (
       video?.title ||
       "Sri Lanka Backcountry Video";
 
-    const videoDescription =
-      automaticVideo?.seoDescription ||
-      video?.description ||
-      `Watch ${videoTitle} from My Journal's Sri Lanka backcountry video archive.`;
-
     title =
       `${videoTitle}${BRAND_SUFFIX}`;
 
@@ -2822,11 +2808,10 @@ export const updateSEO = (
       automaticVideo?.seoTitle ||
       videoTitle;
 
-    description =
-      truncateText(
-        videoDescription,
-        155
-      );
+    description = buildConciseVideoSchemaDescription(
+      video,
+      videoTitle
+    );
 
     rawCanonicalUrl =
       automaticVideo?.watchUrl ||
@@ -2880,20 +2865,14 @@ export const updateSEO = (
         "Attraction"
       );
 
-    const localityValue =
-      seoCleanText(
-        place.locality
-      );
-
-    const localityName =
-      localityValue
-        ? `, ${localityValue}`
-        : "";
-
     const slug =
       getMediaSEOPlaceSlug(
         place
       );
+    const concisePlaceDescription = buildConciseLocationSchemaDescription(
+      place,
+      place.ai_article
+    );
 
     // -------------------------------------------------------------------
     // 12A.7.1 Gallery
@@ -2906,8 +2885,7 @@ export const updateSEO = (
       ogTitle =
         `${placeName} - Aerial Drone & Field Photos`;
 
-      description =
-        `Visual field notes, terrain photos, and high-resolution aerial drone photography of ${placeName}${localityName}, Sri Lanka.`;
+      description = concisePlaceDescription;
 
       rawCanonicalUrl =
         `${BASE_URL}/gallery/${slug}`;
@@ -2924,34 +2902,7 @@ export const updateSEO = (
       ogTitle =
         `${placeName} Trail Guide: GPS Maps & Field Notes`;
 
-      const article =
-        typeof place.ai_article === "object" &&
-          place.ai_article !== null
-          ? place.ai_article
-          : {};
-
-      const rawStory =
-        article?.story ||
-        (
-          typeof place.ai_article ===
-            "string"
-            ? place.ai_article
-            : null
-        ) ||
-        place.description;
-
-      if (rawStory) {
-        description =
-          truncateText(
-            seoCleanText(
-              rawStory
-            ),
-            155
-          );
-      } else {
-        description =
-          `Backcountry guide for ${placeName}${localityName}, Sri Lanka. Features mapped GPS coordinates, route paths, terrain telemetry, and photos.`;
-      }
+      description = concisePlaceDescription;
 
       rawCanonicalUrl =
         `${BASE_URL}/place/${slug}`;

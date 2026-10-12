@@ -1,4 +1,8 @@
 import { getSupabaseServerConfig } from "../server/supabase-config.js";
+import {
+  buildConciseLocationSchemaDescription,
+  buildConciseVideoSchemaDescription,
+} from "../src/utils/schemaDescriptions.js";
 const DEFAULT_SITE_URL = "https://www.myjournalview.com";
 
 function generateSlug(value) {
@@ -181,7 +185,7 @@ function buildVideoGallerySchema(items, title, description, canonicalUrl) {
         item: {
           "@type": "VideoObject",
           name: video.title,
-          description: video.description,
+          description: video.schemaDescription || video.description,
           thumbnailUrl: [video.imageUrl],
           url: video.pageUrl,
           embedUrl: `https://www.youtube-nocookie.com/embed/${video.videoId}`,
@@ -474,6 +478,7 @@ export default async function handler(req, res) {
           const videoDescription = cleanText(
             video.description || `Watch ${videoTitle} from My Journal's Sri Lanka backcountry video archive.`,
           );
+          const schemaDescription = buildConciseVideoSchemaDescription(video, videoTitle);
           const itemImageUrl = socialImageUrl(
             video.custom_thumbnail_url || `https://img.youtube.com/vi/${itemVideoId}/hqdefault.jpg`,
             `https://img.youtube.com/vi/${itemVideoId}/hqdefault.jpg`,
@@ -483,6 +488,7 @@ export default async function handler(req, res) {
             videoId: itemVideoId,
             title: videoTitle,
             description: videoDescription,
+            schemaDescription,
             imageUrl: itemImageUrl,
             pageUrl: `${baseUrl}/videos/${encodeURIComponent(videoSlug)}`,
           };
@@ -534,13 +540,20 @@ export default async function handler(req, res) {
         const fullVideoDescription = cleanText(
           video.description || `Watch ${videoTitle} from My Journal's Sri Lanka backcountry video archive.`,
         );
-        description = truncateText(fullVideoDescription);
+        description = buildConciseVideoSchemaDescription(video, videoTitle);
         videoDescriptionHtml = renderArticleContent({ description: fullVideoDescription });
         imageUrl = socialImageUrl(
           video.custom_thumbnail_url || `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`,
           `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`,
         );
-        videoSchema = buildVideoSchema(video, videoId, videoTitle, description, imageUrl, canonicalUrl);
+        videoSchema = buildVideoSchema(
+          video,
+          videoId,
+          videoTitle,
+          buildConciseVideoSchemaDescription(video, videoTitle),
+          imageUrl,
+          canonicalUrl,
+        );
       }
     } else {
       const params = new URLSearchParams({
@@ -570,8 +583,8 @@ export default async function handler(req, res) {
         const gallery = routeType === "gallery";
         title = gallery ? `${placeName} Gallery | My Journal` : `${placeName} | My Journal`;
         const article = parseArticle(place.ai_article);
-        const story = article.story || article.seo_intro || article.why_visit?.summary;
-        description = truncateText(story || `Explore ${placeName} in Sri Lanka.`, 120);
+        const schemaDescription = buildConciseLocationSchemaDescription(place, article);
+        description = schemaDescription;
         articleContentHtml = renderArticleContent(article);
         imageUrl = firstSocialImage(
           [
@@ -596,7 +609,7 @@ export default async function handler(req, res) {
             })
             .filter(Boolean)
           : [];
-        pageSchema = buildPlaceSchema(placeName, title, description, imageUrl, canonicalUrl, gallery, galleryImages);
+        pageSchema = buildPlaceSchema(placeName, title, schemaDescription, imageUrl, canonicalUrl, gallery, galleryImages);
       }
     }
   } catch (error) {
