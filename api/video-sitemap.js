@@ -111,7 +111,9 @@ export default async function handler(req, res) {
 
     try {
         const supabase = createClient(supabaseUrl, supabaseKey);
-        let videoColumns = "id,url,title,description,custom_thumbnail_url,upload_date,published_at,created_at,is_active";
+        // hub_videos has no description column; the sitemap generates its
+        // video description from the title instead of querying a missing field.
+        let videoColumns = "id,url,title,custom_thumbnail_url,created_at,is_active";
         const coreVideoColumns = "id,url,title,custom_thumbnail_url,is_active";
         let pageData = [];
 
@@ -154,13 +156,13 @@ export default async function handler(req, res) {
             const watchPageUrl = `${baseUrl}/videos/${slug}`;
             const defaultThumbnail = `https://img.youtube.com/vi/${youtubeId}/hqdefault.jpg`;
             const thumbnail = getHttpUrl(video.custom_thumbnail_url, defaultThumbnail);
-            const rawDescription = cleanText(video.description || `Watch ${rawTitle}. A My Journal visual field recording documenting Sri Lanka's backcountry landscapes, trails, terrain and natural attractions.`, `Watch ${rawTitle} from My Journal's Sri Lanka backcountry video archive.`);
+            const rawDescription = `Watch ${rawTitle}. A My Journal visual field recording documenting Sri Lanka's backcountry landscapes, trails, terrain and natural attractions.`;
             const description = sanitizeSitemapText(
                 rawDescription,
                 `Watch ${title} from My Journal's Sri Lanka backcountry video archive.`,
             ).slice(0, 2048);
             
-            const publicationDate = video.upload_date || video.published_at || video.created_at;
+            const publicationDate = video.created_at;
             const parsedPublicationDate = parseDate(publicationDate);
 
             xml += `  <url>\n    <loc>${escapeXml(watchPageUrl)}</loc>\n`;
