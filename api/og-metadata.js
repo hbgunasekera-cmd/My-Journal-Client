@@ -3,6 +3,11 @@ import {
   buildConciseLocationSchemaDescription,
   buildConciseVideoSchemaDescription,
 } from "../src/utils/schemaDescriptions.js";
+import {
+  findRelatedTouristAttraction,
+  normalizeVideoDurationValue,
+  normalizeVideoUploadDate,
+} from "../src/utils/videoStructuredData.js";
 const DEFAULT_SITE_URL = "https://www.myjournalview.com";
 
 function generateSlug(value) {
@@ -183,12 +188,7 @@ function buildVideoGallerySchema(items, title, description, canonicalUrl) {
         position: index + 1,
         url: video.pageUrl,
         item: {
-          "@type": "VideoObject",
-          name: video.title,
-          description: video.schemaDescription || video.description,
-          thumbnailUrl: [video.imageUrl],
-          url: video.pageUrl,
-          embedUrl: `https://www.youtube-nocookie.com/embed/${video.videoId}`,
+          ...video.schema,
         },
       })),
     },
@@ -331,7 +331,54 @@ async function fetchRows(supabaseUrl, supabaseKey, table, params) {
   return response.json();
 }
 
-function buildVideoSchema(video, videoId, title, description, imageUrl, canonicalUrl) {
+async function fetchHubVideos(supabaseUrl, supabaseKey, params) {
+  const baseColumns = "id,url,title,custom_thumbnail_url,created_at,is_active";
+  const minimalColumns = "id,url,title,custom_thumbnail_url,is_active";
+  const selections = [
+    `${baseColumns},duration_iso,duration`,
+    `${baseColumns},duration_iso`,
+    `${baseColumns},duration`,
+    baseColumns,
+    `${minimalColumns},duration_iso,duration`,
+    `${minimalColumns},duration_iso`,
+    `${minimalColumns},duration`,
+    minimalColumns,
+  ];
+
+  for (const select of selections) {
+    const query = new URLSearchParams(params.toString());
+    query.set("select", select);
+
+    try {
+      return await fetchRows(supabaseUrl, supabaseKey, "hub_videos", query);
+    } catch (error) {
+      const missingOptionalColumn =
+        /42703|PGRST204/.test(String(error?.message || "")) ||
+        /column .* does not exist/i.test(String(error?.message || ""));
+      if (!missingOptionalColumn || select === minimalColumns) throw error;
+    }
+  }
+
+  return [];
+}
+
+async function fetchPublishedAttractions(supabaseUrl, supabaseKey) {
+  const params = new URLSearchParams({
+    select: "slug,place_name,locality",
+    status: "in.(done,Completed,Visited)",
+    limit: "2000",
+  });
+
+  try {
+    return await fetchRows(supabaseUrl, supabaseKey, "travel_bucket_list", params);
+  } catch (error) {
+    // Video metadata must still render if destination lookup is unavailable.
+    console.warn("Video destination enrichment was skipped:", error?.message || error);
+    return [];
+  }
+}
+
+function buildVideoSchema(video, videoId, title, description, imageUrl, canonicalUrl, relatedAttraction = null) {
   const schema = {
     "@context": "https://schema.org",
     "@type": "VideoObject",
@@ -353,10 +400,26 @@ function buildVideoSchema(video, videoId, title, description, imageUrl, canonica
     isFamilyFriendly: true,
   };
 
-  const dateValue = video.upload_date || video.published_at || video.created_at;
-  if (dateValue) {
-    const date = new Date(dateValue);
-    if (!Number.isNaN(date.getTime())) schema.uploadDate = date.toISOString();
+  const uploadDate = normalizeVideoUploadDate(video);
+  if (uploadDate) {
+    schema.uploadDate = uploadDate;
+  }
+
+  const duration = normalizeVideoDurationValue(video.duration_iso ?? video.duration);
+  if (duration) {
+    schema.duration = duration;
+  }
+
+  if (relatedAttraction?.["@id"]) {
+    schema.about = relatedAttraction;
+    schema.contentLocation = {
+      "@type": "Place",
+      "@id": relatedAttraction["@id"],
+      name: relatedAttraction.name,
+      ...(relatedAttraction.address
+        ? { address: relatedAttraction.address }
+        : {}),
+    };
   }
   return schema;
 }
@@ -460,13 +523,13 @@ export default async function handler(req, res) {
       title = "Aerial & Video Journal | My Journal";
       description = "Watch aerial drone perspectives, backcountry video journals, terrain footage, trails, waterfalls and natural landscapes across Sri Lanka.";
       const videoParams = new URLSearchParams({
-        // hub_videos does not have a description column. Keep this query
-        // aligned with the actual table so social crawlers don't get a 503.
-        select: "id,url,title,custom_thumbnail_url,is_active",
         is_active: "eq.true",
         limit: "100",
       });
-      const videos = await fetchRows(supabaseUrl, supabaseKey, "hub_videos", videoParams);
+      const videos = await fetchHubVideos(supabaseUrl, supabaseKey, videoParams);
+      const attractions = videos.length
+        ? await fetchPublishedAttractions(supabaseUrl, supabaseKey)
+        : [];
       videoGalleryItems = videos
         .map((video) => {
           const itemVideoId = getYouTubeId(video.url);
@@ -478,19 +541,42 @@ export default async function handler(req, res) {
           const videoDescription = cleanText(
             video.description || `Watch ${videoTitle} from My Journal's Sri Lanka backcountry video archive.`,
           );
-          const schemaDescription = buildConciseVideoSchemaDescription(video, videoTitle);
           const itemImageUrl = socialImageUrl(
             video.custom_thumbnail_url || `https://img.youtube.com/vi/${itemVideoId}/hqdefault.jpg`,
             `https://img.youtube.com/vi/${itemVideoId}/hqdefault.jpg`,
           );
           const videoSlug = buildVideoSlug(video);
+          const pageUrl = `${baseUrl}/videos/${encodeURIComponent(videoSlug)}`;
+          const relatedAttraction = findRelatedTouristAttraction(
+            video,
+            attractions,
+            baseUrl,
+          );
+          const videoWithAttraction = relatedAttraction
+            ? {
+              ...video,
+              relatedAttraction,
+              place_name: relatedAttraction.name,
+              locality: relatedAttraction.address?.addressLocality,
+            }
+            : video;
+          const schemaDescription = buildConciseVideoSchemaDescription(videoWithAttraction, videoTitle);
           return {
             videoId: itemVideoId,
             title: videoTitle,
             description: videoDescription,
             schemaDescription,
             imageUrl: itemImageUrl,
-            pageUrl: `${baseUrl}/videos/${encodeURIComponent(videoSlug)}`,
+            pageUrl,
+            schema: buildVideoSchema(
+              video,
+              itemVideoId,
+              videoTitle,
+              schemaDescription,
+              itemImageUrl,
+              pageUrl,
+              relatedAttraction,
+            ),
           };
         })
         .filter(Boolean);
@@ -499,7 +585,6 @@ export default async function handler(req, res) {
     } else if (videoRoute) {
       // The video description is optional metadata generated below; it is
       // not a column in hub_videos.
-      const select = "id,url,title,custom_thumbnail_url,is_active";
       const idSuffix = cleanSlug.match(
         /--?([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})$/i,
       );
@@ -507,12 +592,12 @@ export default async function handler(req, res) {
 
       if (idSuffix) {
         const idSlug = idSuffix[1];
-        const params = new URLSearchParams({ select, id: `eq.${idSlug}`, is_active: "eq.true", limit: "1" });
-        videos = await fetchRows(supabaseUrl, supabaseKey, "hub_videos", params);
+        const params = new URLSearchParams({ id: `eq.${idSlug}`, is_active: "eq.true", limit: "1" });
+        videos = await fetchHubVideos(supabaseUrl, supabaseKey, params);
       } else {
         // Accept old title-only links while the ID-based links become established.
-        const params = new URLSearchParams({ select, is_active: "eq.true", limit: "1000" });
-        videos = await fetchRows(supabaseUrl, supabaseKey, "hub_videos", params);
+        const params = new URLSearchParams({ is_active: "eq.true", limit: "1000" });
+        videos = await fetchHubVideos(supabaseUrl, supabaseKey, params);
       }
 
       const video = videos.find((item) =>
@@ -536,11 +621,25 @@ export default async function handler(req, res) {
           video.title || `Sri Lanka Backcountry Video ${video.id}`,
           "Sri Lanka Backcountry Video",
         );
+        const attractions = await fetchPublishedAttractions(supabaseUrl, supabaseKey);
+        const relatedAttraction = findRelatedTouristAttraction(
+          video,
+          attractions,
+          baseUrl,
+        );
+        const videoWithAttraction = relatedAttraction
+          ? {
+            ...video,
+            relatedAttraction,
+            place_name: relatedAttraction.name,
+            locality: relatedAttraction.address?.addressLocality,
+          }
+          : video;
         title = `${videoTitle} | My Journal`;
         const fullVideoDescription = cleanText(
           video.description || `Watch ${videoTitle} from My Journal's Sri Lanka backcountry video archive.`,
         );
-        description = buildConciseVideoSchemaDescription(video, videoTitle);
+        description = buildConciseVideoSchemaDescription(videoWithAttraction, videoTitle);
         videoDescriptionHtml = renderArticleContent({ description: fullVideoDescription });
         imageUrl = socialImageUrl(
           video.custom_thumbnail_url || `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`,
@@ -550,9 +649,10 @@ export default async function handler(req, res) {
           video,
           videoId,
           videoTitle,
-          buildConciseVideoSchemaDescription(video, videoTitle),
+          description,
           imageUrl,
           canonicalUrl,
+          relatedAttraction,
         );
       }
     } else {

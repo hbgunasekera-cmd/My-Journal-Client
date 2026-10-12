@@ -186,9 +186,14 @@ export function buildConciseVideoSchemaDescription(video = {}, title = "") {
   const videoPlace =
     video.place_name ||
     video.location_name ||
+    video.relatedAttraction?.name ||
     (typeof video.location === "string" ? video.location : video.location?.name) ||
     "";
-  const locality = video.locality || video.location?.locality || "";
+  const locality =
+    video.locality ||
+    video.location?.locality ||
+    video.relatedAttraction?.address?.addressLocality ||
+    "";
   const fallback = `Video clip of ${videoTitle}${videoPlace ? ` at ${videoPlace}` : locality ? ` in ${locality}` : " from Sri Lanka"}.`;
 
   return buildConciseSchemaDescription({

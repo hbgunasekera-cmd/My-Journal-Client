@@ -23,6 +23,7 @@ import {
   buildConciseLocationSchemaDescription,
   buildConciseVideoSchemaDescription,
 } from './utils/schemaDescriptions.js';
+import { findRelatedTouristAttraction } from './utils/videoStructuredData.js';
 
 // =======================================================================
 // 3. DRAG AND DROP ENGINE
@@ -1664,12 +1665,13 @@ export const buildAutomaticVideoCollectionSEO = (
  *
  * Only supplied or safely derived facts are emitted.
  *
- * Geographic metadata is included only when the source record provides
- * an actual locality or valid coordinates.
+ * Geographic metadata is included only from explicit video data or an
+ * unambiguous association with a published destination.
  */
 export const buildVideoObjectSchema = (
   video = {},
-  index = 0
+  index = 0,
+  relatedAttraction = video?.relatedAttraction || null
 ) => {
   const seo =
     buildAutomaticVideoSEO(
@@ -1808,11 +1810,22 @@ export const buildVideoObjectSchema = (
    * Do NOT fall back to "Sri Lanka" here because that would imply that
    * Sri Lanka itself is the video's specific geographic subject.
    */
-  if (
+  if (relatedAttraction?.["@id"]) {
+    const attractionAddress = relatedAttraction.address;
+    schema.about = relatedAttraction;
+    schema.contentLocation = {
+      "@type": "Place",
+      "@id": relatedAttraction["@id"],
+      name: relatedAttraction.name,
+      ...(attractionAddress
+        ? { address: attractionAddress }
+        : {}),
+    };
+  } else if (
     placeName ||
     hasCoordinates
   ) {
-    schema.about = {
+    const locationSchema = {
       "@type":
         "Place",
 
@@ -1836,6 +1849,9 @@ export const buildVideoObjectSchema = (
         }
         : {})
     };
+
+    schema.about = locationSchema;
+    schema.contentLocation = locationSchema;
   }
 
   return schema;
@@ -1876,7 +1892,8 @@ export const buildVideoCollectionSchema = (
         item:
           buildVideoObjectSchema(
             video,
-            index
+            index,
+            video?.relatedAttraction
           )
       })
     );
@@ -6003,30 +6020,23 @@ export const PhotoGallery = React.memo(
 //
 //     hub_videos
 //
-// Existing fields:
+// Stable video fields:
 //
 //     id
 //     url
 //     title
 //     custom_thumbnail_url
-//
-// Optional existing fields:
-//
-//     created_at
-//     published_at
-//     upload_date
-//     duration
-//     duration_iso
-//     latitude
-//     longitude
-//     locality
-//     district
-//     province
-//     description
-//     meta_description
-//     slug
-//     display_order
 //     is_active
+//     created_at (used for uploadDate when available)
+//
+// Duration columns are schema-dependent and are loaded with a safe fallback:
+//
+//     duration_iso
+//     duration
+//
+// Do not assume hub_videos has a description column. Location relationships
+// are resolved against published travel_bucket_list records when the video
+// title gives an unambiguous place match.
 //
 // SEO metadata is generated automatically at runtime.
 //
@@ -9124,8 +9134,9 @@ function App() {
         id,
         url,
         title,
-        custom_thumbnail_url
-      `)
+        custom_thumbnail_url,
+        created_at
+        `)
         .eq("is_active", true)
         .order("display_order", {
           ascending: false,
@@ -9146,9 +9157,46 @@ function App() {
         return [];
       }
 
-      const videos = Array.isArray(data)
+      let videos = Array.isArray(data)
         ? data
         : [];
+
+      // Duration is optional in hub_videos. Fetch it separately so a missing
+      // optional column never prevents the video library from loading.
+      if (videos.length > 0) {
+        const videoIds = videos.map((video) => video.id).filter(Boolean);
+        const durationSelections = [
+          ["duration_iso", "duration"],
+          ["duration_iso"],
+          ["duration"],
+        ];
+        for (const durationColumns of durationSelections) {
+          const { data: durationData, error: durationError } = await supabaseClient
+            .from("hub_videos")
+            .select(`id, ${durationColumns.join(", ")}`)
+            .in("id", videoIds);
+
+          if (!durationError && Array.isArray(durationData)) {
+            const durationsById = new Map(durationData.map((row) => [row.id, row]));
+            videos = videos.map((video) => {
+              const durationRow = durationsById.get(video.id) || {};
+              return {
+                ...video,
+                ...Object.fromEntries(
+                  durationColumns.map((column) => [column, durationRow[column]])
+                ),
+              };
+            });
+            break;
+          }
+
+          const missingColumn =
+            durationError?.code === "42703" ||
+            durationError?.code === "PGRST204" ||
+            /column .* does not exist/i.test(durationError?.message || "");
+          if (!missingColumn) break;
+        }
+      }
 
       setVideoLibrary(videos);
 
@@ -11346,14 +11394,30 @@ function App() {
     } else if (isPlannerOpen) {
       updateSEO(null, { isPlanner: true });
     } else if (isVideoDetailOpen && activeVideo) {
+      const videoWithAttraction = {
+        ...activeVideo,
+        relatedAttraction: findRelatedTouristAttraction(
+          activeVideo,
+          places,
+          "https://www.myjournalview.com"
+        ),
+      };
       updateSEO(null, {
         isVideo: true,
-        video: activeVideo,
+        video: videoWithAttraction,
       });
     } else if (isVideoGalleryActive) {
+      const videosWithAttractions = activeVideos.map((video) => ({
+        ...video,
+        relatedAttraction: findRelatedTouristAttraction(
+          video,
+          places,
+          "https://www.myjournalview.com"
+        ),
+      }));
       updateSEO(null, {
         isVideoGallery: true,
-        galleryVideos: activeVideos,
+        galleryVideos: videosWithAttractions,
       });
     } else if (activeGalleryPlace) {
       // 1. Active Photo Gallery View
