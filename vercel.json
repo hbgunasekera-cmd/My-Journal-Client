@@ -24,6 +24,10 @@
   ],
   "rewrites": [
     {
+      "source": "/video-feed.xml",
+      "destination": "/api/video-feed"
+    },
+    {
       "source": "/sitemap.xml",
       "destination": "/api/sitemap"
     },
