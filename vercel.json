@@ -48,6 +48,10 @@
       "destination": "/api/video-sitemap"
     },
     {
+      "source": "/:type((?:[pP]lace|[gG]allery|[vV]ideos))/:slug([^/]*[A-Z][^/]*)",
+      "destination": "/api/og-metadata?type=:type&slug=:slug"
+    },
+    {
       "source": "/:type([vV]ideos)",
       "has": [
         {
