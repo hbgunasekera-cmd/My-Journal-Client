@@ -28,6 +28,14 @@
       "destination": "/api/sitemap"
     },
     {
+      "source": "/article-sitemap.xml",
+      "destination": "/api/article-sitemap"
+    },
+    {
+      "source": "/page-sitemap.xml",
+      "destination": "/api/page-sitemap"
+    },
+    {
       "source": "/image-sitemap.xml",
       "destination": "/api/image-sitemap"
     },
