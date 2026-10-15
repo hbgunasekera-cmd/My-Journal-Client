@@ -6029,10 +6029,7 @@ export const PhotoGallery = React.memo(
 //     is_active
 //     created_at (used for uploadDate when available)
 //
-// Duration columns are schema-dependent and are loaded with a safe fallback:
-//
-//     duration_iso
-//     duration
+// Duration is omitted because hub_videos has no duration columns.
 //
 // Do not assume hub_videos has a description column. Location relationships
 // are resolved against published travel_bucket_list records when the video
@@ -9160,43 +9157,6 @@ function App() {
       let videos = Array.isArray(data)
         ? data
         : [];
-
-      // Duration is optional in hub_videos. Fetch it separately so a missing
-      // optional column never prevents the video library from loading.
-      if (videos.length > 0) {
-        const videoIds = videos.map((video) => video.id).filter(Boolean);
-        const durationSelections = [
-          ["duration_iso", "duration"],
-          ["duration_iso"],
-          ["duration"],
-        ];
-        for (const durationColumns of durationSelections) {
-          const { data: durationData, error: durationError } = await supabaseClient
-            .from("hub_videos")
-            .select(`id, ${durationColumns.join(", ")}`)
-            .in("id", videoIds);
-
-          if (!durationError && Array.isArray(durationData)) {
-            const durationsById = new Map(durationData.map((row) => [row.id, row]));
-            videos = videos.map((video) => {
-              const durationRow = durationsById.get(video.id) || {};
-              return {
-                ...video,
-                ...Object.fromEntries(
-                  durationColumns.map((column) => [column, durationRow[column]])
-                ),
-              };
-            });
-            break;
-          }
-
-          const missingColumn =
-            durationError?.code === "42703" ||
-            durationError?.code === "PGRST204" ||
-            /column .* does not exist/i.test(durationError?.message || "");
-          if (!missingColumn) break;
-        }
-      }
 
       setVideoLibrary(videos);
 

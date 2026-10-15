@@ -333,33 +333,9 @@ async function fetchRows(supabaseUrl, supabaseKey, table, params) {
 
 async function fetchHubVideos(supabaseUrl, supabaseKey, params) {
   const baseColumns = "id,url,title,custom_thumbnail_url,created_at,is_active";
-  const minimalColumns = "id,url,title,custom_thumbnail_url,is_active";
-  const selections = [
-    `${baseColumns},duration_iso,duration`,
-    `${baseColumns},duration_iso`,
-    `${baseColumns},duration`,
-    baseColumns,
-    `${minimalColumns},duration_iso,duration`,
-    `${minimalColumns},duration_iso`,
-    `${minimalColumns},duration`,
-    minimalColumns,
-  ];
-
-  for (const select of selections) {
-    const query = new URLSearchParams(params.toString());
-    query.set("select", select);
-
-    try {
-      return await fetchRows(supabaseUrl, supabaseKey, "hub_videos", query);
-    } catch (error) {
-      const missingOptionalColumn =
-        /42703|PGRST204/.test(String(error?.message || "")) ||
-        /column .* does not exist/i.test(String(error?.message || ""));
-      if (!missingOptionalColumn || select === minimalColumns) throw error;
-    }
-  }
-
-  return [];
+  const query = new URLSearchParams(params.toString());
+  query.set("select", baseColumns);
+  return fetchRows(supabaseUrl, supabaseKey, "hub_videos", query);
 }
 
 async function fetchPublishedAttractions(supabaseUrl, supabaseKey) {

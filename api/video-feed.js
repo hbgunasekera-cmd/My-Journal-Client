@@ -1,6 +1,5 @@
 import { createClient } from "@supabase/supabase-js";
 import { getSupabaseServerConfig } from "../server/supabase-config.js";
-import { normalizeVideoDurationValue } from "../src/utils/videoStructuredData.js";
 
 const DEFAULT_SITE_URL = "https://www.myjournalview.com";
 const BASE_VIDEO_COLUMNS = "id,url,title,custom_thumbnail_url,created_at,is_active";
@@ -128,43 +127,16 @@ function parseDate(value) {
   return Number.isNaN(date.getTime()) ? null : date;
 }
 
-function durationInSeconds(value) {
-  const normalized = normalizeVideoDurationValue(value);
-  if (!normalized) return null;
-  const parts = normalized.match(/^PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+(?:\.\d+)?)S)?$/i);
-  if (!parts) return null;
-  const seconds = (Number(parts[1] || 0) * 3600) +
-    (Number(parts[2] || 0) * 60) +
-    Number(parts[3] || 0);
-  return Number.isFinite(seconds) && seconds > 0 ? Math.round(seconds) : null;
-}
-
-function isMissingColumnError(error) {
-  return error?.code === "42703" || error?.code === "PGRST204" ||
-    /column .* does not exist/i.test(error?.message || "");
-}
-
 async function fetchVideos(supabase) {
-  const selections = [
-    `${BASE_VIDEO_COLUMNS},duration_iso,duration`,
-    `${BASE_VIDEO_COLUMNS},duration_iso`,
-    `${BASE_VIDEO_COLUMNS},duration`,
-    BASE_VIDEO_COLUMNS,
-  ];
+  const { data, error } = await supabase
+    .from("hub_videos")
+    .select(BASE_VIDEO_COLUMNS)
+    .eq("is_active", true)
+    .order("created_at", { ascending: false, nullsFirst: false })
+    .limit(20);
 
-  for (const columns of selections) {
-    const { data, error } = await supabase
-      .from("hub_videos")
-      .select(columns)
-      .eq("is_active", true)
-      .order("created_at", { ascending: false, nullsFirst: false })
-      .limit(20);
-
-    if (!error) return data || [];
-    if (!isMissingColumnError(error) || columns === BASE_VIDEO_COLUMNS) throw error;
-  }
-
-  return [];
+  if (error) throw error;
+  return data || [];
 }
 
 export default async function handler(req, res) {
@@ -215,10 +187,8 @@ export default async function handler(req, res) {
       const mediaPlayer = youtubeId
         ? `<media:player url="https://www.youtube-nocookie.com/embed/${escapeXml(youtubeId)}" />`
         : "";
-      const duration = durationInSeconds(video.duration_iso ?? video.duration);
-      const durationAttribute = duration ? ` duration="${duration}"` : "";
       const mediaContent = mediaPlayer
-        ? `<media:content medium="video"${durationAttribute}>${mediaPlayer}<media:title>${escapeXml(mediaTitle)}</media:title><media:description>${escapeXml(description)}</media:description>${thumbnailUrl ? `<media:thumbnail url="${escapeXml(thumbnailUrl)}" />` : ""}</media:content>`
+        ? `<media:content medium="video">${mediaPlayer}<media:title>${escapeXml(mediaTitle)}</media:title><media:description>${escapeXml(description)}</media:description>${thumbnailUrl ? `<media:thumbnail url="${escapeXml(thumbnailUrl)}" />` : ""}</media:content>`
         : "";
       const htmlDescription = [
         thumbnailUrl
