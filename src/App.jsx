@@ -12241,7 +12241,13 @@ function App() {
 
                   {/* Grid Directory */}
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-                    {places?.map((place) => {
+                    {(places || [])
+                      .filter((place) =>
+                        ["done", "completed", "visited"].includes(
+                          String(place.status || "").trim().toLowerCase(),
+                        ),
+                      )
+                      .map((place) => {
                       // Abstracted Access Restriction Status Configuration
                       const restrictionLevel = place.restriction_level?.trim() || 'None';
                       let statusLabel = "No Restriction";
@@ -12295,7 +12301,7 @@ function App() {
                           </div>
                         </article>
                       );
-                    })}
+                      })}
                   </div>
 
                 </div>
