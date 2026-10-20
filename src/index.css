@@ -1,5 +1,10 @@
 @import "tailwindcss";
 @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap');
+@custom-variant dark (&:where(.dark-theme-enabled, .dark-theme-enabled *));
+
+:root {
+  color-scheme: light;
+}
 
 /* ==========================================================================
    Base Styles & Layout Locking

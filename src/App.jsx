@@ -8895,96 +8895,6 @@ function App() {
 
 
   // ============================================================================
-  // OS THEME TRACKER
-  // ============================================================================
-  //
-  // The application follows the user's operating-system/browser theme.
-  //
-  // Light OS
-  //     ↓
-  // remove .dark
-  //
-  // Dark OS
-  //     ↓
-  // add .dark
-  //
-  // Existing Tailwind `dark:` classes remain active.
-  //
-  // Theme preference is intentionally NOT stored in localStorage.
-  // This prevents an old "dark"/"light" value from overriding the
-  // user's current operating-system preference.
-  //
-  // The MediaQueryList listener also allows the application to react
-  // immediately when the OS/browser theme changes while the app is open.
-  // ============================================================================
-
-  // ============================================================================
-  // OS THEME SYNCHRONIZATION
-  // ============================================================================
-
-  useEffect(() => {
-    if (typeof window === 'undefined') {
-      return undefined;
-    }
-
-    const mediaQuery = window.matchMedia(
-      '(prefers-color-scheme: dark)'
-    );
-
-    // --------------------------------------------------------------------------
-    // Apply theme to the document root.
-    // --------------------------------------------------------------------------
-
-    const applyTheme = (darkMode) => {
-      const root = document.documentElement;
-
-      if (darkMode) {
-        root.classList.add('dark');
-      } else {
-        root.classList.remove('dark');
-      }
-
-      // Keep browser-native controls aligned with the active theme.
-      root.style.colorScheme = darkMode
-        ? 'dark'
-        : 'light';
-    };
-
-    // --------------------------------------------------------------------------
-    // Initial synchronization.
-    // --------------------------------------------------------------------------
-
-    applyTheme(mediaQuery.matches);
-
-    // --------------------------------------------------------------------------
-    // React to operating-system/browser theme changes.
-    // --------------------------------------------------------------------------
-
-    const handleThemeChange = (event) => {
-      const darkMode = event.matches;
-
-      applyTheme(darkMode);
-    };
-
-    mediaQuery.addEventListener(
-      'change',
-      handleThemeChange
-    );
-
-    // --------------------------------------------------------------------------
-    // Cleanup.
-    // --------------------------------------------------------------------------
-
-    return () => {
-      mediaQuery.removeEventListener(
-        'change',
-        handleThemeChange
-      );
-    };
-  }, []);
-
-
-  // ============================================================================
   // NEWSLETTER PROMPT TRACKING
   // ============================================================================
 
@@ -10869,7 +10779,7 @@ function App() {
   };
 
   // ============================================================================
-  // 31. LIFECYCLE EFFECTS (API calls, Observer, Maps, Theme)
+  // 31. LIFECYCLE EFFECTS (API calls, Observer, Maps)
   // ============================================================================
 
   useEffect(() => {
