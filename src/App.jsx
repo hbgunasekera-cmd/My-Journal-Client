@@ -518,6 +518,10 @@ const getCategoryBreadcrumb = (category, t) => {
 const Breadcrumbs = ({ items = [], className = "" }) => {
   const visibleItems = items.filter((item) => item?.label);
   if (visibleItems.length === 0) return null;
+  const currentPageUrl =
+    typeof window === "undefined"
+      ? "https://www.myjournalview.com/"
+      : `${window.location.origin}${window.location.pathname}`;
 
   return (
     <nav aria-label="Breadcrumb" className={className}>
@@ -528,6 +532,7 @@ const Breadcrumbs = ({ items = [], className = "" }) => {
       >
         {visibleItems.map((item, index) => {
           const isCurrent = index === visibleItems.length - 1;
+          const itemUrl = item.href || currentPageUrl;
           return (
             <li
               key={`${item.href || item.label}-${index}`}
@@ -536,23 +541,14 @@ const Breadcrumbs = ({ items = [], className = "" }) => {
               itemScope
               itemType="https://schema.org/ListItem"
             >
-              {item.href && !isCurrent ? (
-                <a
-                  href={item.href}
-                  itemProp="item"
-                  className="hover:text-indigo-600 dark:hover:text-indigo-300 transition-colors"
-                >
-                  <span itemProp="name">{item.label}</span>
-                </a>
-              ) : (
-                <span
-                  itemProp="name"
-                  aria-current={isCurrent ? "page" : undefined}
-                  className={isCurrent ? "font-semibold" : ""}
-                >
-                  {item.label}
-                </span>
-              )}
+              <a
+                href={itemUrl}
+                itemProp="item"
+                aria-current={isCurrent ? "page" : undefined}
+                className={`${isCurrent ? "font-semibold" : "hover:text-indigo-600 dark:hover:text-indigo-300"} transition-colors`}
+              >
+                <span itemProp="name">{item.label}</span>
+              </a>
               <meta itemProp="position" content={String(index + 1)} />
               {!isCurrent && (
                 <ChevronRight aria-hidden="true" className="h-3 w-3 opacity-50" />
