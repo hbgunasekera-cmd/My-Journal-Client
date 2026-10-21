@@ -15,24 +15,57 @@ const CATEGORY_TERMS = {
   location: ["destination", "attraction", "place"],
 };
 
-const CATEGORY_LABELS = {
-  waterfall: "waterfall",
-  mountain: "mountain",
-  trail: "trail",
-  viewpoint: "viewpoint",
-  beach: "beach",
-  park: "park",
-  plateaus: "plateau",
-  reservedforest: "reserved forest",
-  monastery: "monastery",
-  archaeology: "archaeological site",
-  reservoir: "reservoir",
-  pool: "natural pool",
-  stream: "stream",
-  location: "destination",
-};
-
 const NARRATIVE_OPENING = /^(?:the )?(?:morning|evening|afternoon|sun|sunrise|sunset|journey|trip|day|weather|wind|rain)\b|^(?:we|i)\s+(?:arrived|started|set off|reached|began|found)\b|\bwas already making its presence felt\b/i;
+
+// Only descriptions in this registry may make factual claims in location
+// schema and social metadata. Verify each claim against an authoritative
+// source before adding it. Unknown locations receive a neutral description;
+// this does not alter the visible article text.
+const VERIFIED_LOCATION_SCHEMA_DESCRIPTIONS = new Map([
+  [
+    "thotupola mountain",
+    {
+      description:
+        "Thotupola Kanda (Thotupola Mountain) is Sri Lanka's third-highest peak at 2,357 metres, within Horton Plains National Park.",
+      source: "https://tourism.cp.gov.lk/en/hiking-n-trekking",
+    },
+  ],
+  [
+    "thotupola kanda",
+    {
+      description:
+        "Thotupola Kanda (Thotupola Mountain) is Sri Lanka's third-highest peak at 2,357 metres, within Horton Plains National Park.",
+      source: "https://tourism.cp.gov.lk/en/hiking-n-trekking",
+    },
+  ],
+  [
+    "totapolakanda",
+    {
+      description:
+        "Thotupola Kanda (Thotupola Mountain) is Sri Lanka's third-highest peak at 2,357 metres, within Horton Plains National Park.",
+      source: "https://tourism.cp.gov.lk/en/hiking-n-trekking",
+    },
+  ],
+]);
+
+function normalizeLocationKey(value) {
+  return String(value || "")
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9]+/g, " ")
+    .trim();
+}
+
+function getVerifiedLocationDescription(place = {}) {
+  for (const candidate of [place.slug, place.place_name, place.name]) {
+    const verified = VERIFIED_LOCATION_SCHEMA_DESCRIPTIONS.get(
+      normalizeLocationKey(candidate),
+    );
+    if (verified) return verified.description;
+  }
+  return "";
+}
 
 function cleanDescription(value) {
   if (typeof value !== "string") return "";
@@ -139,46 +172,14 @@ export function buildConciseSchemaDescription({
   return trimToLimit(description, maxLength);
 }
 
-export function buildConciseLocationSchemaDescription(place = {}, articleValue = null) {
-  let article = articleValue;
-  if (typeof article === "string") {
-    try {
-      article = JSON.parse(article);
-    } catch {
-      article = { story: article };
-    }
-  }
-  if (!article || typeof article !== "object" || Array.isArray(article)) article = {};
+export function buildConciseLocationSchemaDescription(place = {}) {
+  const verifiedDescription = getVerifiedLocationDescription(place);
+  if (verifiedDescription) return verifiedDescription;
 
-  const about = article.about && typeof article.about === "object" ? article.about : {};
-  const whyVisit = article.why_visit && typeof article.why_visit === "object" ? article.why_visit : {};
-  const placeName = place.place_name || place.name || "";
-  const locality = place.locality || place.city || "";
-  const category = place.category || "destination";
-  const categoryLabel = CATEGORY_LABELS[String(category).toLowerCase().replace(/[^a-z]/g, "")] || "destination";
-  const articleWord = /^[aeiou]/i.test(categoryLabel) ? "an" : "a";
-  const fallback = placeName
-    ? `${placeName} is ${articleWord} ${categoryLabel}${locality ? ` in ${locality}` : " in Sri Lanka"}.`
-    : "Destination in Sri Lanka.";
-
-  return buildConciseSchemaDescription({
-    candidates: [
-      { value: article.schema_description, weight: 8 },
-      { value: article.meta_description, weight: 7 },
-      { value: article.seo_description, weight: 7 },
-      { value: article.seo_intro, weight: 6 },
-      { value: about.overview, weight: 5 },
-      { value: whyVisit.summary, weight: 4 },
-      { value: place.short_description, weight: 4 },
-      { value: place.description, weight: 3 },
-      { value: article.story, weight: 0 },
-      { value: typeof articleValue === "string" ? articleValue : "", weight: 0 },
-    ],
-    placeName,
-    locality,
-    category,
-    fallback,
-  });
+  const placeName = cleanDescription(place.place_name || place.name || "");
+  return placeName
+    ? `Explore ${placeName} in My Journal's destination guide.`
+    : "Explore this destination in My Journal.";
 }
 
 export function buildConciseVideoSchemaDescription(video = {}, title = "") {

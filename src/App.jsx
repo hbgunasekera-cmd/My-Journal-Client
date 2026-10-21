@@ -2198,11 +2198,6 @@ export const injectJSONLDSchema = (
       ? place.ai_article
       : {};
 
-  const legacyStory =
-    typeof place.ai_article === "string"
-      ? place.ai_article
-      : null;
-
   const metrics =
     article?.metrics &&
       typeof article.metrics === "object"
@@ -2234,14 +2229,7 @@ export const injectJSONLDSchema = (
   // 12.8 Place description
   // ---------------------------------------------------------------------
 
-  const placeDescription = buildConciseLocationSchemaDescription(
-    place,
-    place.ai_article ?? {
-      ...article,
-      story: article.story || legacyStory,
-      about,
-    }
-  );
+  const placeDescription = buildConciseLocationSchemaDescription(place);
 
   // ---------------------------------------------------------------------
   // 12.9 Image Gallery schema
@@ -2447,6 +2435,11 @@ export const injectJSONLDSchema = (
   // 12.10 TouristAttraction schema
   // ---------------------------------------------------------------------
 
+  const latitude = Number(place.latitude);
+  const longitude = Number(place.longitude);
+  const hasCoordinates =
+    Number.isFinite(latitude) && Number.isFinite(longitude);
+
   const additionalProperty = [];
 
   if (
@@ -2505,12 +2498,10 @@ export const injectJSONLDSchema = (
   }
 
   if (
-    metrics?.elevation_m !==
-    undefined &&
-    metrics?.elevation_m !==
-    null &&
-    metrics?.elevation_m !==
-    ""
+    metrics?.elevation_m !== undefined &&
+    metrics?.elevation_m !== null &&
+    metrics?.elevation_m !== "" &&
+    !hasCoordinates
   ) {
     additionalProperty.push({
       "@type":
@@ -2523,24 +2514,6 @@ export const injectJSONLDSchema = (
         `${metrics.elevation_m} m`
     });
   }
-
-  const latitude =
-    Number(
-      place.latitude
-    );
-
-  const longitude =
-    Number(
-      place.longitude
-    );
-
-  const hasCoordinates =
-    Number.isFinite(
-      latitude
-    ) &&
-    Number.isFinite(
-      longitude
-    );
 
   const touristSchema = {
     "@context":
@@ -2561,68 +2534,43 @@ export const injectJSONLDSchema = (
     url:
       canonicalUrl,
 
+    mainEntityOfPage: {
+      "@type": "WebPage",
+      "@id": canonicalUrl,
+    },
+
     image:
       place.cover_photo_url ||
       `${BASE_URL}/my-journal-logo.png`,
 
-    isPartOf: {
-      "@type":
-        "WebSite",
-
-      name:
-        "My Journal",
-
-      url:
-        BASE_URL
-    },
-
-    location: {
-      "@type":
-        "Place",
-
-      ...(locality
-        ? {
-          name:
-            locality,
-
+    ...(locality
+      ? {
+        containedInPlace: {
+          "@type": "Place",
+          name: locality,
           address: {
-            "@type":
-              "PostalAddress",
+            "@type": "PostalAddress",
+            addressLocality: locality,
+            addressCountry: "LK",
+          },
+        },
+      }
+      : {}),
 
-            addressLocality:
-              locality,
-
-            addressCountry:
-              "LK"
-          }
-        }
-        : {}),
-
-      ...(hasCoordinates
-        ? {
-          geo: {
-            "@type":
-              "GeoCoordinates",
-
-            latitude,
-
-            longitude
-          }
-        }
-        : {}),
-
-      ...(metrics?.elevation_m !==
-        undefined &&
-        metrics?.elevation_m !==
-        null &&
-        metrics?.elevation_m !==
-        ""
-        ? {
-          elevation:
-            `${metrics.elevation_m} m`
-        }
-        : {})
-    },
+    ...(hasCoordinates
+      ? {
+        geo: {
+          "@type": "GeoCoordinates",
+          latitude,
+          longitude,
+          ...(metrics?.elevation_m !== undefined &&
+            metrics?.elevation_m !== null &&
+            metrics?.elevation_m !== ""
+            ? { elevation: `${metrics.elevation_m} m` }
+            : {}),
+        },
+      }
+      : {}),
 
     ...(additionalProperty.length > 0
       ? {
@@ -2882,10 +2830,7 @@ export const updateSEO = (
       getMediaSEOPlaceSlug(
         place
       );
-    const concisePlaceDescription = buildConciseLocationSchemaDescription(
-      place,
-      place.ai_article
-    );
+    const concisePlaceDescription = buildConciseLocationSchemaDescription(place);
 
     // -------------------------------------------------------------------
     // 12A.7.1 Gallery

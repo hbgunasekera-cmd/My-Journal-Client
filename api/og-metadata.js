@@ -659,7 +659,7 @@ export default async function handler(req, res) {
         const gallery = routeType === "gallery";
         title = gallery ? `${placeName} Gallery | My Journal` : `${placeName} | My Journal`;
         const article = parseArticle(place.ai_article);
-        const schemaDescription = buildConciseLocationSchemaDescription(place, article);
+        const schemaDescription = buildConciseLocationSchemaDescription(place);
         description = schemaDescription;
         articleContentHtml = renderArticleContent(article);
         imageUrl = firstSocialImage(
