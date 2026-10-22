@@ -177,9 +177,40 @@ export function buildConciseLocationSchemaDescription(place = {}) {
   if (verifiedDescription) return verifiedDescription;
 
   const placeName = cleanDescription(place.place_name || place.name || "");
-  return placeName
-    ? `Explore ${placeName} in My Journal's destination guide.`
-    : "Explore this destination in My Journal.";
+  if (!placeName) return "Explore this destination in My Journal.";
+
+  const category = cleanDescription(place.category || "");
+  const locality = cleanDescription(place.locality || "");
+  const genericCategories = new Set(["location", "destination", "attraction"]);
+  const location = [locality, "Sri Lanka"].filter(Boolean).join(", ");
+
+  const categoryText = category && !genericCategories.has(category.toLowerCase())
+    ? `listed under the ${category} category`
+    : "listed as a destination";
+
+  return `${placeName} is ${categoryText} in ${location}. Explore its location guide and photos on My Journal.`;
+}
+
+export function buildLocationMetaDescription(place = {}, { isGallery = false } = {}) {
+  const placeName = cleanDescription(place.place_name || place.name || "");
+  if (!placeName) return "Explore this destination in My Journal.";
+
+  const verifiedDescription = getVerifiedLocationDescription(place);
+  if (verifiedDescription) {
+    return `${isGallery ? `Photo gallery for ${placeName}.` : `Travel guide for ${placeName}.`} ${verifiedDescription}`;
+  }
+
+  const category = cleanDescription(place.category || "");
+  const locality = cleanDescription(place.locality || "");
+  const genericCategories = new Set(["location", "destination", "attraction"]);
+  const classification = category && !genericCategories.has(category.toLowerCase())
+    ? `listed under ${category}`
+    : "a destination";
+  const location = [locality, "Sri Lanka"].filter(Boolean).join(", ");
+
+  return isGallery
+    ? `Photo gallery for ${placeName}, ${classification} in ${location}. View this destination's photos on My Journal.`
+    : `Travel guide for ${placeName}, ${classification} in ${location}. Read its location details on My Journal.`;
 }
 
 export function buildConciseVideoSchemaDescription(video = {}, title = "") {

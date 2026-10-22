@@ -22,7 +22,12 @@ import {
   buildConciseImageSchemaDescription,
   buildConciseLocationSchemaDescription,
   buildConciseVideoSchemaDescription,
+  buildLocationMetaDescription,
 } from './utils/schemaDescriptions.js';
+import {
+  buildLocationPageTitle,
+  getLocationHeroImageSource,
+} from './utils/locationSeo.js';
 import { findRelatedTouristAttraction } from './utils/videoStructuredData.js';
 
 // =======================================================================
@@ -2815,35 +2820,23 @@ export const updateSEO = (
   else if (
     hasPlace
   ) {
-    const placeName =
-      seoCleanText(
-        place.place_name
-      );
-
-    const categoryName =
-      seoCleanText(
-        place.category,
-        "Attraction"
-      );
-
     const slug =
       getMediaSEOPlaceSlug(
         place
       );
     const concisePlaceDescription = buildConciseLocationSchemaDescription(place);
+    const placeMetaDescription = buildLocationMetaDescription(place, { isGallery });
 
     // -------------------------------------------------------------------
     // 12A.7.1 Gallery
     // -------------------------------------------------------------------
 
     if (isGallery) {
-      title =
-        `${placeName} Photos (${categoryName})${BRAND_SUFFIX}`;
+      title = buildLocationPageTitle(place, { isGallery: true });
 
-      ogTitle =
-        `${placeName} - Aerial Drone & Field Photos`;
+      ogTitle = title;
 
-      description = concisePlaceDescription;
+      description = placeMetaDescription;
 
       rawCanonicalUrl =
         `${BASE_URL}/gallery/${slug}`;
@@ -2854,13 +2847,11 @@ export const updateSEO = (
     // -------------------------------------------------------------------
 
     else {
-      title =
-        `${placeName} (${categoryName}) Guide${BRAND_SUFFIX}`;
+      title = buildLocationPageTitle(place);
 
-      ogTitle =
-        `${placeName} Trail Guide: GPS Maps & Field Notes`;
+      ogTitle = title;
 
-      description = concisePlaceDescription;
+      description = placeMetaDescription;
 
       rawCanonicalUrl =
         `${BASE_URL}/place/${slug}`;
@@ -2870,16 +2861,13 @@ export const updateSEO = (
     // 12A.7.3 Social image
     // -------------------------------------------------------------------
 
-    if (
-      place.cover_photo_url
-    ) {
-      imageUrl =
-        getOptimizedUrl(
-          place.cover_photo_url,
-          1200,
-          82
-        );
-    }
+    const heroImageSource = getLocationHeroImageSource(place);
+    const optimizedHeroImage = heroImageSource
+      ? getOptimizedUrl(heroImageSource, 1200, 82)
+      : "";
+    imageUrl = optimizedHeroImage
+      ? new URL(optimizedHeroImage, `${BASE_URL}/`).href
+      : "";
   }
 
   // ---------------------------------------------------------------------
@@ -3016,6 +3004,7 @@ export const updateSEO = (
   // ---------------------------------------------------------------------
 
   if (
+    !hasPlace &&
     title.length > 60
   ) {
     const brandIndex =
@@ -3074,6 +3063,8 @@ export const updateSEO = (
   if (
     typeof document !== "undefined"
   ) {
+    const titleElements = Array.from(document.querySelectorAll("title"));
+    titleElements.slice(1).forEach((duplicate) => duplicate.remove());
     document.title =
       title;
   }
@@ -3085,10 +3076,11 @@ export const updateSEO = (
   if (
     typeof document !== "undefined"
   ) {
-    let canonicalEl =
-      document.querySelector(
-        'link[rel="canonical"]'
-      );
+    const canonicalElements = Array.from(
+      document.querySelectorAll('link[rel="canonical"]')
+    );
+    let canonicalEl = canonicalElements.shift();
+    canonicalElements.forEach((duplicate) => duplicate.remove());
 
     if (!canonicalEl) {
       canonicalEl =
@@ -3110,6 +3102,22 @@ export const updateSEO = (
       "href",
       canonicalUrl
     );
+
+    const imageSourceElements = Array.from(
+      document.querySelectorAll('link[rel="image_src"]')
+    );
+    let imageSourceEl = imageSourceElements.shift();
+    imageSourceElements.forEach((duplicate) => duplicate.remove());
+    if (!imageUrl) {
+      imageSourceEl?.remove();
+    } else {
+      if (!imageSourceEl) {
+        imageSourceEl = document.createElement("link");
+        imageSourceEl.setAttribute("rel", "image_src");
+        document.head.appendChild(imageSourceEl);
+      }
+      imageSourceEl.setAttribute("href", imageUrl);
+    }
   }
 
   // ---------------------------------------------------------------------
@@ -3140,6 +3148,12 @@ export const updateSEO = (
       "og:image":
         imageUrl,
 
+      "og:image:secure_url":
+        imageUrl,
+
+      "og:image:alt":
+        imageUrl ? title : "",
+
       "og:url":
         canonicalUrl,
 
@@ -3168,7 +3182,10 @@ export const updateSEO = (
         description,
 
       "twitter:image":
-        imageUrl
+        imageUrl,
+
+      "twitter:image:alt":
+        imageUrl ? title : ""
     };
 
     Object.entries(
@@ -3184,10 +3201,23 @@ export const updateSEO = (
             ? `meta[property="${key}"]`
             : `meta[name="${key}"]`;
 
-        let el =
-          document.querySelector(
-            selector
-          );
+        const matchingElements = Array.from(
+          document.querySelectorAll(selector)
+        );
+        let el = matchingElements.shift();
+        matchingElements.forEach((duplicate) => duplicate.remove());
+
+        const imageMeta = [
+          "og:image",
+          "og:image:secure_url",
+          "og:image:alt",
+          "twitter:image",
+          "twitter:image:alt",
+        ].includes(key);
+        if (imageMeta && !content) {
+          el?.remove();
+          return;
+        }
 
         if (!el) {
           el =
@@ -9465,7 +9495,9 @@ function App() {
     if (!place) return;
 
     setTranslatedContent(null);
-    const isPublished = place.status === 'done';
+    const isPublished = ["done", "completed", "visited"].includes(
+      String(place.status || "").toLowerCase()
+    );
     const slug = getMediaSEOPlaceSlug(place);
 
     if (isPublished) {
@@ -11202,12 +11234,22 @@ function App() {
         decodeURIComponent(slug)
           .replace(/-/g, " ");
 
-      const targetPlace =
-        places.find(
-          (place) =>
-            getMediaSEOPlaceSlug(place) === slug ||
-            place.place_name?.toLowerCase() === decodedName.toLowerCase()
-        );
+      const publishedPlaces = places.filter((place) =>
+        ["done", "completed", "visited"].includes(String(place.status || "").toLowerCase())
+      );
+      const slugMatches = publishedPlaces.filter(
+        (place) => getMediaSEOPlaceSlug(place) === slug
+      );
+      const nameMatches = slugMatches.length === 0
+        ? publishedPlaces.filter(
+          (place) => place.place_name?.toLowerCase() === decodedName.toLowerCase()
+        )
+        : [];
+      const targetPlace = slugMatches.length === 1
+        ? slugMatches[0]
+        : nameMatches.length === 1
+          ? nameMatches[0]
+          : null;
 
       if (!targetPlace) {
         toast.error("Location not found.");
@@ -11221,6 +11263,14 @@ function App() {
       }
 
       if (type === "gallery") {
+        const canonicalGalleryPath = `/gallery/${getMediaSEOPlaceSlug(targetPlace)}`;
+        if (window.location.pathname !== canonicalGalleryPath) {
+          window.history.replaceState(
+            { ...(window.history.state || {}), gallery: true, placeId: targetPlace.id },
+            "",
+            canonicalGalleryPath
+          );
+        }
         setActiveId(targetPlace.id);
       } else if (type === "place") {
         handleOpenArticle(targetPlace);

@@ -2,7 +2,12 @@ import { getSupabaseServerConfig } from "../server/supabase-config.js";
 import {
   buildConciseLocationSchemaDescription,
   buildConciseVideoSchemaDescription,
+  buildLocationMetaDescription,
 } from "../src/utils/schemaDescriptions.js";
+import {
+  buildLocationPageTitle,
+  getLocationHeroImageSource,
+} from "../src/utils/locationSeo.js";
 import {
   findRelatedTouristAttraction,
   normalizeVideoDurationValue,
@@ -160,7 +165,7 @@ function buildPlaceSchema(placeName, title, description, imageUrl, canonicalUrl,
     mainEntityOfPage: { "@type": "WebPage", "@id": canonicalUrl },
     headline: title,
     description,
-    image: [imageUrl],
+    ...(imageUrl ? { image: [imageUrl] } : {}),
     about: { "@type": "Place", name: placeName },
     author: { "@type": "Organization", name: "My Journal", url: DEFAULT_SITE_URL },
     publisher: {
@@ -221,7 +226,10 @@ function extractImageUrl(value) {
 
 function socialImageUrl(value, fallback) {
   const source = extractImageUrl(value);
-  const safeUrl = absoluteHttpUrl(source, "");
+  const relativeFallback = String(source).startsWith("/")
+    ? new URL(source, DEFAULT_SITE_URL).href
+    : "";
+  const safeUrl = absoluteHttpUrl(source, relativeFallback);
   if (!safeUrl) return fallback;
 
   try {
@@ -458,7 +466,7 @@ export default async function handler(req, res) {
   const cleanSlug = videoRoute
     ? decodedSlug.toLowerCase()
     : generateSlug(decodedSlug);
-  const canonicalUrl = videoGallery
+  let canonicalUrl = videoGallery
     ? `${baseUrl}/videos`
     : `${baseUrl}/${pathType}/${encodeURIComponent(cleanSlug)}`;
 
@@ -633,22 +641,34 @@ export default async function handler(req, res) {
       }
     } else {
       const params = new URLSearchParams({
-        select: "place_name,slug,cover_photo_url,ai_article,album_photos",
+        select: "place_name,slug,category,locality,cover_photo_url,ai_article,album_photos",
         status: "in.(done,Completed,Visited)",
         slug: `ilike.${cleanSlug}`,
-        limit: "1",
+        limit: "2",
       });
-      let places = await fetchRows(supabaseUrl, supabaseKey, "travel_bucket_list", params);
+      const slugMatches = await fetchRows(supabaseUrl, supabaseKey, "travel_bucket_list", params);
+      let places = slugMatches.length === 1 ? slugMatches : [];
 
-      if (!places.length) {
+      if (!slugMatches.length) {
         const decodedName = decodedSlug.replace(/-/g, " ").replace(/[\\%_]/g, "\\$&");
         const fallbackParams = new URLSearchParams({
-          select: "place_name,slug,cover_photo_url,ai_article,album_photos",
+          select: "place_name,slug,category,locality,cover_photo_url,ai_article,album_photos",
           status: "in.(done,Completed,Visited)",
           place_name: `ilike.${decodedName}`,
-          limit: "1",
+          limit: "2",
         });
-        places = await fetchRows(supabaseUrl, supabaseKey, "travel_bucket_list", fallbackParams);
+        const nameMatches = await fetchRows(supabaseUrl, supabaseKey, "travel_bucket_list", fallbackParams);
+        if (nameMatches.length === 1) {
+          const matchedPlace = nameMatches[0];
+          const storedSlug = generateSlug(matchedPlace.slug || matchedPlace.place_name);
+          if (storedSlug && storedSlug !== cleanSlug) {
+            canonicalUrl = `${baseUrl}/${pathType}/${encodeURIComponent(storedSlug)}`;
+            res.setHeader("Location", canonicalUrl);
+            res.setHeader("Cache-Control", "s-maxage=31536000, immutable");
+            return res.status(301).end();
+          }
+          if (storedSlug === cleanSlug) places = nameMatches;
+        }
       }
 
       const place = places[0];
@@ -657,18 +677,13 @@ export default async function handler(req, res) {
       } else {
         const placeName = cleanText(place.place_name, "Sri Lanka Backcountry Location");
         const gallery = routeType === "gallery";
-        title = gallery ? `${placeName} Gallery | My Journal` : `${placeName} | My Journal`;
+        title = buildLocationPageTitle(place, { isGallery: gallery });
         const article = parseArticle(place.ai_article);
         const schemaDescription = buildConciseLocationSchemaDescription(place);
-        description = schemaDescription;
+        description = buildLocationMetaDescription(place, { isGallery: gallery });
         articleContentHtml = renderArticleContent(article);
-        imageUrl = firstSocialImage(
-          [
-            place.cover_photo_url,
-            ...(Array.isArray(place.album_photos) ? place.album_photos : []),
-          ],
-          defaultImage,
-        );
+        const heroImageSource = getLocationHeroImageSource(place);
+        imageUrl = heroImageSource ? socialImageUrl(heroImageSource, "") : "";
         galleryImages = Array.isArray(place.album_photos)
           ? place.album_photos.slice(0, 50)
             .map((photo, index) => {
@@ -701,6 +716,7 @@ export default async function handler(req, res) {
     title = "404 - Page Not Found | My Journal";
     description = "The requested location, gallery, or video could not be found on My Journal.";
   }
+  description = truncateText(description, 155);
 
   try {
     const indexResponse = await fetch(`${baseUrl}/index.html`);
@@ -725,21 +741,22 @@ export default async function handler(req, res) {
       <meta name="description" content="${safeDescription}" />
       ${robotsTag}
       <link rel="canonical" href="${safeCanonicalUrl}" />
+      ${safeImageUrl ? `<link rel="image_src" href="${safeImageUrl}" />` : ""}
       <meta property="og:type" content="${openGraphType}" />
       <meta property="og:site_name" content="My Journal" />
       <meta property="og:url" content="${safeCanonicalUrl}" />
       <meta property="og:title" content="${safeTitle}" />
       <meta property="og:description" content="${safeDescription}" />
-      <meta property="og:image" content="${safeImageUrl}" />
+      ${safeImageUrl ? `<meta property="og:image" content="${safeImageUrl}" />
       <meta property="og:image:secure_url" content="${safeImageUrl}" />
-      <meta property="og:image:alt" content="${safeTitle}" />
+      <meta property="og:image:alt" content="${safeTitle}" />` : ""}
       ${videoTags}
       <meta name="twitter:card" content="summary_large_image" />
       <meta name="twitter:url" content="${safeCanonicalUrl}" />
       <meta name="twitter:title" content="${safeTitle}" />
       <meta name="twitter:description" content="${safeDescription}" />
-      <meta name="twitter:image" content="${safeImageUrl}" />
-      <meta name="twitter:image:alt" content="${safeTitle}" />`;
+      ${safeImageUrl ? `<meta name="twitter:image" content="${safeImageUrl}" />
+      <meta name="twitter:image:alt" content="${safeTitle}" />` : ""}`;
 
     const structuredData = videoSchema || pageSchema;
     const schemaTag = structuredData
@@ -747,12 +764,13 @@ export default async function handler(req, res) {
       : "";
 
     html = html
-      .replace(/<title>[\s\S]*?<\/title>/i, "")
+      .replace(/<title>[\s\S]*?<\/title>/gi, "")
       .replace(/<meta\s+name=["']description["'][\s\S]*?>/gi, "")
       .replace(/<meta\s+name=["']robots["'][\s\S]*?>/gi, "")
       .replace(/<meta\s+property=["']og:[\s\S]*?>/gi, "")
       .replace(/<meta\s+name=["']twitter:[\s\S]*?>/gi, "")
-      .replace(/<link\s+rel=["']canonical["'][\s\S]*?>/gi, "");
+      .replace(/<link\s+rel=["']canonical["'][\s\S]*?>/gi, "")
+      .replace(/<link\s+rel=["']image_src["'][\s\S]*?>/gi, "");
 
     if (!/<\/head>/i.test(html) || !/<div\b(?=[^>]*\bid\s*=["']root["'])[^>]*>/i.test(html)) {
       throw new Error("Index document does not have the expected HTML shell.");
@@ -764,7 +782,7 @@ export default async function handler(req, res) {
       mediaContent = `<iframe src="https://www.youtube-nocookie.com/embed/${escapeHtml(videoId)}" title="${safeTitle}" style="display:block;width:100%;aspect-ratio:16/9;border:0;border-radius:16px" loading="lazy" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>`;
     } else {
       const heroAlt = galleryImages.find((photo) => photo.url === imageUrl)?.alt || title;
-      const heroImage = imageUrl !== defaultImage
+      const heroImage = imageUrl
         ? `<img src="${safeImageUrl}" alt="${escapeHtml(heroAlt)}" style="display:block;width:100%;height:auto;max-height:72vh;object-fit:contain;border-radius:16px" fetchpriority="high" />`
         : "";
       const additionalImages = galleryImages

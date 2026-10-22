@@ -97,10 +97,16 @@ export default async function handler(req, res) {
       page += 1;
     }
 
+    const slugCounts = new Map();
+    for (const place of places) {
+      const slug = generateSlug(place.slug || place.place_name);
+      if (slug) slugCounts.set(slug, (slugCounts.get(slug) || 0) + 1);
+    }
+
     let xml = `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">`;
     for (const place of places) {
       const slug = generateSlug(place.slug || place.place_name);
-      if (!slug) continue;
+      if (!slug || slugCounts.get(slug) !== 1) continue;
 
       const lastMod = formatDateOnly(place.created_at);
       xml += `\n  <url><loc>${escapeXml(`${baseUrl}/place/${slug}`)}</loc>`;

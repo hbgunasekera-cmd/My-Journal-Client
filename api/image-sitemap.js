@@ -95,45 +95,61 @@ export default async function handler(req, res) {
         if (page3.error) throw page3.error;
 
         const places = [...(page1.data || []), ...(page2.data || []), ...(page3.data || [])];
+        const entries = places.map((place) => {
+            const locationSlug = generateSlug(place.slug || place.place_name);
+            const albumPhotos = Array.isArray(place.album_photos) ? place.album_photos : [];
+            const sourceImages = [...new Set([place.cover_photo_url, ...albumPhotos].filter(Boolean).map((photo) => {
+                if (typeof photo === "string") return photo.trim();
+                return String(photo?.url || photo?.src || photo?.image_url || "").trim();
+            }).filter(Boolean))];
+            const images = sourceImages.map((source) => {
+                try {
+                    return { url: getSiteImageUrl(source, baseUrl) };
+                } catch {
+                    return null;
+                }
+            }).filter(Boolean);
+            return { place, locationSlug, images };
+        });
+
+        const slugCounts = new Map();
+        const imageOwners = new Map();
+        for (const entry of entries) {
+            if (!entry.locationSlug) continue;
+            slugCounts.set(entry.locationSlug, (slugCounts.get(entry.locationSlug) || 0) + 1);
+            for (const image of entry.images) {
+                const owners = imageOwners.get(image.url) || new Set();
+                owners.add(entry.locationSlug);
+                imageOwners.set(image.url, owners);
+            }
+        }
 
         let xml = '<?xml version="1.0" encoding="UTF-8"?>\n';
         xml += '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">\n';
 
-        places.forEach((place) => {
-            const albumPhotos = Array.isArray(place.album_photos) ? place.album_photos : [];
-            if (!place.cover_photo_url && albumPhotos.length === 0) return;
+        entries.forEach(({ place, locationSlug, images: entryImages }) => {
+            if (!locationSlug || slugCounts.get(locationSlug) !== 1) return;
 
             const placeName = cleanText(place.place_name, "Sri Lanka Backcountry Location");
             const category = cleanText(place.category, "natural attraction");
             const locality = cleanText(place.locality, "Sri Lanka");
-            const locationSlug = generateSlug(place.slug || place.place_name);
-
-            if (!locationSlug) return;
             const pageUrl = `${baseUrl}/gallery/${locationSlug}`;
             const lastMod = formatDateOnly(place.created_at);
             const lastModTag = lastMod ? `<lastmod>${lastMod}</lastmod>` : "";
 
-            const images = [...new Set([place.cover_photo_url, ...albumPhotos].filter(Boolean).map((photo) => {
-                if (typeof photo === "string") return photo.trim();
-                return String(photo?.url || photo?.src || photo?.image_url || "").trim();
-            }).filter(Boolean))];
+            const images = entryImages
+                .filter((image) => imageOwners.get(image.url)?.size === 1)
+                .map((image) => image.url) || [];
 
             if (images.length === 0) return;
 
             xml += `  <url>\n    <loc>${escapeXml(pageUrl)}</loc>\n    ${lastModTag}\n`;
 
             images.forEach((imageUrl, index) => {
-                let absoluteImageUrl;
-                try {
-                    absoluteImageUrl = getSiteImageUrl(imageUrl, baseUrl);
-                } catch {
-                    return; // STRICT SKIP: Google strictly rejects sitemaps if relative URLs slip through
-                }
-
                 const title = getImageTitle(placeName, category, index);
                 const caption = getImageCaption(placeName, locality, category, index);
 
-                xml += `    <image:image><image:loc>${escapeXml(absoluteImageUrl)}</image:loc><image:title>${escapeXml(title)}</image:title><image:caption>${escapeXml(caption)}</image:caption></image:image>\n`;
+                xml += `    <image:image><image:loc>${escapeXml(imageUrl)}</image:loc><image:title>${escapeXml(title)}</image:title><image:caption>${escapeXml(caption)}</image:caption></image:image>\n`;
             });
             xml += `  </url>\n`;
         });
