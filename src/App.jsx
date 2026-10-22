@@ -3503,14 +3503,20 @@ export const invokeInteractionEvent = async (eventType, payload = {}) => {
   if (eventType === 'share') {
     const shareType = payload.share_type;
     const isVideoShare = shareType === 'video';
+    const videoTitle =
+      typeof payload.video_title === 'string'
+        ? payload.video_title
+          .replace(/[^\p{L}\p{N}\s]/gu, '')
+          .replace(/\s+/g, ' ')
+          .trim()
+        : '';
     if (!['article', 'gallery', 'video'].includes(shareType)) {
       throw new Error('Share type must be article, gallery, or video.');
     }
     if (
       isVideoShare &&
       (
-        typeof payload.video_title !== 'string' ||
-        !payload.video_title.trim() ||
+        !videoTitle ||
         typeof payload.video_id !== 'string' ||
         !payload.video_id.trim()
       )
@@ -3532,7 +3538,7 @@ export const invokeInteractionEvent = async (eventType, payload = {}) => {
       ? {
         ...shareRecord,
         video_id: payload.video_id.trim(),
-        video_title: payload.video_title.trim(),
+        video_title: videoTitle,
       }
       : shareRecord;
 
