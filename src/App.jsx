@@ -10698,10 +10698,19 @@ function App() {
       videoSEO?.title ||
       video?.title ||
       "My Journal video";
-    void handleShareEvent(null, "video", {
-      id: String(video.id || videoSEO?.youtubeId || ""),
-      title: video?.title || videoSEO?.title || name,
-    });
+    const ownerMode =
+      new URLSearchParams(window.location.search).get("mode") === "owner";
+    if (ownerMode) {
+      localStorage.setItem("owner_auth_token", "owner");
+    }
+    const isOwnerSession =
+      ownerMode || localStorage.getItem("owner_auth_token") === "owner";
+    if (!isOwnerSession) {
+      void handleShareEvent(null, "video", {
+        id: String(video.id || videoSEO?.youtubeId || ""),
+        title: video?.title || videoSEO?.title || name,
+      });
+    }
 
     const url = new URL(
       getVideoPageUrl(video, index),
