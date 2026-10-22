@@ -9695,7 +9695,7 @@ function App() {
         "owner_auth_token"
       ) === "owner" ||
       !supabaseClient ||
-      (!locationId && shareType !== "Video")
+      (!locationId && shareType !== "video")
     ) {
       return;
     }
@@ -9706,7 +9706,7 @@ function App() {
         {
           location_id: locationId,
           share_type: shareType,
-          ...(shareType === "Video"
+          ...(shareType === "video"
             ? {
               video_id: video?.id,
               video_title: video?.title,
@@ -10671,7 +10671,7 @@ function App() {
       videoSEO?.title ||
       video?.title ||
       "My Journal video";
-    void handleShareEvent(null, "Video", {
+    void handleShareEvent(null, "video", {
       id: video.id || videoSEO?.youtubeId,
       title: video?.title || videoSEO?.title || name,
     });
