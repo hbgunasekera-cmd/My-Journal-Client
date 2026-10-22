@@ -3500,21 +3500,30 @@ export const invokeInteractionEvent = async (eventType, payload = {}) => {
     return { success: true };
   }
 
-  if (!locationId) {
-    throw new Error(`A location_id is required for ${eventType} events.`);
-  }
-
   if (eventType === 'share') {
     const shareType = payload.share_type;
-    if (shareType !== 'article' && shareType !== 'gallery') {
-      throw new Error('Share type must be article or gallery.');
+    const isVideoShare = shareType === 'video';
+    if (!['article', 'gallery', 'video'].includes(shareType)) {
+      throw new Error('Share type must be article, gallery, or video.');
+    }
+    if (isVideoShare && (!payload.video_id || !payload.video_title)) {
+      throw new Error('Video shares require a video_id and video_title.');
+    }
+    if (!isVideoShare && !locationId) {
+      throw new Error(`A location_id is required for ${shareType} share events.`);
     }
 
     const { error } = await supabaseClient
       .from('location_shares')
       .insert([{
-        location_id: locationId,
+        location_id: isVideoShare ? null : locationId,
         type: shareType,
+        ...(isVideoShare
+          ? {
+            video_id: String(payload.video_id),
+            video_title: String(payload.video_title),
+          }
+          : {}),
         country: metadata.country,
         city: metadata.city,
         ip_address: metadata.ip_address,
@@ -3522,6 +3531,10 @@ export const invokeInteractionEvent = async (eventType, payload = {}) => {
 
     if (error) throw error;
     return { success: true };
+  }
+
+  if (!locationId) {
+    throw new Error(`A location_id is required for ${eventType} events.`);
   }
 
   if (eventType === 'like' || eventType === 'unlike') {
@@ -9651,7 +9664,8 @@ function App() {
 
   const handleShareEvent = async (
     locationId,
-    shareType = "article"
+    shareType = "article",
+    video = null
   ) => {
     // Localhost exclusion
     const host = window.location.hostname;
@@ -9681,7 +9695,7 @@ function App() {
         "owner_auth_token"
       ) === "owner" ||
       !supabaseClient ||
-      !locationId
+      (!locationId && shareType !== "Video")
     ) {
       return;
     }
@@ -9692,15 +9706,23 @@ function App() {
         {
           location_id: locationId,
           share_type: shareType,
+          ...(shareType === "Video"
+            ? {
+              video_id: video?.id,
+              video_title: video?.title,
+            }
+            : {}),
         }
       );
 
-      // Keep the local share counter immediately responsive.
-      setShares((prev) => ({
-        ...prev,
-        [locationId]:
-          (prev[locationId] || 0) + 1,
-      }));
+      // Keep a matched destination's local share counter immediately responsive.
+      if (locationId) {
+        setShares((prev) => ({
+          ...prev,
+          [locationId]:
+            (prev[locationId] || 0) + 1,
+        }));
+      }
 
     } catch (err) {
       console.error(
@@ -10649,6 +10671,11 @@ function App() {
       videoSEO?.title ||
       video?.title ||
       "My Journal video";
+    void handleShareEvent(null, "Video", {
+      id: video.id || videoSEO?.youtubeId,
+      title: video?.title || videoSEO?.title || name,
+    });
+
     const url = new URL(
       getVideoPageUrl(video, index),
       window.location.origin
