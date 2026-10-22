@@ -3506,28 +3506,55 @@ export const invokeInteractionEvent = async (eventType, payload = {}) => {
     if (!['article', 'gallery', 'video'].includes(shareType)) {
       throw new Error('Share type must be article, gallery, or video.');
     }
-    if (isVideoShare && (!payload.video_id || !payload.video_title)) {
+    if (
+      isVideoShare &&
+      (
+        typeof payload.video_title !== 'string' ||
+        !payload.video_title.trim() ||
+        typeof payload.video_id !== 'string' ||
+        !payload.video_id.trim()
+      )
+    ) {
       throw new Error('Video shares require a video_id and video_title.');
     }
     if (!isVideoShare && !locationId) {
       throw new Error(`A location_id is required for ${shareType} share events.`);
     }
 
-    const { error } = await supabaseClient
+    const shareRecord = {
+      location_id: isVideoShare ? null : locationId,
+      type: shareType,
+      country: metadata.country,
+      city: metadata.city,
+      ip_address: metadata.ip_address,
+    };
+    const detailedShareRecord = isVideoShare
+      ? {
+        ...shareRecord,
+        video_id: payload.video_id.trim(),
+        video_title: payload.video_title.trim(),
+      }
+      : shareRecord;
+
+    let { error } = await supabaseClient
       .from('location_shares')
-      .insert([{
-        location_id: isVideoShare ? null : locationId,
-        type: shareType,
-        ...(isVideoShare
-          ? {
-            video_id: String(payload.video_id),
-            video_title: String(payload.video_title),
-          }
-          : {}),
-        country: metadata.country,
-        city: metadata.city,
-        ip_address: metadata.ip_address,
-      }]);
+      .insert([detailedShareRecord]);
+
+    const missingVideoColumns =
+      isVideoShare &&
+      ['PGRST204', '42703'].includes(error?.code) &&
+      /video_id|video_title/i.test(
+        [error?.message, error?.details, error?.hint].filter(Boolean).join(' ')
+      );
+
+    if (missingVideoColumns) {
+      console.warn(
+        'Video share columns are not in location_shares yet; logging the share without clip details.'
+      );
+      ({ error } = await supabaseClient
+        .from('location_shares')
+        .insert([shareRecord]));
+    }
 
     if (error) throw error;
     return { success: true };
@@ -10672,7 +10699,7 @@ function App() {
       video?.title ||
       "My Journal video";
     void handleShareEvent(null, "video", {
-      id: video.id || videoSEO?.youtubeId,
+      id: String(video.id || videoSEO?.youtubeId || ""),
       title: video?.title || videoSEO?.title || name,
     });
 
