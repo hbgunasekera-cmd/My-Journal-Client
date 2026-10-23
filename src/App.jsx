@@ -4365,6 +4365,9 @@ export const PhotoGallery = React.memo(
     placeName,
     selectedLocation,
     onShare,
+    onLike,
+    shareState = null,
+    likeState = null,
     initialImageUrl = null,
   }) => {
 
@@ -5310,6 +5313,25 @@ export const PhotoGallery = React.memo(
           <div className="flex items-center gap-3">
 
             {/* =================================================
+                LIKE
+            ================================================== */}
+
+            {selectedLocation?.id && (
+              <button
+                type="button"
+                onClick={(event) => {
+                  event.stopPropagation();
+                  onLike?.(event, selectedLocation);
+                }}
+                aria-label={`${likeState?.isUserLiked ? "Unlike" : "Like"} ${placeName || "this gallery"}`}
+                className={`h-12 px-3 flex items-center justify-center gap-2 rounded-full transition-all shadow-sm ${likeState?.isUserLiked ? "bg-rose-100 text-rose-600 hover:bg-rose-200" : "bg-slate-800/10 text-slate-700 hover:bg-rose-500 hover:text-white"}`}
+              >
+                <Heart className={`w-5 h-5 ${likeState?.isUserLiked ? "fill-current" : ""}`} aria-hidden="true" />
+                <span className="text-xs font-semibold tabular-nums">{likeState?.count || 0}</span>
+              </button>
+            )}
+
+            {/* =================================================
                 SHARE
             ================================================== */}
 
@@ -5333,13 +5355,14 @@ export const PhotoGallery = React.memo(
 
               }}
               aria-label="Share Gallery"
-              className="w-12 h-12 flex items-center justify-center bg-slate-800/10 text-slate-700 hover:bg-blue-500 hover:text-white rounded-full transition-all shadow-sm"
+              className={`h-12 px-3 flex items-center justify-center gap-2 rounded-full transition-all shadow-sm ${shareState?.isUserShared ? "bg-emerald-100 text-emerald-600 hover:bg-emerald-200" : "bg-slate-800/10 text-slate-700 hover:bg-blue-500 hover:text-white"}`}
             >
 
               <Share2
                 className="w-5 h-5"
                 aria-hidden="true"
               />
+              <span className="text-xs font-semibold tabular-nums">{shareState?.count || 0}</span>
 
             </button>
 
@@ -9006,6 +9029,7 @@ function App() {
   const [isSocialOpen, setIsSocialOpen] = useState(false);
   const [likes, setLikes] = useState({});
   const [shares, setShares] = useState({});
+  const [locationShareStates, setLocationShareStates] = useState({});
   const [videoShares, setVideoShares] = useState({});
   const [comments, setComments] = useState({});
   const [newCommentText, setnewCommentText] = useState('');
@@ -9584,7 +9608,7 @@ function App() {
 
         supabaseClient
           .from("location_shares")
-          .select("location_id"),
+          .select("location_id, type, ip_address"),
 
         supabaseClient
           .from("video_likes")
@@ -9698,6 +9722,29 @@ function App() {
         return acc;
       }, {});
 
+      const structuredLocationShareStates = (
+        sharesResponse.data || []
+      ).reduce((acc, share) => {
+        const locationId = share.location_id;
+        const shareType = String(share.type || "").toLowerCase();
+        if (!locationId || !["article", "gallery"].includes(shareType)) {
+          return acc;
+        }
+
+        const key = `${shareType}:${locationId}`;
+        if (!acc[key]) {
+          acc[key] = { count: 0, isUserShared: false };
+        }
+        acc[key].count += 1;
+        if (
+          visitorMetadata?.ip_address &&
+          share.ip_address === visitorMetadata.ip_address
+        ) {
+          acc[key].isUserShared = true;
+        }
+        return acc;
+      }, {});
+
       const structuredVideoShares = (
         videoSharesResponse.data || []
       ).reduce((acc, share) => {
@@ -9724,6 +9771,7 @@ function App() {
       setLikes(structuredLikes);
       setComments(groupedComments);
       setShares(structuredShares);
+      setLocationShareStates(structuredLocationShareStates);
       setVideoShares(structuredVideoShares);
 
     } catch (err) {
@@ -9864,6 +9912,14 @@ function App() {
         setShares((prev) => ({
           ...prev,
           [locationId]: (prev[locationId] || 0) + 1,
+        }));
+        const shareStateKey = `${shareType}:${locationId}`;
+        setLocationShareStates((prev) => ({
+          ...prev,
+          [shareStateKey]: {
+            count: (prev[shareStateKey]?.count || 0) + 1,
+            isUserShared: true,
+          },
         }));
       }
 
@@ -12162,7 +12218,7 @@ function App() {
                             >
                               <div className="p-2 rounded-full group-hover:bg-rose-50 dark:group-hover:bg-rose-950/30 transition-colors">
                                 <Heart
-                                  className={`w-4 h-4 ${likes[place.id] ? "fill-rose-500 text-rose-500" : "text-slate-400"
+                                  className={`w-4 h-4 ${likes[place.id]?.isUserLiked ? "fill-rose-500 text-rose-500" : "text-slate-400"
                                     }`}
                                 />
                               </div>
@@ -12198,13 +12254,13 @@ function App() {
                                   handleShare(e, place);
                                 }
                               }}
-                              className="flex items-center gap-1.5 group outline-none select-none"
+                              className={`flex items-center gap-1.5 group outline-none select-none ${locationShareStates[`article:${place.id}`]?.isUserShared ? "text-emerald-600" : "text-slate-500"}`}
                               aria-label="Share Article"
                             >
-                              <div className="p-2 rounded-full group-hover:bg-emerald-50 dark:group-hover:bg-emerald-950/30 transition-colors">
-                                <Share2 className="w-4 h-4 text-slate-400 group-hover:text-emerald-500" />
+                              <div className={`p-2 rounded-full transition-colors ${locationShareStates[`article:${place.id}`]?.isUserShared ? "bg-emerald-50 dark:bg-emerald-950/30" : "group-hover:bg-emerald-50 dark:group-hover:bg-emerald-950/30"}`}>
+                                <Share2 className={`w-4 h-4 transition-colors ${locationShareStates[`article:${place.id}`]?.isUserShared ? "text-emerald-600" : "text-slate-400 group-hover:text-emerald-500"}`} />
                               </div>
-                              <span className="text-xs font-semibold text-slate-500 group-hover:text-emerald-500 transition-colors">
+                              <span className={`text-xs font-semibold transition-colors ${locationShareStates[`article:${place.id}`]?.isUserShared ? "text-emerald-600" : "text-slate-500 group-hover:text-emerald-500"}`}>
                                 {shares?.[place?.id] || 0}
                               </span>
                             </button>
@@ -12827,10 +12883,10 @@ function App() {
                         <button
                           type="button"
                           onClick={() => handleShare(null, viewingArticle)}
-                          className="p-2 bg-slate-50 dark:bg-slate-800 hover:bg-indigo-50 dark:hover:bg-indigo-950/40 hover:border-indigo-100 dark:hover:border-indigo-900/50 rounded-xl transition-colors border border-slate-100 dark:border-slate-700/60 group"
+                          className={`p-2 rounded-xl transition-colors border group ${locationShareStates[`article:${viewingArticle.id}`]?.isUserShared ? "bg-emerald-50 dark:bg-emerald-950/30 border-emerald-200 dark:border-emerald-900/50" : "bg-slate-50 dark:bg-slate-800 border-slate-100 dark:border-slate-700/60 hover:bg-indigo-50 dark:hover:bg-indigo-950/40 hover:border-indigo-100 dark:hover:border-indigo-900/50"}`}
                           title={t('article.share', { defaultValue: 'Share' })}
                         >
-                          <Share2 className="w-3.5 h-3.5 text-slate-500 dark:text-slate-400 group-hover:text-indigo-600 dark:group-hover:text-indigo-400" />
+                          <Share2 className={`w-3.5 h-3.5 ${locationShareStates[`article:${viewingArticle.id}`]?.isUserShared ? "text-emerald-600 dark:text-emerald-400" : "text-slate-500 dark:text-slate-400 group-hover:text-indigo-600 dark:group-hover:text-indigo-400"}`} />
                         </button>
 
                         <button
@@ -12855,7 +12911,7 @@ function App() {
                             className="flex items-center gap-2 bg-slate-50 dark:bg-slate-800 hover:bg-rose-50 dark:hover:bg-rose-950/30 px-4 py-2 rounded-2xl border border-slate-100 dark:border-slate-700/60 transition-all"
                           >
                             <Heart
-                              className={`w-4 h-4 ${likes[viewingArticle.id]
+                              className={`w-4 h-4 ${likes[viewingArticle.id]?.isUserLiked
                                 ? 'fill-rose-500 text-rose-500'
                                 : 'text-slate-400'
                                 }`}
@@ -13834,6 +13890,9 @@ function App() {
                     : null
                 }
                 onClose={handleClosePhotoGallery}
+                shareState={locationShareStates[`gallery:${activePlace.id}`]}
+                likeState={likes[activePlace.id]}
+                onLike={(_event, location) => handleLike(location?.id)}
                 onShare={(e, location) => handleShare(e, location, true)}
               />
             );
