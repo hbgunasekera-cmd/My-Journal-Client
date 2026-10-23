@@ -6823,7 +6823,7 @@ export const VideoGallery =
       onShare,
       onLike,
       likes = {},
-      shares = {},
+      videoShares = {},
       preserveCurrentPath = false,
     }) => {
 
@@ -7643,10 +7643,10 @@ export const VideoGallery =
                           event.stopPropagation();
                           onShare?.(event, item, index);
                         }}
-                        className="shrink-0 self-center p-2 rounded-lg inline-flex items-center gap-1 text-emerald-400 hover:text-emerald-200 hover:bg-emerald-600/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400 transition-colors"
+                        className={`shrink-0 self-center p-2 rounded-lg inline-flex items-center gap-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400 transition-colors ${videoShares[item.id]?.isUserShared ? "text-emerald-400 hover:text-emerald-200 hover:bg-emerald-600/30" : "text-slate-400 hover:text-emerald-300 hover:bg-emerald-600/20"}`}
                       >
                         <Share2 className="w-4 h-4" />
-                        <span className="text-[10px] tabular-nums">{shares[item.id] || 0}</span>
+                        <span className="text-[10px] tabular-nums">{videoShares[item.id]?.count || 0}</span>
                       </button>
                     </div>
                   );
@@ -9006,6 +9006,7 @@ function App() {
   const [isSocialOpen, setIsSocialOpen] = useState(false);
   const [likes, setLikes] = useState({});
   const [shares, setShares] = useState({});
+  const [videoShares, setVideoShares] = useState({});
   const [comments, setComments] = useState({});
   const [newCommentText, setnewCommentText] = useState('');
 
@@ -9591,7 +9592,7 @@ function App() {
 
         supabaseClient
           .from("video_shares")
-          .select("video_id"),
+          .select("video_id, ip_address"),
 
         fetchVisitorMetadata().catch((error) => {
           console.error("Visitor metadata fetch failed:", error);
@@ -9697,12 +9698,24 @@ function App() {
         return acc;
       }, {});
 
-      (videoSharesResponse.data || []).forEach((share) => {
+      const structuredVideoShares = (
+        videoSharesResponse.data || []
+      ).reduce((acc, share) => {
         const videoId = share.video_id;
         if (videoId) {
-          structuredShares[videoId] = (structuredShares[videoId] || 0) + 1;
+          if (!acc[videoId]) {
+            acc[videoId] = { count: 0, isUserShared: false };
+          }
+          acc[videoId].count += 1;
+          if (
+            visitorMetadata?.ip_address &&
+            share.ip_address === visitorMetadata.ip_address
+          ) {
+            acc[videoId].isUserShared = true;
+          }
         }
-      });
+        return acc;
+      }, {});
 
       // -----------------------------------------------------------------------
       // Update component state
@@ -9711,6 +9724,7 @@ function App() {
       setLikes(structuredLikes);
       setComments(groupedComments);
       setShares(structuredShares);
+      setVideoShares(structuredVideoShares);
 
     } catch (err) {
       console.error(
@@ -9838,12 +9852,18 @@ function App() {
       );
 
       // Keep a matched destination's local share counter immediately responsive.
-      const shareCountKey = shareType === "video" ? video?.id : locationId;
-      if (shareCountKey) {
+      if (shareType === "video" && video?.id) {
+        setVideoShares((prev) => ({
+          ...prev,
+          [video.id]: {
+            count: (prev[video.id]?.count || 0) + 1,
+            isUserShared: true,
+          },
+        }));
+      } else if (locationId) {
         setShares((prev) => ({
           ...prev,
-          [shareCountKey]:
-            (prev[shareCountKey] || 0) + 1,
+          [locationId]: (prev[locationId] || 0) + 1,
         }));
       }
 
@@ -11675,7 +11695,7 @@ function App() {
             onShare={handleShareVideo}
             onLike={handleVideoLike}
             likes={likes}
-            shares={shares}
+            videoShares={videoShares}
           />
         ) : (
           <main
@@ -13829,7 +13849,7 @@ function App() {
               onShare={handleShareVideo}
               onLike={handleVideoLike}
               likes={likes}
-              shares={shares}
+              videoShares={videoShares}
             />
           )}
 
