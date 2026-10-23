@@ -3436,6 +3436,10 @@ export const initClarity = () => {
  */
 let visitorMetadataPromise = null;
 
+const isUuid = (value) =>
+  typeof value === 'string' &&
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(value.trim());
+
 const fetchVisitorMetadata = async () => {
   if (!supabaseClient) {
     throw new Error('Supabase client is unavailable.');
@@ -3533,79 +3537,58 @@ export const invokeInteractionEvent = async (eventType, payload = {}) => {
   if (eventType === 'share') {
     const shareType = payload.share_type;
     const isVideoShare = shareType === 'video';
-    const videoTitle =
-      typeof payload.video_title === 'string'
-        ? payload.video_title
-          .replace(/[^\p{L}\p{N}\s]/gu, '')
-          .replace(/\s+/g, ' ')
-          .trim()
-        : '';
     if (!['article', 'gallery', 'video'].includes(shareType)) {
       throw new Error('Share type must be article, gallery, or video.');
     }
-    if (
-      isVideoShare &&
-      (
-        !videoTitle ||
-        typeof payload.video_id !== 'string' ||
-        !payload.video_id.trim()
-      )
-    ) {
-      throw new Error('Video shares require a video_id and video_title.');
+    if (isVideoShare && !isUuid(payload.video_id)) {
+      throw new Error('Video shares require the hub_videos UUID as video_id.');
     }
     if (!isVideoShare && !locationId) {
       throw new Error(`A location_id is required for ${shareType} share events.`);
     }
 
-    const shareRecord = {
-      location_id: isVideoShare ? null : locationId,
-      type: shareType,
-      country: metadata.country,
-      city: metadata.city,
-      ip_address: metadata.ip_address,
-    };
-    const detailedShareRecord = isVideoShare
+    const shareTable = isVideoShare ? 'video_shares' : 'location_shares';
+    const shareRecord = isVideoShare
       ? {
-        ...shareRecord,
         video_id: payload.video_id.trim(),
-        video_title: videoTitle,
+        country: metadata.country,
+        city: metadata.city,
+        ip_address: metadata.ip_address,
       }
-      : shareRecord;
+      : {
+        location_id: locationId,
+        type: shareType,
+        country: metadata.country,
+        city: metadata.city,
+        ip_address: metadata.ip_address,
+      };
 
-    let { error } = await supabaseClient
-      .from('location_shares')
-      .insert([detailedShareRecord]);
-
-    const missingVideoColumns =
-      isVideoShare &&
-      ['PGRST204', '42703'].includes(error?.code) &&
-      /video_id|video_title/i.test(
-        [error?.message, error?.details, error?.hint].filter(Boolean).join(' ')
-      );
-
-    if (missingVideoColumns) {
-      console.warn(
-        'Video share columns are not in location_shares yet; logging the share without clip details.'
-      );
-      ({ error } = await supabaseClient
-        .from('location_shares')
-        .insert([shareRecord]));
-    }
+    const { error } = await supabaseClient
+      .from(shareTable)
+      .insert([shareRecord]);
 
     if (error) throw error;
     return { success: true };
   }
 
-  if (!locationId) {
-    throw new Error(`A location_id is required for ${eventType} events.`);
-  }
-
   if (eventType === 'like' || eventType === 'unlike') {
+    const isVideoLike = payload.video_id !== undefined && payload.video_id !== null;
+    const targetId = isVideoLike ? payload.video_id : locationId;
+    const targetColumn = isVideoLike ? 'video_id' : 'location_id';
+    const targetTable = isVideoLike ? 'video_likes' : 'location_likes';
+
+    if (isVideoLike && !isUuid(targetId)) {
+      throw new Error('Video likes require the hub_videos UUID as video_id.');
+    }
+    if (!targetId) {
+      throw new Error(`A ${isVideoLike ? 'video_id' : 'location_id'} is required for ${eventType} events.`);
+    }
+
     if (eventType === 'like') {
       const { data: existingLike, error: lookupError } = await supabaseClient
-        .from('location_likes')
-        .select('location_id')
-        .eq('location_id', locationId)
+        .from(targetTable)
+        .select(targetColumn)
+        .eq(targetColumn, targetId)
         .eq('ip_address', metadata.ip_address)
         .limit(1)
         .maybeSingle();
@@ -3614,9 +3597,9 @@ export const invokeInteractionEvent = async (eventType, payload = {}) => {
 
       if (!existingLike) {
         const { error } = await supabaseClient
-          .from('location_likes')
+          .from(targetTable)
           .insert([{
-            location_id: locationId,
+            [targetColumn]: targetId,
             country: metadata.country,
             city: metadata.city,
             ip_address: metadata.ip_address,
@@ -3626,18 +3609,18 @@ export const invokeInteractionEvent = async (eventType, payload = {}) => {
       }
     } else {
       const { error } = await supabaseClient
-        .from('location_likes')
+        .from(targetTable)
         .delete()
-        .eq('location_id', locationId)
+        .eq(targetColumn, targetId)
         .eq('ip_address', metadata.ip_address);
 
       if (error) throw error;
     }
 
     const { count, error: countError } = await supabaseClient
-      .from('location_likes')
-      .select('location_id', { count: 'exact', head: true })
-      .eq('location_id', locationId);
+      .from(targetTable)
+      .select(targetColumn, { count: 'exact', head: true })
+      .eq(targetColumn, targetId);
 
     if (countError) throw countError;
     return {
@@ -3645,6 +3628,10 @@ export const invokeInteractionEvent = async (eventType, payload = {}) => {
       isUserLiked: eventType === 'like',
       count: count || 0,
     };
+  }
+
+  if (!locationId) {
+    throw new Error(`A location_id is required for ${eventType} events.`);
   }
 
   const commentText = typeof payload.comment_text === 'string'
@@ -6834,6 +6821,9 @@ export const VideoGallery =
       onClose,
       onActiveVideoChange,
       onShare,
+      onLike,
+      likes = {},
+      shares = {},
       preserveCurrentPath = false,
     }) => {
 
@@ -7631,6 +7621,21 @@ export const VideoGallery =
 
                       <button
                         type="button"
+                        aria-label={`${likes[item.id]?.isUserLiked ? "Unlike" : "Like"} ${itemSEO?.title || "video"}`}
+                        title={likes[item.id]?.isUserLiked ? "Unlike this video" : "Like this video"}
+                        onClick={(event) => {
+                          event.preventDefault();
+                          event.stopPropagation();
+                          onLike?.(event, item, index);
+                        }}
+                        className={`shrink-0 self-center p-2 rounded-lg inline-flex items-center gap-1 hover:bg-rose-600/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-400 transition-colors ${likes[item.id]?.isUserLiked ? "text-rose-400" : "text-slate-400 hover:text-rose-300"}`}
+                      >
+                        <Heart className={`w-4 h-4 ${likes[item.id]?.isUserLiked ? "fill-rose-400" : ""}`} />
+                        <span className="text-[10px] tabular-nums">{likes[item.id]?.count || 0}</span>
+                      </button>
+
+                      <button
+                        type="button"
                         aria-label={`Share ${itemSEO?.title || "video"}`}
                         title="Share this video"
                         onClick={(event) => {
@@ -7638,9 +7643,10 @@ export const VideoGallery =
                           event.stopPropagation();
                           onShare?.(event, item, index);
                         }}
-                        className="shrink-0 self-center p-2 rounded-lg text-slate-400 hover:text-white hover:bg-indigo-600/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400 transition-colors"
+                        className="shrink-0 self-center p-2 rounded-lg inline-flex items-center gap-1 text-slate-400 hover:text-white hover:bg-indigo-600/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400 transition-colors"
                       >
                         <Share2 className="w-4 h-4" />
+                        <span className="text-[10px] tabular-nums">{shares[item.id] || 0}</span>
                       </button>
                     </div>
                   );
@@ -8999,7 +9005,7 @@ function App() {
   // ============================================================================
   const [isSocialOpen, setIsSocialOpen] = useState(false);
   const [likes, setLikes] = useState({});
-  const [shares, setShares] = useState(0);
+  const [shares, setShares] = useState({});
   const [comments, setComments] = useState({});
   const [newCommentText, setnewCommentText] = useState('');
 
@@ -9560,6 +9566,8 @@ function App() {
         likesResponse,
         commentsResponse,
         sharesResponse,
+        videoLikesResponse,
+        videoSharesResponse,
         visitorMetadata,
       ] = await Promise.all([
         supabaseClient
@@ -9577,6 +9585,14 @@ function App() {
           .from("location_shares")
           .select("location_id"),
 
+        supabaseClient
+          .from("video_likes")
+          .select("video_id, ip_address"),
+
+        supabaseClient
+          .from("video_shares")
+          .select("video_id"),
+
         fetchVisitorMetadata().catch((error) => {
           console.error("Visitor metadata fetch failed:", error);
           return null;
@@ -9593,6 +9609,14 @@ function App() {
 
       if (sharesResponse.error) {
         throw sharesResponse.error;
+      }
+
+      if (videoLikesResponse.error) {
+        console.error("Video likes fetch failed:", videoLikesResponse.error);
+      }
+
+      if (videoSharesResponse.error) {
+        console.error("Video shares fetch failed:", videoSharesResponse.error);
       }
 
       // -----------------------------------------------------------------------
@@ -9622,6 +9646,26 @@ function App() {
         return acc;
       }, {});
 
+      (videoLikesResponse.data || []).forEach((like) => {
+        const videoId = like.video_id;
+        if (!videoId) return;
+
+        if (!structuredLikes[videoId]) {
+          structuredLikes[videoId] = {
+            count: 0,
+            isUserLiked: false,
+          };
+        }
+
+        structuredLikes[videoId].count += 1;
+        if (
+          visitorMetadata?.ip_address &&
+          like.ip_address === visitorMetadata.ip_address
+        ) {
+          structuredLikes[videoId].isUserLiked = true;
+        }
+      });
+
       // -----------------------------------------------------------------------
       // Group comments by location ID
       // -----------------------------------------------------------------------
@@ -9646,11 +9690,19 @@ function App() {
         sharesResponse.data || []
       ).reduce((acc, curr) => {
         const locId = curr.location_id;
-
-        acc[locId] = (acc[locId] || 0) + 1;
+        if (locId) {
+          acc[locId] = (acc[locId] || 0) + 1;
+        }
 
         return acc;
       }, {});
+
+      (videoSharesResponse.data || []).forEach((share) => {
+        const videoId = share.video_id;
+        if (videoId) {
+          structuredShares[videoId] = (structuredShares[videoId] || 0) + 1;
+        }
+      });
 
       // -----------------------------------------------------------------------
       // Update component state
@@ -9673,11 +9725,11 @@ function App() {
   // ---------------------------------------------------------------------------
   //
 
-  const handleLike = async (locationId) => {
-    if (!locationId || !supabaseClient) return;
+  const updateLike = async (targetId, isVideo = false) => {
+    if (!targetId || !supabaseClient) return;
 
     const currentStatus =
-      likes[locationId] || {
+      likes[targetId] || {
         count: 0,
         isUserLiked: false,
       };
@@ -9687,9 +9739,9 @@ function App() {
         currentStatus.isUserLiked
           ? "unlike"
           : "like",
-        {
-          location_id: locationId,
-        }
+        isVideo
+          ? { video_id: targetId }
+          : { location_id: targetId }
       );
 
       const nextIsUserLiked =
@@ -9706,7 +9758,7 @@ function App() {
 
       setLikes((prev) => ({
         ...prev,
-        [locationId]: {
+        [targetId]: {
           count: nextCount,
           isUserLiked: nextIsUserLiked,
         },
@@ -9719,6 +9771,12 @@ function App() {
       );
       toast.error("Couldn't update your like. Please try again.");
     }
+  };
+
+  const handleLike = (locationId) => updateLike(locationId);
+  const handleVideoLike = (_event, videoOrId) => {
+    const videoId = typeof videoOrId === "string" ? videoOrId : videoOrId?.id;
+    return updateLike(videoId, true);
   };
 
   // ---------------------------------------------------------------------------
@@ -9774,18 +9832,18 @@ function App() {
           ...(shareType === "video"
             ? {
               video_id: video?.id,
-              video_title: video?.title,
             }
             : {}),
         }
       );
 
       // Keep a matched destination's local share counter immediately responsive.
-      if (locationId) {
+      const shareCountKey = shareType === "video" ? video?.id : locationId;
+      if (shareCountKey) {
         setShares((prev) => ({
           ...prev,
-          [locationId]:
-            (prev[locationId] || 0) + 1,
+          [shareCountKey]:
+            (prev[shareCountKey] || 0) + 1,
         }));
       }
 
@@ -10745,8 +10803,7 @@ function App() {
       ownerMode || localStorage.getItem("owner_auth_token") === "owner";
     if (!isOwnerSession) {
       void handleShareEvent(null, "video", {
-        id: String(video.id || videoSEO?.youtubeId || ""),
-        title: video?.title || videoSEO?.title || name,
+        id: video.id,
       });
     }
 
@@ -11616,6 +11673,9 @@ function App() {
             onClose={handleCloseDeepLinkedVideoGallery}
             onActiveVideoChange={handleActiveVideoChange}
             onShare={handleShareVideo}
+            onLike={handleVideoLike}
+            likes={likes}
+            shares={shares}
           />
         ) : (
           <main
@@ -13767,6 +13827,9 @@ function App() {
               onClose={handleCloseVideoGallery}
               onActiveVideoChange={handleActiveVideoChange}
               onShare={handleShareVideo}
+              onLike={handleVideoLike}
+              likes={likes}
+              shares={shares}
             />
           )}
 
