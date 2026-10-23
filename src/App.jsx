@@ -7643,7 +7643,7 @@ export const VideoGallery =
                           event.stopPropagation();
                           onShare?.(event, item, index);
                         }}
-                        className="shrink-0 self-center p-2 rounded-lg inline-flex items-center gap-1 text-slate-400 hover:text-white hover:bg-indigo-600/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400 transition-colors"
+                        className="shrink-0 self-center p-2 rounded-lg inline-flex items-center gap-1 text-emerald-400 hover:text-emerald-200 hover:bg-emerald-600/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400 transition-colors"
                       >
                         <Share2 className="w-4 h-4" />
                         <span className="text-[10px] tabular-nums">{shares[item.id] || 0}</span>
