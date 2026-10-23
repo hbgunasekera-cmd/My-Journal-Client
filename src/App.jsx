@@ -12881,11 +12881,11 @@ function App() {
                         <button
                           type="button"
                           onClick={() => handleShare(null, viewingArticle)}
-                          className={`p-2 rounded-xl transition-colors border group ${locationShareStates[`article:${viewingArticle.id}`]?.isUserShared ? "bg-emerald-50 dark:bg-emerald-950/30 border-emerald-200 dark:border-emerald-900/50" : "bg-slate-50 dark:bg-slate-800 border-slate-100 dark:border-slate-700/60 hover:bg-indigo-50 dark:hover:bg-indigo-950/40 hover:border-indigo-100 dark:hover:border-indigo-900/50"}`}
+                          className={`h-9 min-w-9 px-2 inline-flex items-center justify-center gap-1 rounded-xl transition-colors border group ${locationShareStates[`article:${viewingArticle.id}`]?.isUserShared ? "bg-emerald-50 dark:bg-emerald-950/30 border-emerald-200 dark:border-emerald-900/50" : "bg-slate-50 dark:bg-slate-800 border-slate-100 dark:border-slate-700/60 hover:bg-indigo-50 dark:hover:bg-indigo-950/40 hover:border-indigo-100 dark:hover:border-indigo-900/50"}`}
                           title={t('article.share', { defaultValue: 'Share' })}
                         >
-                          <Share2 className={`w-3.5 h-3.5 ${locationShareStates[`article:${viewingArticle.id}`]?.isUserShared ? "text-emerald-600 dark:text-emerald-400" : "text-slate-500 dark:text-slate-400 group-hover:text-indigo-600 dark:group-hover:text-indigo-400"}`} />
-                          <span className={`ml-1 text-[10px] font-bold tabular-nums ${locationShareStates[`article:${viewingArticle.id}`]?.isUserShared ? "text-emerald-600 dark:text-emerald-400" : "text-slate-500 dark:text-slate-400"}`}>
+                          <Share2 className={`w-4 h-4 shrink-0 ${locationShareStates[`article:${viewingArticle.id}`]?.isUserShared ? "text-emerald-600 dark:text-emerald-400" : "text-slate-500 dark:text-slate-400 group-hover:text-indigo-600 dark:group-hover:text-indigo-400"}`} />
+                          <span className={`text-[10px] font-bold leading-none tabular-nums ${locationShareStates[`article:${viewingArticle.id}`]?.isUserShared ? "text-emerald-600 dark:text-emerald-400" : "text-slate-500 dark:text-slate-400"}`}>
                             {locationShareStates[`article:${viewingArticle.id}`]?.count || 0}
                           </span>
                         </button>
@@ -12899,26 +12899,26 @@ function App() {
                             );
                             if (mapsUrl) window.open(mapsUrl, "_blank", "noopener,noreferrer");
                           }}
-                          className="p-2 bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-xl transition-colors border border-slate-100 dark:border-slate-700/60"
+                          className="w-9 h-9 inline-flex items-center justify-center bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-xl transition-colors border border-slate-100 dark:border-slate-700/60"
                           title={t('article.view_maps', { defaultValue: 'View on Maps' })}
                         >
-                          <MapPin className="w-3.5 h-3.5 text-slate-500 dark:text-slate-400" />
+                          <MapPin className="w-4 h-4 text-slate-500 dark:text-slate-400" />
                         </button>
 
                         {viewingArticle.status !== 'pending' && (
                           <button
                             type="button"
                             onClick={() => handleLike(viewingArticle.id)}
-                            className="flex items-center gap-2 bg-slate-50 dark:bg-slate-800 hover:bg-rose-50 dark:hover:bg-rose-950/30 px-4 py-2 rounded-2xl border border-slate-100 dark:border-slate-700/60 transition-all"
+                            className="h-9 min-w-9 px-2 inline-flex items-center justify-center gap-1 bg-slate-50 dark:bg-slate-800 hover:bg-rose-50 dark:hover:bg-rose-950/30 rounded-xl border border-slate-100 dark:border-slate-700/60 transition-all"
                           >
                             <Heart
-                              className={`w-4 h-4 ${likes[viewingArticle.id]?.isUserLiked
+                              className={`w-4 h-4 shrink-0 ${likes[viewingArticle.id]?.isUserLiked
                                 ? 'fill-rose-500 text-rose-500'
                                 : 'text-slate-400'
                                 }`}
                             />
                             <span
-                              className={`text-[10px] font-black transition-colors ${likes[viewingArticle.id]?.isUserLiked
+                              className={`text-[10px] font-black leading-none tabular-nums transition-colors ${likes[viewingArticle.id]?.isUserLiked
                                 ? 'text-rose-600 dark:text-rose-400'
                                 : 'text-slate-900 dark:text-slate-200'
                                 }`}
