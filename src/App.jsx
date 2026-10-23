@@ -5373,7 +5373,8 @@ export const PhotoGallery = React.memo(
                 }
 
               }}
-              aria-label="Share Gallery"
+              aria-label={`Share Gallery (${shareState?.count || 0} shares)`}
+              title={`${shareState?.count || 0} gallery shares`}
               className={`h-12 px-3 flex items-center justify-center gap-2 rounded-full transition-all shadow-sm ${shareState?.isUserShared ? "bg-emerald-100 text-emerald-600 hover:bg-emerald-200" : "bg-slate-800/10 text-slate-700 hover:bg-blue-500 hover:text-white"}`}
             >
 
@@ -12884,6 +12885,9 @@ function App() {
                           title={t('article.share', { defaultValue: 'Share' })}
                         >
                           <Share2 className={`w-3.5 h-3.5 ${locationShareStates[`article:${viewingArticle.id}`]?.isUserShared ? "text-emerald-600 dark:text-emerald-400" : "text-slate-500 dark:text-slate-400 group-hover:text-indigo-600 dark:group-hover:text-indigo-400"}`} />
+                          <span className={`ml-1 text-[10px] font-bold tabular-nums ${locationShareStates[`article:${viewingArticle.id}`]?.isUserShared ? "text-emerald-600 dark:text-emerald-400" : "text-slate-500 dark:text-slate-400"}`}>
+                            {locationShareStates[`article:${viewingArticle.id}`]?.count || 0}
+                          </span>
                         </button>
 
                         <button
