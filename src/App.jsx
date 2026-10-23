@@ -3440,6 +3440,18 @@ const isUuid = (value) =>
   typeof value === 'string' &&
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(value.trim());
 
+const isOwnerModeSession = () => {
+  if (typeof window === 'undefined') return false;
+
+  const ownerMode =
+    new URLSearchParams(window.location.search).get('mode') === 'owner';
+  if (ownerMode) {
+    window.localStorage.setItem('owner_auth_token', 'owner');
+  }
+
+  return ownerMode || window.localStorage.getItem('owner_auth_token') === 'owner';
+};
+
 const fetchVisitorMetadata = async () => {
   if (!supabaseClient) {
     throw new Error('Supabase client is unavailable.');
@@ -3481,6 +3493,13 @@ const fetchVisitorMetadata = async () => {
 export const invokeInteractionEvent = async (eventType, payload = {}) => {
   const supportedEvents = ['visit', 'like', 'unlike', 'comment', 'share'];
   if (!supportedEvents.includes(eventType)) {
+    return { success: true, ignored: true };
+  }
+
+  if (
+    ['like', 'unlike', 'share'].includes(eventType) &&
+    isOwnerModeSession()
+  ) {
     return { success: true, ignored: true };
   }
 
@@ -9788,7 +9807,7 @@ function App() {
   //
 
   const updateLike = async (targetId, isVideo = false) => {
-    if (!targetId || !supabaseClient) return;
+    if (!targetId || !supabaseClient || isOwnerModeSession()) return;
 
     const currentStatus =
       likes[targetId] || {
@@ -9862,23 +9881,8 @@ function App() {
       return;
     }
 
-    // Owner mode exclusion
-    const urlParams =
-      new URLSearchParams(
-        window.location.search
-      );
-
-    if (urlParams.get("mode") === "owner") {
-      localStorage.setItem(
-        "owner_auth_token",
-        "owner"
-      );
-    }
-
     if (
-      localStorage.getItem(
-        "owner_auth_token"
-      ) === "owner" ||
+      isOwnerModeSession() ||
       !supabaseClient ||
       (!locationId && shareType !== "video")
     ) {
@@ -10870,14 +10874,7 @@ function App() {
       videoSEO?.title ||
       video?.title ||
       "My Journal video";
-    const ownerMode =
-      new URLSearchParams(window.location.search).get("mode") === "owner";
-    if (ownerMode) {
-      localStorage.setItem("owner_auth_token", "owner");
-    }
-    const isOwnerSession =
-      ownerMode || localStorage.getItem("owner_auth_token") === "owner";
-    if (!isOwnerSession) {
+    if (!isOwnerModeSession()) {
       void handleShareEvent(null, "video", {
         id: video.id,
       });
