@@ -2,11 +2,20 @@ const MAX_MESSAGE_LENGTH = 4000;
 const MAX_STACK_LENGTH = 12000;
 const SESSION_ID_KEY = 'client_error_session_id';
 const PENDING_ERRORS_KEY = 'client_error_pending_queue';
-
+const CRITICAL_ERROR_TYPES = new Set([
+  'api_http_error',
+  'api_network_error',
+  'api_timeout',
+  'api_response_parse_error',
+  'api_response_error',
+  'react_render_error',
+  'uncaught_error',
+  'unhandled_rejection',
+  'user_action_error',
+]);
 let supabaseClient = null;
 let installed = false;
 let originalConsoleError = null;
-let originalConsoleWarn = null;
 let originalFetch = null;
 const pendingClientErrors = [];
 let pendingRows = [];
@@ -37,19 +46,113 @@ const getRequestDetails = (input, init) => {
     ? String(input)
     : input?.url || String(input || '');
   let requestUrl = rawUrl;
+  let parsedUrl = null;
 
   try {
-    const parsed = new URL(rawUrl, window.location.origin);
+    parsedUrl = new URL(rawUrl, window.location.origin);
     // Avoid storing query strings because they can contain tokens or user data.
-    requestUrl = `${parsed.origin}${parsed.pathname}`;
+    requestUrl = `${parsedUrl.origin}${parsedUrl.pathname}`;
   } catch {
     requestUrl = rawUrl.split(/[?#]/, 1)[0];
   }
 
   const method = String(init?.method || input?.method || 'GET').toUpperCase();
   const isErrorLoggerRequest = /\/rest\/v1\/error_logs\/?$/i.test(requestUrl);
+  const path = parsedUrl?.pathname || '';
+  const hostname = parsedUrl?.hostname || '';
+  const isSiteApi = Boolean(
+    parsedUrl &&
+    parsedUrl.origin === window.location.origin &&
+    /^\/api(?:\/|$)/i.test(path)
+  );
+  const isSupabaseApi = /^\/(?:rest|functions|auth|storage|graphql)\/v1(?:\/|$)/i.test(path);
+  const isExternalApi = /(^|\.)googleapis\.com$/i.test(hostname) ||
+    hostname === 'api.openrouteservice.org' ||
+    hostname === 'api.openweathermap.org';
+  const isApiRequest = isSiteApi || isSupabaseApi || isExternalApi;
 
-  return { requestUrl, method, isErrorLoggerRequest };
+  return {
+    requestUrl,
+    method,
+    isErrorLoggerRequest,
+    isApiRequest,
+    isSiteApi,
+    isSupabaseApi,
+  };
+};
+
+const isAbortError = (error) =>
+  error?.name === 'AbortError' ||
+  error?.code === 'ABORT_ERR' ||
+  /\b(?:aborted|aborterror)\b/i.test(String(error?.message || ''));
+
+const shouldReportClientError = (error, options = {}) => {
+  if (options.critical === false) return false;
+  if (options.critical === true) return true;
+
+  const errorType = String(options.errorType || '').toLowerCase();
+  if (!CRITICAL_ERROR_TYPES.has(errorType)) return false;
+  if (errorType === 'unhandled_rejection' && isAbortError(error)) return false;
+  return true;
+};
+
+const shouldReportApiStatus = (status, request) => {
+  return Boolean(
+    request?.isApiRequest &&
+    !request.isErrorLoggerRequest &&
+    Number.isInteger(status) &&
+    status >= 400
+  );
+};
+
+const isCriticalAppAsset = (url) => {
+  if (!url) return false;
+  try {
+    const parsed = new URL(url, window.location.origin);
+    const isFirstPartyCode =
+      parsed.origin === window.location.origin && /\.(?:js|mjs|css)$/i.test(parsed.pathname);
+    const isGoogleMapsScript =
+      (parsed.hostname === 'maps.googleapis.com' || parsed.origin === window.location.origin) &&
+      parsed.pathname === '/maps/api/js';
+    return isFirstPartyCode || isGoogleMapsScript;
+  } catch {
+    return false;
+  }
+};
+
+const isSameOriginSource = (url) => {
+  if (!url) return false;
+  try {
+    return new URL(url, window.location.origin).origin === window.location.origin;
+  } catch {
+    return false;
+  }
+};
+
+const isCriticalQueuedRow = (row) => {
+  const errorType = String(row?.error_type || '').toLowerCase();
+  if (['resource_load_error', 'security_policy_error'].includes(errorType)) {
+    return isCriticalAppAsset(
+      row?.source || row?.context?.resource_url || row?.context?.blocked_uri,
+    );
+  }
+  if (!CRITICAL_ERROR_TYPES.has(errorType)) return false;
+  if (errorType === 'unhandled_rejection' && isAbortError({
+    name: row?.error_name,
+    message: row?.message,
+  })) return false;
+
+  if (['api_http_error', 'api_network_error', 'api_timeout'].includes(errorType)) {
+    const request = getRequestDetails(
+      row?.context?.request_url || row?.source || '',
+      { method: row?.context?.method || 'GET' },
+    );
+    if (!request.isApiRequest || request.isErrorLoggerRequest) return false;
+    return errorType !== 'api_http_error' ||
+      shouldReportApiStatus(Number(row?.context?.status || row?.error_code), request);
+  }
+
+  return true;
 };
 
 const normalizeError = (error) => {
@@ -127,7 +230,12 @@ const loadPendingRows = () => {
   queueLoaded = true;
   try {
     const savedRows = JSON.parse(window.localStorage.getItem(PENDING_ERRORS_KEY) || '[]');
-    if (Array.isArray(savedRows)) pendingRows = savedRows;
+    if (Array.isArray(savedRows)) {
+      pendingRows = savedRows.filter(isCriticalQueuedRow);
+      if (pendingRows.length !== savedRows.length) {
+        window.localStorage.setItem(PENDING_ERRORS_KEY, JSON.stringify(pendingRows));
+      }
+    }
   } catch (error) {
     if (originalConsoleError) {
       originalConsoleError('[Error Logger] Could not restore queued client errors.', error);
@@ -188,6 +296,7 @@ const flushPendingRows = async () => {
 
 export const reportClientError = (error, options = {}) => {
   if (typeof window === 'undefined') return;
+  if (!shouldReportClientError(error, options)) return;
   if (!supabaseClient) {
     pendingClientErrors.push({ error, options });
     return;
@@ -241,7 +350,6 @@ export const installClientErrorLogging = (client) => {
   installed = true;
 
   originalConsoleError = console.error.bind(console);
-  originalConsoleWarn = console.warn.bind(console);
   originalFetch = window.fetch.bind(window);
 
   const queuedErrors = pendingClientErrors.splice(0, pendingClientErrors.length);
@@ -252,14 +360,17 @@ export const installClientErrorLogging = (client) => {
   window.addEventListener('online', () => void flushPendingRows());
   void flushPendingRows();
 
-  // Observe API and other fetch failures without consuming or changing the
+  // Observe API failures without consuming or changing the
   // response returned to the application. Exclude this logger's own insert to
   // prevent a failed log write from recursively creating more log writes.
   window.fetch = async (input, init) => {
     const request = getRequestDetails(input, init);
     try {
       const response = await originalFetch(input, init);
-      if (!response.ok && !request.isErrorLoggerRequest) {
+      if (
+        shouldReportApiStatus(response.status, request) &&
+        !request.isErrorLoggerRequest
+      ) {
         const apiError = new Error(
           `HTTP ${response.status}${response.statusText ? ` ${response.statusText}` : ''}`,
         );
@@ -280,9 +391,14 @@ export const installClientErrorLogging = (client) => {
       }
       return response;
     } catch (error) {
-      if (!request.isErrorLoggerRequest) {
+      const isTimeout = error?.name === 'TimeoutError';
+      if (
+        request.isApiRequest &&
+        !request.isErrorLoggerRequest &&
+        (!isAbortError(error) || isTimeout)
+      ) {
         reportClientError(error, {
-          errorType: 'api_network_error',
+          errorType: isTimeout ? 'api_timeout' : 'api_network_error',
           source: request.requestUrl,
           context: {
             method: request.method,
@@ -305,7 +421,7 @@ export const installClientErrorLogging = (client) => {
 
     XMLHttpRequest.prototype.send = function (...args) {
       const request = this.__clientErrorRequest;
-      if (request && !request.isErrorLoggerRequest) {
+      if (request?.isApiRequest && !request.isErrorLoggerRequest) {
         let recorded = false;
         let wasAborted = false;
         const reportOnce = (errorType, status = null, statusText = null) => {
@@ -331,7 +447,7 @@ export const installClientErrorLogging = (client) => {
         this.addEventListener('timeout', () => reportOnce('api_timeout'), { once: true });
         this.addEventListener('abort', () => { wasAborted = true; }, { once: true });
         this.addEventListener('loadend', () => {
-          if (this.status >= 400) {
+          if (shouldReportApiStatus(this.status, request)) {
             reportOnce('api_http_error', this.status, this.statusText || null);
           } else if (this.status === 0 && !wasAborted) {
             reportOnce('api_network_error');
@@ -342,44 +458,12 @@ export const installClientErrorLogging = (client) => {
     };
   }
 
-  console.error = (...args) => {
-    originalConsoleError(...args);
-    const errorValue =
-      args.find((value) => value instanceof Error) ||
-      args.find((value) =>
-        value &&
-        typeof value === 'object' &&
-        (value.message || value.error_description || value.code || value.status)
-      ) ||
-      args[0];
-    const logMessage = args.map(stringifySafely).join(' ').slice(0, MAX_MESSAGE_LENGTH);
-    reportClientError(errorValue, {
-      errorType: 'console_error',
-      context: { console_message: logMessage },
-    });
-  };
-
-  console.warn = (...args) => {
-    originalConsoleWarn(...args);
-    const warningMessage = args.map(stringifySafely).join(' ').slice(0, MAX_MESSAGE_LENGTH);
-    const errorValue =
-      args.find((value) => value instanceof Error) ||
-      args.find((value) =>
-        value &&
-        typeof value === 'object' &&
-        (value.message || value.error_description || value.code || value.status)
-      );
-
-    if (errorValue || /error|failed|failure|unavailable|skipped|invalid|timeout|timed out|denied|unable|cannot|missing|not found|blocked|rejected/i.test(warningMessage)) {
-      reportClientError(errorValue || new Error(warningMessage), {
-        errorType: 'handled_warning',
-        context: { console_message: warningMessage },
-      });
-    }
-  };
-
   window.addEventListener('error', (event) => {
     if (event instanceof ErrorEvent) {
+      if (
+        (event.filename && !isSameOriginSource(event.filename)) ||
+        (!event.filename && /^script error\.?$/i.test(String(event.message || '')))
+      ) return;
       reportClientError(event.error || event.message, {
         errorType: 'uncaught_error',
         source: event.filename,
@@ -391,7 +475,13 @@ export const installClientErrorLogging = (client) => {
 
     const element = event.target;
     if (element && element !== window) {
+      const tagName = String(element.tagName || '').toUpperCase();
+      const rel = String(element.rel || '').toLowerCase();
+      const isAppCodeElement = tagName === 'SCRIPT' ||
+        (tagName === 'LINK' && ['stylesheet', 'modulepreload'].includes(rel));
+      if (!isAppCodeElement) return;
       const resourceUrl = element.src || element.href || element.currentSrc || '';
+      if (!isCriticalAppAsset(resourceUrl)) return;
       const safeResourceUrl = resourceUrl
         ? getRequestDetails(String(resourceUrl)).requestUrl
         : null;
@@ -399,6 +489,7 @@ export const installClientErrorLogging = (client) => {
         new Error(`${element.tagName || 'Resource'} failed to load.`),
         {
           errorType: 'resource_load_error',
+          critical: true,
           source: safeResourceUrl,
           context: {
             tag_name: element.tagName || null,
@@ -415,6 +506,8 @@ export const installClientErrorLogging = (client) => {
 
   window.addEventListener('securitypolicyviolation', (event) => {
     const blockedUri = event.blockedURI || '';
+    const directive = event.effectiveDirective || event.violatedDirective || '';
+    if (!/^(?:script|style)-src(?:-|$)/i.test(directive) || !isCriticalAppAsset(blockedUri)) return;
     const safeBlockedUri = blockedUri
       ? getRequestDetails(blockedUri).requestUrl
       : null;
@@ -422,6 +515,7 @@ export const installClientErrorLogging = (client) => {
       new Error(`Content Security Policy blocked ${event.violatedDirective || 'a resource'}.`),
       {
         errorType: 'security_policy_error',
+        critical: true,
         source: safeBlockedUri,
         context: {
           violated_directive: event.violatedDirective || null,

@@ -4046,17 +4046,28 @@ export const translateContentService = async (ai_article, targetLangCode, articl
       body: JSON.stringify({ article: ai_article, targetLangCode: baseLang }),
     });
     const payload = await response.json().catch((error) => {
-      reportClientError(error, {
-        errorType: 'api_response_parse_error',
-        context: { operation: 'parse_translation_api_response' },
-      });
+      if (response.ok) {
+        reportClientError(error, {
+          errorType: 'api_response_parse_error',
+          source: '/api/translate-content',
+          context: { operation: 'parse_translation_api_response' },
+        });
+      }
       return null;
     });
     if (!response.ok) {
       throw new Error(payload?.error || `Translation service returned ${response.status}.`);
     }
     if (!payload?.translation || typeof payload.translation !== "object") {
-      throw new Error("Translation service returned an invalid response.");
+      const error = new Error("Translation service returned an invalid response.");
+      if (payload) {
+        reportClientError(error, {
+          errorType: 'api_response_error',
+          source: '/api/translate-content',
+          context: { operation: 'validate_translation_api_response' },
+        });
+      }
+      throw error;
     }
 
     const finalResult = { ...ai_article, ...payload.translation, language: baseLang };
@@ -10158,6 +10169,7 @@ function App() {
 
       // 4. Run Concurrent Requests for each Task across sampled points
       const categoryResults = {};
+      const placesApiFailures = new Set();
 
       for (const task of searchTasks) {
         const searchPromises = sampledPoints.flatMap(point => {
@@ -10173,7 +10185,9 @@ function App() {
                 if (status === PlacesServiceStatus.OK && results) {
                   resolve(results);
                 } else {
-                  console.warn(`Places API failed for ${targetType} with status: ${status}`);
+                  if (status !== PlacesServiceStatus.ZERO_RESULTS) {
+                    placesApiFailures.add(`${targetType}:${status}`);
+                  }
                   resolve([]);
                 }
               });
@@ -10192,6 +10206,17 @@ function App() {
         });
 
         categoryResults[task.key] = Array.from(uniqueMap.values());
+      }
+
+      if (placesApiFailures.size > 0) {
+        reportClientError(new Error('Google Places returned an error for route searches.'), {
+          errorType: 'api_response_error',
+          source: 'https://maps.googleapis.com/maps/api/place/nearbysearch',
+          context: {
+            operation: 'route_places_nearby_search',
+            statuses: Array.from(placesApiFailures).slice(0, 20),
+          },
+        });
       }
 
       // 5. Process & Filter Nature Attractions
@@ -10272,6 +10297,10 @@ function App() {
 
     } catch (e) {
       console.error("Failed to fetch route places:", e);
+      reportClientError(e, {
+        errorType: 'user_action_error',
+        context: { operation: 'load_route_places' },
+      });
       setNearbyAttractions([]);
       setRouteAmenities({ gas_stations: [], restaurants: [], lodgings: [] });
     }
@@ -10303,8 +10332,14 @@ function App() {
         if (!res.ok) throw new Error("API Error");
 
         const data = await res.json();
-        fetchedWeatherKeys.current.add(placeKey);
-
+        if (!Array.isArray(data?.list) || data.list.length === 0) {
+          reportClientError(new Error('Weather API returned an invalid forecast payload.'), {
+            errorType: 'api_response_error',
+            source: 'https://api.openweathermap.org/data/2.5/forecast',
+            context: { operation: 'validate_route_weather_response' },
+          });
+          return null;
+        }
         const current = data.list[0];
         const tomorrow = new Date();
         tomorrow.setDate(tomorrow.getDate() + 1);
@@ -10314,7 +10349,21 @@ function App() {
           return d.getDate() === tomorrow.getDate() && d.getHours() >= 12;
         });
 
-        if (!nextDay) nextDay = data.list[8];
+        if (!nextDay) nextDay = data.list[8] || data.list[data.list.length - 1];
+        if (
+          typeof current?.main?.temp !== 'number' ||
+          typeof current?.weather?.[0]?.main !== 'string' ||
+          typeof nextDay?.main?.temp !== 'number' ||
+          typeof nextDay?.weather?.[0]?.main !== 'string'
+        ) {
+          reportClientError(new Error('Weather API forecast is missing required fields.'), {
+            errorType: 'api_response_error',
+            source: 'https://api.openweathermap.org/data/2.5/forecast',
+            context: { operation: 'validate_route_weather_forecast_fields' },
+          });
+          return null;
+        }
+        fetchedWeatherKeys.current.add(placeKey);
 
         return {
           key: placeKey,
@@ -10772,7 +10821,7 @@ function App() {
           await navigator.clipboard.writeText(universalUrl);
           toast.success("Link copied to clipboard!");
         } catch (error) {
-          reportClientError(error, { errorType: 'handled_error', context: { operation: 'copy_route_link' } });
+          reportClientError(error, { errorType: 'user_action_error', context: { operation: 'copy_route_link' } });
           toast.error("Could not copy the route link.");
         }
       };
@@ -10825,7 +10874,7 @@ function App() {
       URL.revokeObjectURL(url);
       toast.success(`Route exported as ${type.toUpperCase()}`);
     } catch (error) {
-      reportClientError(error, { errorType: 'handled_error', context: { operation: 'export_route_file' } });
+      reportClientError(error, { errorType: 'user_action_error', context: { operation: 'export_route_file' } });
       toast.error("Download failed. Check browser permissions.");
     }
   };
