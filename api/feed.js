@@ -3,7 +3,7 @@ import { createClient } from "@supabase/supabase-js";
 const DEFAULT_SITE_URL = "https://www.myjournalview.com";
 
 function getSiteOrigin() {
-  const siteUrl = process.env.SITE_URL || process.env.NEXT_PUBLIC_SITE_URL || DEFAULT_SITE_URL;
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || process.env.SITE_URL || DEFAULT_SITE_URL;
   const parsed = new URL(siteUrl);
   if (!["https:", "http:"].includes(parsed.protocol)) {
     throw new Error("Site URL must use HTTP or HTTPS.");

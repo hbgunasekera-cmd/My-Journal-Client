@@ -5,7 +5,7 @@ const DEFAULT_SITE_URL = "https://www.myjournalview.com";
 const BASE_VIDEO_COLUMNS = "id,url,title,custom_thumbnail_url,created_at,is_active";
 
 function getSiteOrigin() {
-  const siteUrl = process.env.SITE_URL || process.env.NEXT_PUBLIC_SITE_URL || DEFAULT_SITE_URL;
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || process.env.SITE_URL || DEFAULT_SITE_URL;
   const parsed = new URL(siteUrl);
   if (!["https:", "http:"].includes(parsed.protocol)) {
     throw new Error("Site URL must use HTTP or HTTPS.");
