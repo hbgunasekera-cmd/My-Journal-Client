@@ -1,6 +1,7 @@
 import i18n from "i18next";
 import { initReactI18next } from "react-i18next";
 import LanguageDetector from "i18next-browser-languagedetector";
+import { reportClientError } from './utils/clientErrorLogger.js';
 
 // Import all translation files
 import arTranslations from "./locales/ar.json";
@@ -57,7 +58,11 @@ if (typeof window !== "undefined") {
     const savedLanguage = window.localStorage.getItem("i18nextLng");
     if (savedLanguage === "in") window.localStorage.setItem("i18nextLng", "id");
     if (savedLanguage === "kr") window.localStorage.setItem("i18nextLng", "ko");
-  } catch {
+  } catch (error) {
+    reportClientError(error, {
+      errorType: 'handled_error',
+      context: { operation: 'migrate_saved_language_preference' },
+    });
     // Language detection will use the browser preference if storage is unavailable.
   }
 }

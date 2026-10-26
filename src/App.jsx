@@ -29,6 +29,7 @@ import {
   getLocationHeroImageSource,
 } from './utils/locationSeo.js';
 import { findRelatedTouristAttraction } from './utils/videoStructuredData.js';
+import { reportClientError } from './utils/clientErrorLogger.js';
 
 // =======================================================================
 // 3. DRAG AND DROP ENGINE
@@ -140,7 +141,8 @@ function getGooglePhotoRouteKey(photo) {
     }
 
     return decodeURIComponent(image.pathname.slice("/pw/".length));
-  } catch {
+  } catch (error) {
+    reportClientError(error, { errorType: 'handled_error', context: { operation: 'parse_google_photo_route_key' } });
     return null;
   }
 }
@@ -153,7 +155,8 @@ function getGooglePhotoRouteKeyFromPath(pathname) {
 
   try {
     return decodeURIComponent(match[1]);
-  } catch {
+  } catch (error) {
+    reportClientError(error, { errorType: 'handled_error', context: { operation: 'decode_google_photo_route_path' } });
     return match[1];
   }
 }
@@ -503,7 +506,8 @@ export const generateSlug = (name) => {
 const safeDecodeURIComponent = (value) => {
   try {
     return decodeURIComponent(value);
-  } catch {
+  } catch (error) {
+    reportClientError(error, { errorType: 'handled_error', context: { operation: 'decode_location_slug' } });
     return value;
   }
 };
@@ -579,7 +583,8 @@ const getSafeHttpUrl = (value) => {
   try {
     const url = new URL(String(value || ""));
     return ["http:", "https:"].includes(url.protocol) ? url.href : null;
-  } catch {
+  } catch (error) {
+    reportClientError(error, { errorType: 'handled_error', context: { operation: 'validate_http_url' } });
     return null;
   }
 };
@@ -661,7 +666,8 @@ export const getOptimizedUrl = (
   let parsedUrl;
   try {
     parsedUrl = new URL(value);
-  } catch {
+  } catch (error) {
+    reportClientError(error, { errorType: 'handled_error', context: { operation: 'parse_image_url' } });
     return "";
   }
   if (!["http:", "https:"].includes(parsedUrl.protocol)) return "";
@@ -1342,7 +1348,8 @@ export const getYouTubeId = (
           : null;
       }
     }
-  } catch {
+  } catch (error) {
+    reportClientError(error, { errorType: 'handled_error', context: { operation: 'parse_youtube_video_url' } });
     // Fall through to defensive parsing.
   }
 
@@ -1463,7 +1470,8 @@ export const buildAutomaticVideoSEO = (
     if (["http:", "https:"].includes(parsedThumbnail.protocol)) {
       thumbnailUrl = parsedThumbnail.href;
     }
-  } catch {
+  } catch (error) {
+    reportClientError(error, { errorType: 'handled_error', context: { operation: 'parse_custom_video_thumbnail' } });
     // Use the provider thumbnail when a custom URL is invalid.
   }
 
@@ -2976,7 +2984,8 @@ export const updateSEO = (
       canonicalUrl =
         `${cleanUrl.origin}/`;
     }
-  } catch {
+  } catch (error) {
+    reportClientError(error, { errorType: 'handled_error', context: { operation: 'normalize_canonical_url' } });
     canonicalUrl =
       rawCanonicalUrl;
   }
@@ -3729,7 +3738,8 @@ export const logVisit = async (path = null) => {
   const safeDecode = (value) => {
     try {
       return decodeURIComponent(value);
-    } catch {
+    } catch (error) {
+      reportClientError(error, { errorType: 'handled_error', context: { operation: 'decode_route_parameter' } });
       return value;
     }
   };
@@ -4035,7 +4045,13 @@ export const translateContentService = async (ai_article, targetLangCode, articl
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ article: ai_article, targetLangCode: baseLang }),
     });
-    const payload = await response.json().catch(() => null);
+    const payload = await response.json().catch((error) => {
+      reportClientError(error, {
+        errorType: 'api_response_parse_error',
+        context: { operation: 'parse_translation_api_response' },
+      });
+      return null;
+    });
     if (!response.ok) {
       throw new Error(payload?.error || `Translation service returned ${response.status}.`);
     }
@@ -10372,7 +10388,8 @@ function App() {
       if (placeChangedListener) {
         try {
           placeChangedListener.remove?.();
-        } catch {
+        } catch (error) {
+          reportClientError(error, { errorType: 'handled_error', context: { operation: 'remove_places_autocomplete_listener' } });
           // Safe cleanup
         }
         placeChangedListener = null;
@@ -10385,7 +10402,8 @@ function App() {
               autocompleteRef.current
             );
           }
-        } catch {
+        } catch (error) {
+          reportClientError(error, { errorType: 'handled_error', context: { operation: 'clear_places_autocomplete_listeners' } });
           // Safe cleanup
         }
 
@@ -10753,7 +10771,8 @@ function App() {
         try {
           await navigator.clipboard.writeText(universalUrl);
           toast.success("Link copied to clipboard!");
-        } catch {
+        } catch (error) {
+          reportClientError(error, { errorType: 'handled_error', context: { operation: 'copy_route_link' } });
           toast.error("Could not copy the route link.");
         }
       };
@@ -10805,7 +10824,8 @@ function App() {
       document.body.removeChild(link);
       URL.revokeObjectURL(url);
       toast.success(`Route exported as ${type.toUpperCase()}`);
-    } catch {
+    } catch (error) {
+      reportClientError(error, { errorType: 'handled_error', context: { operation: 'export_route_file' } });
       toast.error("Download failed. Check browser permissions.");
     }
   };
@@ -10830,7 +10850,8 @@ function App() {
       try {
         await navigator.clipboard.writeText(text);
         return true;
-      } catch {
+      } catch (error) {
+        reportClientError(error, { errorType: 'handled_error', context: { operation: 'copy_share_link' } });
         const textArea = document.createElement("textarea");
         textArea.value = text;
         textArea.style.position = "fixed";
@@ -10922,6 +10943,7 @@ function App() {
       setIsAddOpen(false);
       setFormData({ place_name: "", category: "Location", latitude: null, longitude: null, locality: "", map_url: "" });
     } catch (err) {
+      reportClientError(err, { errorType: 'handled_error', context: { operation: 'submit_suggested_spot' } });
       toast.error("Failed to submit: " + err.message);
     }
   };
@@ -11015,6 +11037,7 @@ function App() {
           activeToastId = null;
         }
       } catch (error) {
+        reportClientError(error, { errorType: 'handled_error', context: { operation: 'translate_visible_content' } });
         if (isCurrent) {
           toast.error(error.message || "Translation failed. Showing original.", { id: activeToastId });
           setTranslatedContent(null);

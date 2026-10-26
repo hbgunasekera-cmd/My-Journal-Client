@@ -1,3 +1,5 @@
+import { reportClientError } from './clientErrorLogger.js';
+
 function cleanLocationText(value) {
   return String(value || "")
     .replace(/[<>]/g, "")
@@ -25,7 +27,11 @@ function isUsableImageSource(value) {
     if (!["http:", "https:"].includes(parsed.protocol)) return false;
     const host = parsed.hostname.toLowerCase();
     return host !== "photos.google.com" && host !== "photos.app.goo.gl";
-  } catch {
+  } catch (error) {
+    reportClientError(error, {
+      errorType: 'handled_error',
+      context: { operation: 'validate_location_image_url' },
+    });
     return false;
   }
 }
