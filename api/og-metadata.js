@@ -14,6 +14,7 @@ import {
   normalizeVideoUploadDate,
 } from "../src/utils/videoStructuredData.js";
 const DEFAULT_SITE_URL = "https://www.myjournalview.com";
+const CRAWLER_USER_AGENT = /bot|crawler|spider|bing|msnbot|twitterbot|facebookexternalhit|facebot|meta-externalagent|meta-externalfetcher|whatsapp|telegram|pinterest|linkedin|slack|discord|instagram|tiktok|xbot|yandex|baidu|duckduck|applebot|google-inspectiontool|googleother|gptbot|chatgpt-user|perplexity|claudebot|claude-user|microsoftpreview|cohere|bytespider|mediapartners-google/i;
 
 function generateSlug(value) {
   if (!value) return "";
@@ -466,9 +467,15 @@ export default async function handler(req, res) {
   const cleanSlug = videoRoute
     ? decodedSlug.toLowerCase()
     : generateSlug(decodedSlug);
+  const userAgent = String(req.headers?.["user-agent"] || "");
+  const isCrawler = CRAWLER_USER_AGENT.test(userAgent);
   let canonicalUrl = videoGallery
     ? `${baseUrl}/videos`
     : `${baseUrl}/${pathType}/${encodeURIComponent(cleanSlug)}`;
+
+  if (videoRoute) {
+    res.setHeader("Vary", "User-Agent");
+  }
 
   if (
     (rawSlug && rawSlug !== cleanSlug) ||
@@ -477,6 +484,25 @@ export default async function handler(req, res) {
     res.setHeader("Location", canonicalUrl);
     res.setHeader("Cache-Control", "s-maxage=31536000, immutable");
     return res.status(301).end();
+  }
+
+  // Individual video URLs are routed through this function for every client
+  // so crawler rendering cannot silently fall back to index.html's homepage
+  // canonical. Human visitors still receive the SPA shell; React then opens
+  // the requested video inside the Video Hub UI.
+  if (videoRoute && !isCrawler) {
+    try {
+      const indexResponse = await fetch(`${baseUrl}/index.html`);
+      if (!indexResponse.ok) throw new Error(`Index document fetch failed (${indexResponse.status}).`);
+      const html = await indexResponse.text();
+      res.setHeader("Content-Type", "text/html; charset=utf-8");
+      res.setHeader("Cache-Control", "no-store");
+      return method === "HEAD" ? res.status(200).end() : res.status(200).send(html);
+    } catch (error) {
+      console.error("Video app shell fetch failed:", error);
+      res.setHeader("Cache-Control", "no-store");
+      return res.status(503).end("Video page is temporarily unavailable.");
+    }
   }
 
   const { supabaseUrl, supabaseKey } = getSupabaseServerConfig();
@@ -803,9 +829,11 @@ export default async function handler(req, res) {
     html = replaceRootElement(html, crawlerBody);
 
     res.setHeader("Content-Type", "text/html; charset=utf-8");
-    res.setHeader("Cache-Control", isNotFound
-      ? "s-maxage=300, stale-while-revalidate=600"
-      : "s-maxage=3600, stale-while-revalidate=86400");
+    res.setHeader("Cache-Control", videoRoute
+      ? "no-store"
+      : isNotFound
+        ? "s-maxage=300, stale-while-revalidate=600"
+        : "s-maxage=3600, stale-while-revalidate=86400");
     const status = isNotFound ? 404 : 200;
     return method === "HEAD" ? res.status(status).end() : res.status(status).send(html);
   } catch (error) {
