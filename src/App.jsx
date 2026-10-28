@@ -10829,7 +10829,7 @@ function App() {
 
   const downloadRouteFile = (type = 'gpx') => {
     if (!routeData || !routeData.coordinates) {
-      toast.info("Please calculate a route first!");
+      toast("Please calculate a route first!");
       return;
     }
 
@@ -11017,7 +11017,7 @@ function App() {
   const handleDeclineCookies = () => {
     writeLocalStorage('myjournal_cookie_consent', 'denied');
     setShowCookieBanner(false);
-    toast.info("Optional tracking cookies declined.", { id: "cookie-consent" });
+    toast("Optional tracking cookies declined.", { id: "cookie-consent" });
   };
 
   // ============================================================================

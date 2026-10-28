@@ -41,6 +41,16 @@ const stringifySafely = (value) => {
   }
 };
 
+// Facebook/Instagram iOS in-app browsers inject an autofill script that can
+// throw this error independently of site code. It is not actionable by the
+// application and is filtered from client error records.
+const isKnownInjectedBrowserError = (errorOrMessage) => {
+  const message = typeof errorOrMessage === 'string'
+    ? errorOrMessage
+    : errorOrMessage?.message || '';
+  return /_AutofillCallbackHandler/i.test(message);
+};
+
 const getRequestDetails = (input, init) => {
   const rawUrl = typeof input === 'string' || input instanceof URL
     ? String(input)
@@ -130,6 +140,7 @@ const isSameOriginSource = (url) => {
 };
 
 const isCriticalQueuedRow = (row) => {
+  if (isKnownInjectedBrowserError(row?.message)) return false;
   const errorType = String(row?.error_type || '').toLowerCase();
   if (['resource_load_error', 'security_policy_error'].includes(errorType)) {
     return isCriticalAppAsset(
@@ -296,6 +307,7 @@ const flushPendingRows = async () => {
 
 export const reportClientError = (error, options = {}) => {
   if (typeof window === 'undefined') return;
+  if (isKnownInjectedBrowserError(error)) return;
   if (!shouldReportClientError(error, options)) return;
   if (!supabaseClient) {
     pendingClientErrors.push({ error, options });
