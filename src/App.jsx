@@ -30,6 +30,7 @@ import {
 } from './utils/locationSeo.js';
 import { findRelatedTouristAttraction } from './utils/videoStructuredData.js';
 import { reportClientError } from './utils/clientErrorLogger.js';
+import { readLocalStorage, writeLocalStorage } from './utils/safeStorage.js';
 
 // =======================================================================
 // 3. DRAG AND DROP ENGINE
@@ -3455,10 +3456,10 @@ const isOwnerModeSession = () => {
   const ownerMode =
     new URLSearchParams(window.location.search).get('mode') === 'owner';
   if (ownerMode) {
-    window.localStorage.setItem('owner_auth_token', 'owner');
+    writeLocalStorage('owner_auth_token', 'owner');
   }
 
-  return ownerMode || window.localStorage.getItem('owner_auth_token') === 'owner';
+  return ownerMode || readLocalStorage('owner_auth_token') === 'owner';
 };
 
 const fetchVisitorMetadata = async () => {
@@ -3718,14 +3719,11 @@ export const logVisit = async (path = null) => {
   );
 
   if (urlParams.get('mode') === 'owner') {
-    localStorage.setItem(
-      'owner_auth_token',
-      'owner'
-    );
+    writeLocalStorage('owner_auth_token', 'owner');
   }
 
   if (
-    localStorage.getItem('owner_auth_token') === 'owner' ||
+    readLocalStorage('owner_auth_token') === 'owner' ||
     !supabaseClient
   ) {
     return;
@@ -8980,11 +8978,7 @@ function App() {
   const [showCookieBanner, setShowCookieBanner] =
     useState(() => {
       if (typeof window !== 'undefined') {
-        return (
-          localStorage.getItem(
-            'myjournal_cookie_consent'
-          ) === null
-        );
+        return readLocalStorage('myjournal_cookie_consent') === null;
       }
 
       return false;
@@ -9470,7 +9464,7 @@ function App() {
 
   const handleDismissNewsletterPrompt = () => {
     setShowNewsletterPrompt(false);
-    localStorage.setItem('myjournal_newsletter_prompted', 'dismissed');
+    writeLocalStorage('myjournal_newsletter_prompted', 'dismissed');
   };
 
   const handleNewsletterSubmit = async (e) => {
@@ -9513,7 +9507,7 @@ function App() {
       toast.success(t('newsletter.success_message', 'Welcome aboard! Subscription successful.'));
       setNewsletterEmail('');
       setShowNewsletterPrompt(false);
-      localStorage.setItem('myjournal_newsletter_prompted', 'subscribed');
+      writeLocalStorage('myjournal_newsletter_prompted', 'subscribed');
 
     } catch (err) {
       console.error("Supabase Newsletter Pipeline Failure:", err);
@@ -11010,7 +11004,7 @@ function App() {
   };
 
   const handleAcceptCookies = () => {
-    localStorage.setItem('myjournal_cookie_consent', 'granted');
+    writeLocalStorage('myjournal_cookie_consent', 'granted');
     setShowCookieBanner(false);
     initClarity();
     if (typeof window !== 'undefined') {
@@ -11021,7 +11015,7 @@ function App() {
   };
 
   const handleDeclineCookies = () => {
-    localStorage.setItem('myjournal_cookie_consent', 'denied');
+    writeLocalStorage('myjournal_cookie_consent', 'denied');
     setShowCookieBanner(false);
     toast.info("Optional tracking cookies declined.", { id: "cookie-consent" });
   };
@@ -11042,7 +11036,7 @@ function App() {
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
-    const hasSeenPrompt = localStorage.getItem('myjournal_newsletter_prompted');
+    const hasSeenPrompt = readLocalStorage('myjournal_newsletter_prompted');
     if (hasSeenPrompt) return;
 
     const isFeatureActive = isArticleOpen || activeId !== null || isPlannerOpen || isAddOpen;
@@ -11219,11 +11213,7 @@ function App() {
     // COOKIE CONSENT / CLARITY INITIALIZATION
     // =====================================================================
 
-    if (
-      localStorage.getItem(
-        "myjournal_cookie_consent"
-      ) === "granted"
-    ) {
+    if (readLocalStorage('myjournal_cookie_consent') === 'granted') {
       initClarity();
 
       if (typeof window !== "undefined") {
