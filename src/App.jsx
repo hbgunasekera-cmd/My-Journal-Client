@@ -3505,6 +3505,11 @@ export const invokeInteractionEvent = async (eventType, payload = {}) => {
   if (!supportedEvents.includes(eventType)) {
     return { success: true, ignored: true };
   }
+  // Search and preview crawlers do not represent reader visits. Avoid sending
+  // their metadata-only analytics request to Supabase.
+  if (eventType === 'visit' && /(?:bot|crawler|spider|slurp|preview|fetcher)/i.test(navigator.userAgent || '')) {
+    return { success: true, ignored: true };
+  }
 
   if (
     ['like', 'unlike', 'share'].includes(eventType) &&

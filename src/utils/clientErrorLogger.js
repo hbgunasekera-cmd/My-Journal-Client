@@ -115,6 +115,15 @@ const shouldReportApiStatus = (status, request) => {
   );
 };
 
+const shouldRetryNetworkRequest = (request) => Boolean(
+  request?.isSupabaseApi &&
+  !request.isErrorLoggerRequest &&
+  (request.method === 'GET' || (
+    request.method === 'POST' &&
+    /\/functions\/v1\/track-visit\/?$/i.test(request.requestUrl)
+  ))
+);
+
 const isCriticalAppAsset = (url) => {
   if (!url) return false;
   try {
@@ -378,7 +387,17 @@ export const installClientErrorLogging = (client) => {
   window.fetch = async (input, init) => {
     const request = getRequestDetails(input, init);
     try {
-      const response = await originalFetch(input, init);
+      let response;
+      try {
+        response = await originalFetch(input, init);
+      } catch (firstError) {
+        const retryable = shouldRetryNetworkRequest(request) &&
+          !isAbortError(firstError) && firstError?.name !== 'TimeoutError';
+        if (!retryable) throw firstError;
+        await new Promise((resolve) => setTimeout(resolve, 300));
+        // Reads and track-visit only return metadata; neither attempt writes a row.
+        response = await originalFetch(input, init);
+      }
       if (
         shouldReportApiStatus(response.status, request) &&
         !request.isErrorLoggerRequest
