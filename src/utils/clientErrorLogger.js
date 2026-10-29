@@ -96,6 +96,16 @@ const isAbortError = (error) =>
   error?.code === 'ABORT_ERR' ||
   /\b(?:aborted|aborterror)\b/i.test(String(error?.message || ''));
 
+const isSearchOrPreviewCrawler = (userAgent = null) => {
+  const agent = userAgent ?? (typeof navigator !== 'undefined' ? navigator.userAgent : '');
+  return /(?:bot|crawler|spider|slurp|preview|fetcher|webindexer)/i.test(agent || '');
+};
+
+const isCrawlerVisitRequest = (request, userAgent = null) =>
+  request?.isSupabaseApi &&
+  /\/functions\/v1\/track-visit\/?$/i.test(request.requestUrl) &&
+  isSearchOrPreviewCrawler(userAgent);
+
 const shouldReportClientError = (error, options = {}) => {
   if (options.critical === false) return false;
   if (options.critical === true) return true;
@@ -118,6 +128,7 @@ const shouldReportApiStatus = (status, request) => {
 const shouldRetryNetworkRequest = (request) => Boolean(
   request?.isSupabaseApi &&
   !request.isErrorLoggerRequest &&
+  !isCrawlerVisitRequest(request) &&
   (request.method === 'GET' || (
     request.method === 'POST' &&
     /\/functions\/v1\/track-visit\/?$/i.test(request.requestUrl)
@@ -159,6 +170,9 @@ const isCriticalQueuedRow = (row) => {
   if (isKnownInjectedBrowserError(row?.message)) return false;
   const errorType = String(row?.error_type || '').toLowerCase();
   if (['resource_load_error', 'security_policy_error'].includes(errorType)) {
+    if (errorType === 'resource_load_error' && isSearchOrPreviewCrawler(row?.user_agent)) {
+      return false;
+    }
     return isCriticalAppAsset(
       row?.source || row?.context?.resource_url || row?.context?.blocked_uri,
     );
@@ -174,6 +188,7 @@ const isCriticalQueuedRow = (row) => {
       row?.context?.request_url || row?.source || '',
       { method: row?.context?.method || 'GET' },
     );
+    if (isCrawlerVisitRequest(request, row?.user_agent)) return false;
     if (!request.isApiRequest || request.isErrorLoggerRequest) return false;
     return errorType !== 'api_http_error' ||
       shouldReportApiStatus(Number(row?.context?.status || row?.error_code), request);
@@ -433,6 +448,7 @@ export const installClientErrorLogging = (client) => {
       if (
         request.isApiRequest &&
         !request.isErrorLoggerRequest &&
+        !isCrawlerVisitRequest(request) &&
         (!isAbortError(error) || isTimeout)
       ) {
         reportClientError(error, {
@@ -513,6 +529,10 @@ export const installClientErrorLogging = (client) => {
 
     const element = event.target;
     if (element && element !== window) {
+      // Crawlers do not need the SPA stylesheet to read server-rendered page
+      // metadata; ignore their asset fetch failures as non-user-facing noise.
+      if (isSearchOrPreviewCrawler()) return;
+
       const tagName = String(element.tagName || '').toUpperCase();
       const rel = String(element.rel || '').toLowerCase();
       const isAppCodeElement = tagName === 'SCRIPT' ||

@@ -3450,6 +3450,10 @@ const isUuid = (value) =>
   typeof value === 'string' &&
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(value.trim());
 
+const isSearchOrPreviewCrawler = () =>
+  typeof navigator !== 'undefined' &&
+  /(?:bot|crawler|spider|slurp|preview|fetcher|webindexer)/i.test(navigator.userAgent || '');
+
 const isOwnerModeSession = () => {
   if (typeof window === 'undefined') return false;
 
@@ -3507,7 +3511,7 @@ export const invokeInteractionEvent = async (eventType, payload = {}) => {
   }
   // Search and preview crawlers do not represent reader visits. Avoid sending
   // their metadata-only analytics request to Supabase.
-  if (eventType === 'visit' && /(?:bot|crawler|spider|slurp|preview|fetcher)/i.test(navigator.userAgent || '')) {
+  if (eventType === 'visit' && isSearchOrPreviewCrawler()) {
     return { success: true, ignored: true };
   }
 
@@ -3704,6 +3708,10 @@ export const logVisit = async (path = null) => {
   if (typeof window === 'undefined') {
     return;
   }
+
+  // Visit logging is client analytics; search/social crawlers render content
+  // for indexing and previews, so do not call the metadata Edge Function.
+  if (isSearchOrPreviewCrawler()) return;
 
   const host = window.location.hostname;
 

@@ -14,7 +14,7 @@ import {
   normalizeVideoUploadDate,
 } from "../src/utils/videoStructuredData.js";
 const DEFAULT_SITE_URL = "https://www.myjournalview.com";
-const CRAWLER_USER_AGENT = /bot|crawler|spider|bing|msnbot|twitterbot|facebookexternalhit|facebot|meta-externalagent|meta-externalfetcher|whatsapp|telegram|pinterest|linkedin|slack|discord|instagram|tiktok|xbot|yandex|baidu|duckduck|applebot|google-inspectiontool|googleother|gptbot|chatgpt-user|perplexity|claudebot|claude-user|microsoftpreview|cohere|bytespider|mediapartners-google/i;
+const CRAWLER_USER_AGENT = /bot|crawler|spider|bing|msnbot|twitterbot|facebookexternalhit|facebot|meta-externalagent|meta-externalfetcher|meta-webindexer|whatsapp|telegram|pinterest|linkedin|slack|discord|instagram|tiktok|xbot|yandex|baidu|duckduck|applebot|google-inspectiontool|googleother|gptbot|chatgpt-user|perplexity|claudebot|claude-user|microsoftpreview|cohere|bytespider|mediapartners-google/i;
 
 function generateSlug(value) {
   if (!value) return "";
