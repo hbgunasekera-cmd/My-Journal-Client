@@ -128,6 +128,13 @@ const isCriticalAppAsset = (url) => {
   if (!url) return false;
   try {
     const parsed = new URL(url, window.location.origin);
+    // Cloudflare owns /cdn-cgi/ endpoints and injects challenge/JavaScript
+    // detection assets there; they are infrastructure, not app bundles.
+    if (
+      parsed.origin === window.location.origin &&
+      parsed.pathname.toLowerCase().startsWith('/cdn-cgi/')
+    ) return false;
+
     const isFirstPartyCode =
       parsed.origin === window.location.origin && /\.(?:js|mjs|css)$/i.test(parsed.pathname);
     const isGoogleMapsScript =
@@ -536,6 +543,9 @@ export const installClientErrorLogging = (client) => {
   });
 
   window.addEventListener('securitypolicyviolation', (event) => {
+    // Report-only policy notices do not block resources or affect the user.
+    if (event.disposition && event.disposition !== 'enforce') return;
+
     const blockedUri = event.blockedURI || '';
     const directive = event.effectiveDirective || event.violatedDirective || '';
     if (!/^(?:script|style)-src(?:-|$)/i.test(directive) || !isCriticalAppAsset(blockedUri)) return;
@@ -552,6 +562,7 @@ export const installClientErrorLogging = (client) => {
           violated_directive: event.violatedDirective || null,
           effective_directive: event.effectiveDirective || null,
           blocked_uri: safeBlockedUri,
+          disposition: event.disposition || null,
         },
       },
     );
