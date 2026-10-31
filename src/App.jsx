@@ -13409,16 +13409,16 @@ function App() {
                 <header className="flex shrink-0 items-start justify-between gap-4 border-b border-slate-100 px-5 py-4 sm:px-7 sm:py-5">
                   <div>
                     <p className="mb-1 text-[10px] font-black uppercase tracking-[0.2em] text-orange-600">
-                      Plan your journey
+                      User guide
                     </p>
                     <h2
                       id="route-planner-instructions-title"
                       className="text-xl font-black tracking-tight sm:text-2xl"
                     >
-                      How to Plan Your Trip with Route Planner
+                      Route Planner: User Guide &amp; Instructions
                     </h2>
                     <p className="mt-1 text-sm leading-relaxed text-slate-600">
-                      Build customized travel routes across Sri Lanka by selecting attractions from our curated website catalog or searching globally across Google Maps.
+                      Plan your road trips across Sri Lanka seamlessly while discovering top waterfalls, peaks, viewpoints, and monasteries!
                     </p>
                   </div>
                   <button
@@ -13432,21 +13432,24 @@ function App() {
                 </header>
 
                 <div className="grid min-h-0 flex-1 gap-5 overflow-y-auto p-4 sm:p-6 lg:grid-cols-[1.08fr_.92fr] lg:gap-7">
-                  <ol className="space-y-3" aria-label="Route planning steps">
+                  <ol className="space-y-3" aria-label="Route planning instructions">
                     <li className="rounded-2xl border border-orange-100 bg-orange-50/70 p-4 sm:p-5">
                       <div className="flex items-start gap-3">
                         <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-orange-500 text-white">
                           <Search className="h-4 w-4" aria-hidden="true" />
                         </span>
                         <div>
-                          <h3 className="font-extrabold">Step 1: Search &amp; Discover Destinations</h3>
+                          <h3 className="font-extrabold">Step 1: Search Destinations using Bucket List Search (Recommended)</h3>
                           <p className="mt-1 text-sm leading-relaxed text-slate-600">
-                            Search for stops in either of these ways:
+                            Keep the search set to <strong>Bucket List Only</strong> (<strong>+ MAPS</strong> toggle turned off). Typing in the search bar (for example, <strong>“LAXAPA”</strong>) filters our verified, free database of attractions.
                           </p>
-                          <ul className="mt-2 space-y-2 text-sm leading-relaxed text-slate-600">
-                            <li><strong>Bucket List Search (Default):</strong> Type a location name in the search bar to filter the curated items in the <strong>Available Locations &amp; Attractions</strong> list below.</li>
-                            <li><strong>Global Search (Google Maps):</strong> Turn on the <strong>Maps</strong> toggle to the right of the search field. Typing opens worldwide Google Maps suggestions while also filtering matching attractions in the list below.</li>
-                          </ul>
+                          <div className="mt-2 rounded-xl border border-orange-200 bg-white/80 px-3 py-2 text-sm leading-relaxed text-slate-700">
+                            <p className="font-bold text-slate-900">Why use Bucket List search?</p>
+                            <ul className="mt-1 list-disc space-y-1 pl-5">
+                              <li><strong>100% Free &amp; Fast:</strong> Search curated local spots with verified GPS coordinates.</li>
+                              <li><strong>Community Powered:</strong> Avoid unnecessary Google Maps API calls and help keep our non-commercial platform free for everyone.</li>
+                            </ul>
+                          </div>
                         </div>
                       </div>
                     </li>
@@ -13458,10 +13461,9 @@ function App() {
                         </span>
                         <div>
                           <h3 className="font-extrabold">Step 2: Add Stops to Your Itinerary</h3>
-                          <ul className="mt-1 space-y-1.5 text-sm leading-relaxed text-slate-600">
-                            <li>Click the <strong>+</strong> button on a card in <strong>Available Locations &amp; Attractions</strong> to add it as a stop.</li>
-                            <li>Or select a place from the Google Maps drop-down when the <strong>Maps</strong> toggle is on.</li>
-                          </ul>
+                          <p className="mt-1 text-sm leading-relaxed text-slate-600">
+                            Matching places appear under <strong>Available Locations &amp; Attractions</strong>. Click the <strong>+</strong> button next to a spot (such as <em>Laxapana Falls</em>) to add it to your route.
+                          </p>
                         </div>
                       </div>
                     </li>
@@ -13472,10 +13474,13 @@ function App() {
                           <MapPin className="h-4 w-4" aria-hidden="true" />
                         </span>
                         <div>
-                          <h3 className="font-extrabold">Step 3: Reorder Stops in “Active Route Stops”</h3>
-                          <p className="mt-1 text-sm leading-relaxed text-slate-600">
-                            Find your selected stops in the <strong>Active Route Stops</strong> panel, then drag and drop them up or down to change your journey order.
-                          </p>
+                          <h3 className="font-extrabold">Step 3: Manage Active Route Stops &amp; Live Weather</h3>
+                          <p className="mt-1 text-sm leading-relaxed text-slate-600">Your selected waypoints appear under <strong>Active Route Stops</strong>:</p>
+                          <ul className="mt-2 list-disc space-y-1 pl-5 text-sm leading-relaxed text-slate-600">
+                            <li><strong>Reorder Stops:</strong> Drag and drop waypoints using the handle (<strong>::</strong>) to resequence your trip.</li>
+                            <li><strong>Weather Forecast:</strong> View current (<strong>NOW</strong>) and next-day (<strong>TMW</strong>) temperatures for each stop.</li>
+                            <li><strong>Remove Stops:</strong> Click the <strong>−</strong> button to remove a waypoint.</li>
+                          </ul>
                         </div>
                       </div>
                     </li>
@@ -13486,9 +13491,9 @@ function App() {
                           <MapIcon className="h-4 w-4" aria-hidden="true" />
                         </span>
                         <div>
-                          <h3 className="font-extrabold">Step 4: Display Nearby Amenities &amp; Fuel Stations</h3>
+                          <h3 className="font-extrabold">Step 4: Display Nearby Amenities</h3>
                           <p className="mt-1 text-sm leading-relaxed text-slate-600">
-                            Turn on <strong>Nearby Locations &amp; Amenities</strong>. The route map will mark useful stops along your path, including gas stations, hotels, and restaurants.
+                            Turn on <strong>Nearby Locations &amp; Amenities</strong> to automatically find and display gas stations, restaurants, and stays along your active route.
                           </p>
                         </div>
                       </div>
@@ -13500,12 +13505,14 @@ function App() {
                           <Share2 className="h-4 w-4" aria-hidden="true" />
                         </span>
                         <div>
-                          <h3 className="font-extrabold">Step 5: Finalize &amp; Share Your Route</h3>
-                          <p className="mt-1 text-sm leading-relaxed text-slate-600">
-                            Once your route is ordered and complete, click <strong>Share</strong> to copy your custom route link or share your itinerary with travel companions.
-                          </p>
+                          <h3 className="font-extrabold">Step 5: Export &amp; Share Your Route Plan</h3>
+                          <p className="mt-1 text-sm leading-relaxed text-slate-600">When your route is ready, choose how to export or share it:</p>
+                          <ul className="mt-2 list-disc space-y-1 pl-5 text-sm leading-relaxed text-slate-600">
+                            <li><strong>Export Data:</strong> Download route files in <strong>GPX</strong> or <strong>KML</strong> format, or open directly in <strong>MAPS</strong>.</li>
+                            <li><strong>Share Plan:</strong> Click <strong>SHARE</strong> to generate a QR code, copy the direct route link, or share via <strong>WhatsApp</strong>.</li>
+                          </ul>
                           <p className="mt-2 rounded-xl border border-indigo-200 bg-indigo-50 px-3 py-2 text-sm leading-relaxed text-indigo-950">
-                            <strong>Tip:</strong> Keep the <strong>Maps</strong> toggle off to filter through pre-verified waterfalls, peaks, and heritage sites listed on My Journal.
+                            <strong>Note on Global Maps Search:</strong> Switch on the <strong>+ MAPS</strong> toggle to search Google Maps for places outside our database. Please use the default Bucket List search whenever possible to help keep My Journal running smoothly.
                           </p>
                         </div>
                       </div>
@@ -13525,7 +13532,7 @@ function App() {
                       >
                         <img
                           src="https://vpslgikpaintiuayajmx.supabase.co/storage/v1/object/public/Instructions/Route%20Plan%20Instruction.jpeg"
-                          alt="Visual instructions showing how to search, add and reorder route stops, view nearby amenities, and share a trip"
+                          alt="Visual instructions for searching Bucket List destinations, managing route stops, viewing nearby amenities, and exporting or sharing a route"
                           className="max-h-[52vh] w-full rounded-xl object-contain transition group-hover:brightness-[0.98]"
                           loading="eager"
                         />
@@ -13533,14 +13540,14 @@ function App() {
                       </button>
                     </div>
                     <figcaption className="border-t border-slate-200 px-4 py-3 text-center text-xs font-semibold text-slate-500">
-                      Visual guide to building and sharing your route.
+                      Route Planner visual guide: search, organize, export, and share your trip.
                     </figcaption>
                   </figure>
                 </div>
 
                 <footer className="flex shrink-0 flex-col-reverse gap-3 border-t border-slate-100 bg-white px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-7">
                   <p className="text-center text-xs text-slate-500 sm:text-left">
-                    Add stops, arrange your journey, then share the route.
+                    Use Bucket List search for verified local attractions; enable + MAPS when you need a global search.
                   </p>
                   <button
                     type="button"
@@ -13607,7 +13614,7 @@ function App() {
               <div className="min-h-0 flex-1 overflow-auto rounded-xl">
                 <img
                   src="https://vpslgikpaintiuayajmx.supabase.co/storage/v1/object/public/Instructions/Route%20Plan%20Instruction.jpeg"
-                  alt="Enlarged visual instructions for using the Route Planner"
+                  alt="Enlarged visual instructions for searching Bucket List destinations, managing route stops, viewing nearby amenities, and exporting or sharing a route"
                   className={routePlannerImageZoom === 1 ? 'mx-auto block max-h-full max-w-full object-contain' : 'mx-auto block h-auto max-w-none'}
                   style={routePlannerImageZoom === 1 ? undefined : { width: `${routePlannerImageZoom * 100}%` }}
                   draggable="false"
