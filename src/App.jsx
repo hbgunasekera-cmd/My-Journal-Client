@@ -9043,6 +9043,10 @@ function App() {
   // ============================================================================
   const [isEngineOpen, setIsEngineOpen] = useState(false);
   const [isPlannerOpen, setIsPlannerOpen] = useState(initialRouteState.isPlannerOpen);
+  const [isRoutePlannerInstructionsOpen, setIsRoutePlannerInstructionsOpen] =
+    useState(initialRouteState.isPlannerOpen);
+  const [isRoutePlannerImageOpen, setIsRoutePlannerImageOpen] = useState(false);
+  const [routePlannerImageZoom, setRoutePlannerImageZoom] = useState(1);
   const [isPlannerExpanded, setIsPlannerExpanded] = useState(false);
   const [plannerSearch, setPlannerSearch] = useState('');
   const [selectedRoute, setSelectedRoute] = useState([]);
@@ -12033,7 +12037,11 @@ function App() {
                           <div className="w-8 h-8 bg-indigo-600 rounded-xl flex items-center justify-center text-white"><Plus className="w-4 h-4" /></div>
                         </button>
                         <button
-                          onClick={() => { setIsPlannerOpen(true); setIsEngineOpen(false); }}
+                          onClick={() => {
+                            setIsRoutePlannerInstructionsOpen(true);
+                            setIsPlannerOpen(true);
+                            setIsEngineOpen(false);
+                          }}
                           className="flex items-center justify-end gap-2 bg-white text-slate-900 p-1.5 pr-2 rounded-2xl shadow-lg border border-slate-100"
                         >
                           <span className="font-black uppercase text-[8px] tracking-tighter ml-2">{t('hub.plan', { defaultValue: 'Plan' })}</span>
@@ -12555,6 +12563,7 @@ function App() {
                       href="/route-planner"
                       onClick={(event) => {
                         event.preventDefault();
+                        setIsRoutePlannerInstructionsOpen(true);
                         setIsPlannerOpen(true);
                       }}
                       className="text-slate-600 hover:text-indigo-600 dark:text-slate-300 dark:hover:text-indigo-400"
@@ -13388,6 +13397,227 @@ function App() {
             );
           })()}
 
+
+          {isPlannerOpen && isRoutePlannerInstructionsOpen && (
+            <div
+              className="fixed inset-0 z-[100010] flex items-center justify-center bg-slate-950/70 p-3 backdrop-blur-sm sm:p-6"
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="route-planner-instructions-title"
+            >
+              <section className="flex max-h-[94dvh] w-full max-w-6xl flex-col overflow-hidden rounded-3xl border border-white/70 bg-white text-slate-900 shadow-2xl">
+                <header className="flex shrink-0 items-start justify-between gap-4 border-b border-slate-100 px-5 py-4 sm:px-7 sm:py-5">
+                  <div>
+                    <p className="mb-1 text-[10px] font-black uppercase tracking-[0.2em] text-orange-600">
+                      Plan your journey
+                    </p>
+                    <h2
+                      id="route-planner-instructions-title"
+                      className="text-xl font-black tracking-tight sm:text-2xl"
+                    >
+                      How to Plan Your Trip with Route Planner
+                    </h2>
+                    <p className="mt-1 text-sm leading-relaxed text-slate-600">
+                      Build customized travel routes across Sri Lanka by selecting attractions from our curated website catalog or searching globally across Google Maps.
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    aria-label="Close instructions and continue to Route Planner"
+                    onClick={() => setIsRoutePlannerInstructionsOpen(false)}
+                    className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-slate-100 text-slate-600 transition hover:bg-slate-200 hover:text-slate-900"
+                  >
+                    <X className="h-5 w-5" />
+                  </button>
+                </header>
+
+                <div className="grid min-h-0 flex-1 gap-5 overflow-y-auto p-4 sm:p-6 lg:grid-cols-[1.08fr_.92fr] lg:gap-7">
+                  <ol className="space-y-3" aria-label="Route planning steps">
+                    <li className="rounded-2xl border border-orange-100 bg-orange-50/70 p-4 sm:p-5">
+                      <div className="flex items-start gap-3">
+                        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-orange-500 text-white">
+                          <Search className="h-4 w-4" aria-hidden="true" />
+                        </span>
+                        <div>
+                          <h3 className="font-extrabold">Step 1: Search &amp; Discover Destinations</h3>
+                          <p className="mt-1 text-sm leading-relaxed text-slate-600">
+                            Search for stops in either of these ways:
+                          </p>
+                          <ul className="mt-2 space-y-2 text-sm leading-relaxed text-slate-600">
+                            <li><strong>Bucket List Search (Default):</strong> Type a location name in the search bar to filter the curated items in the <strong>Available Locations &amp; Attractions</strong> list below.</li>
+                            <li><strong>Global Search (Google Maps):</strong> Turn on the <strong>Maps</strong> toggle to the right of the search field. Typing opens worldwide Google Maps suggestions while also filtering matching attractions in the list below.</li>
+                          </ul>
+                        </div>
+                      </div>
+                    </li>
+
+                    <li className="rounded-2xl border border-slate-200 p-4 sm:p-5">
+                      <div className="flex items-start gap-3">
+                        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-slate-900 text-white">
+                          <Plus className="h-4 w-4" aria-hidden="true" />
+                        </span>
+                        <div>
+                          <h3 className="font-extrabold">Step 2: Add Stops to Your Itinerary</h3>
+                          <ul className="mt-1 space-y-1.5 text-sm leading-relaxed text-slate-600">
+                            <li>Click the <strong>+</strong> button on a card in <strong>Available Locations &amp; Attractions</strong> to add it as a stop.</li>
+                            <li>Or select a place from the Google Maps drop-down when the <strong>Maps</strong> toggle is on.</li>
+                          </ul>
+                        </div>
+                      </div>
+                    </li>
+
+                    <li className="rounded-2xl border border-slate-200 p-4 sm:p-5">
+                      <div className="flex items-start gap-3">
+                        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-slate-900 text-white">
+                          <MapPin className="h-4 w-4" aria-hidden="true" />
+                        </span>
+                        <div>
+                          <h3 className="font-extrabold">Step 3: Reorder Stops in “Active Route Stops”</h3>
+                          <p className="mt-1 text-sm leading-relaxed text-slate-600">
+                            Find your selected stops in the <strong>Active Route Stops</strong> panel, then drag and drop them up or down to change your journey order.
+                          </p>
+                        </div>
+                      </div>
+                    </li>
+
+                    <li className="rounded-2xl border border-slate-200 p-4 sm:p-5">
+                      <div className="flex items-start gap-3">
+                        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-slate-900 text-white">
+                          <MapIcon className="h-4 w-4" aria-hidden="true" />
+                        </span>
+                        <div>
+                          <h3 className="font-extrabold">Step 4: Display Nearby Amenities &amp; Fuel Stations</h3>
+                          <p className="mt-1 text-sm leading-relaxed text-slate-600">
+                            Turn on <strong>Nearby Locations &amp; Amenities</strong>. The route map will mark useful stops along your path, including gas stations, hotels, and restaurants.
+                          </p>
+                        </div>
+                      </div>
+                    </li>
+
+                    <li className="rounded-2xl border border-emerald-100 bg-emerald-50/60 p-4 sm:p-5">
+                      <div className="flex items-start gap-3">
+                        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-emerald-600 text-white">
+                          <Share2 className="h-4 w-4" aria-hidden="true" />
+                        </span>
+                        <div>
+                          <h3 className="font-extrabold">Step 5: Finalize &amp; Share Your Route</h3>
+                          <p className="mt-1 text-sm leading-relaxed text-slate-600">
+                            Once your route is ordered and complete, click <strong>Share</strong> to copy your custom route link or share your itinerary with travel companions.
+                          </p>
+                          <p className="mt-2 rounded-xl border border-indigo-200 bg-indigo-50 px-3 py-2 text-sm leading-relaxed text-indigo-950">
+                            <strong>Tip:</strong> Keep the <strong>Maps</strong> toggle off to filter through pre-verified waterfalls, peaks, and heritage sites listed on My Journal.
+                          </p>
+                        </div>
+                      </div>
+                    </li>
+                  </ol>
+
+                  <figure className="flex min-h-[260px] flex-col overflow-hidden rounded-2xl border border-slate-200 bg-slate-50">
+                    <div className="flex flex-1 items-center justify-center bg-white p-2 sm:p-4">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setRoutePlannerImageZoom(1);
+                          setIsRoutePlannerImageOpen(true);
+                        }}
+                        className="group flex h-full w-full cursor-zoom-in flex-col items-center justify-center gap-2"
+                        aria-label="Enlarge the Route Planner visual instructions"
+                      >
+                        <img
+                          src="https://vpslgikpaintiuayajmx.supabase.co/storage/v1/object/public/Instructions/Route%20Plan%20Instruction.jpeg"
+                          alt="Visual instructions showing how to search, add and reorder route stops, view nearby amenities, and share a trip"
+                          className="max-h-[52vh] w-full rounded-xl object-contain transition group-hover:brightness-[0.98]"
+                          loading="eager"
+                        />
+                        <span className="text-xs font-bold text-orange-700">Tap or click to enlarge</span>
+                      </button>
+                    </div>
+                    <figcaption className="border-t border-slate-200 px-4 py-3 text-center text-xs font-semibold text-slate-500">
+                      Visual guide to building and sharing your route.
+                    </figcaption>
+                  </figure>
+                </div>
+
+                <footer className="flex shrink-0 flex-col-reverse gap-3 border-t border-slate-100 bg-white px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-7">
+                  <p className="text-center text-xs text-slate-500 sm:text-left">
+                    Add stops, arrange your journey, then share the route.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => setIsRoutePlannerInstructionsOpen(false)}
+                    className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl bg-orange-500 px-6 py-3 text-sm font-extrabold text-white shadow-lg shadow-orange-500/20 transition hover:bg-orange-600 active:scale-[0.98]"
+                  >
+                    Got it — continue to Route Planner
+                    <ChevronRight className="h-4 w-4" aria-hidden="true" />
+                  </button>
+                </footer>
+              </section>
+            </div>
+          )}
+
+          {isRoutePlannerImageOpen && (
+            <div
+              className="fixed inset-0 z-[100020] flex flex-col bg-slate-950/95 p-3 text-white sm:p-5"
+              role="dialog"
+              aria-modal="true"
+              aria-label="Enlarged Route Planner visual instructions"
+              onClick={(event) => {
+                if (event.target === event.currentTarget) setIsRoutePlannerImageOpen(false);
+              }}
+            >
+              <div className="flex shrink-0 flex-col gap-2 pb-3 sm:flex-row sm:items-center sm:justify-between">
+                <p className="text-sm font-bold sm:text-base">Route Planner visual instructions</p>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setRoutePlannerImageZoom((zoom) => Math.max(1, Number((zoom - 0.25).toFixed(2))))}
+                    disabled={routePlannerImageZoom <= 1}
+                    className="flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-xl font-bold transition hover:bg-white/20 disabled:cursor-not-allowed disabled:opacity-40"
+                    aria-label="Zoom out"
+                  >
+                    −
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setRoutePlannerImageZoom(1)}
+                    className="min-w-14 rounded-full px-2 py-2 text-xs font-bold text-white/80 hover:bg-white/10"
+                    aria-label="Reset zoom"
+                  >
+                    {Math.round(routePlannerImageZoom * 100)}%
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setRoutePlannerImageZoom((zoom) => Math.min(4, Number((zoom + 0.25).toFixed(2))))}
+                    disabled={routePlannerImageZoom >= 4}
+                    className="flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-xl font-bold transition hover:bg-white/20 disabled:cursor-not-allowed disabled:opacity-40"
+                    aria-label="Zoom in"
+                  >
+                    +
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setIsRoutePlannerImageOpen(false)}
+                    className="ml-1 flex h-10 w-10 items-center justify-center rounded-full bg-white text-slate-900 transition hover:bg-slate-200"
+                    aria-label="Close enlarged visual instructions"
+                  >
+                    <X className="h-5 w-5" />
+                  </button>
+                </div>
+              </div>
+              <div className="min-h-0 flex-1 overflow-auto rounded-xl">
+                <img
+                  src="https://vpslgikpaintiuayajmx.supabase.co/storage/v1/object/public/Instructions/Route%20Plan%20Instruction.jpeg"
+                  alt="Enlarged visual instructions for using the Route Planner"
+                  className={routePlannerImageZoom === 1 ? 'mx-auto block max-h-full max-w-full object-contain' : 'mx-auto block h-auto max-w-none'}
+                  style={routePlannerImageZoom === 1 ? undefined : { width: `${routePlannerImageZoom * 100}%` }}
+                  draggable="false"
+                />
+              </div>
+              <p className="shrink-0 pt-3 text-center text-xs text-white/65">
+                Use the zoom controls to read the guide. Scroll to move around when zoomed in.
+              </p>
+            </div>
+          )}
 
           {/* --- ROUTE PLANNER MODAL --- */}
 
