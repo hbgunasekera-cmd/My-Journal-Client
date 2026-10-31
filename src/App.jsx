@@ -9066,6 +9066,8 @@ function App() {
   const [isAddOpen, setIsAddOpen] = useState(initialRouteState.isAddOpen);
   const [isSuggestSpotInstructionsOpen, setIsSuggestSpotInstructionsOpen] =
     useState(initialAddVisitType === 'Suggest Spot');
+  const [isSuggestSpotImageOpen, setIsSuggestSpotImageOpen] = useState(false);
+  const [suggestSpotImageZoom, setSuggestSpotImageZoom] = useState(1);
   const [addMapInstance, setAddMapInstance] = useState(null);
 
   const [formData, setFormData] = useState({
@@ -12021,6 +12023,7 @@ function App() {
                         <button
                           onClick={() => {
                             pendingAddVisitTypeRef.current = 'Add Function';
+                            setIsSuggestSpotInstructionsOpen(true);
                             setIsAddOpen(true);
                             setIsEngineOpen(false);
                           }}
@@ -13940,7 +13943,7 @@ function App() {
                           }`}
                       >
                         <Plus className="w-3.5 h-3.5" />
-                        Submit for Review
+                        Submit Spot
                       </button>
                       <p className="text-[8px] text-center text-slate-400 font-bold mt-4 uppercase tracking-tighter opacity-70">
                         * Coordinates and locality are auto-captured upon selecting a Google location or pinning the map
@@ -13972,16 +13975,16 @@ function App() {
                       How to Suggest a New Spot
                     </h2>
                     <p className="mt-1 text-sm text-slate-500">
-                      Follow these steps to submit a location to My Journal.
+                      Help us grow our travel map by adding missing waterfalls, mountains, viewpoints, monasteries, and hidden gems!
+                    </p>
+                    <p className="mt-2 text-sm leading-relaxed text-slate-600">
+                      To make sure your suggestion appears correctly on the map, please follow these steps:
                     </p>
                   </div>
                   <button
                     type="button"
-                    aria-label="Close Suggest Spot instructions"
-                    onClick={() => {
-                      setIsSuggestSpotInstructionsOpen(false);
-                      setIsAddOpen(false);
-                    }}
+                    aria-label="Close instructions and continue to Suggest Spot"
+                    onClick={() => setIsSuggestSpotInstructionsOpen(false)}
                     className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-slate-100 text-slate-600 transition hover:bg-slate-200 hover:text-slate-900"
                   >
                     <X className="h-5 w-5" />
@@ -13996,13 +13999,14 @@ function App() {
                           <Search className="h-4 w-4" aria-hidden="true" />
                         </span>
                         <div>
-                          <h3 className="font-extrabold">1. Search for the specific attraction name</h3>
+                          <h3 className="font-extrabold">1. Search for the Specific Spot Name (Not the Town/City)</h3>
                           <p className="mt-1 text-sm leading-relaxed text-slate-600">
-                            Enter the exact name of the place, such as <strong>“Laxapana Falls”</strong> or <strong>“Gongala Mountain.”</strong>
+                            Type the exact name of the place in the search bar—not the broad area or city name.
                           </p>
-                          <p className="mt-2 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-sm leading-relaxed text-amber-950">
-                            <strong>Do not search for a general area, town, or city</strong> (for example, “Deniyaya” or “Hatton”). A town search can pin the town center instead of the actual attraction.
-                          </p>
+                          <div className="mt-2 space-y-1.5 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-sm leading-relaxed text-amber-950">
+                            <p><strong>Correct:</strong> Type “Laxapana Falls” or “Gongala Mountain”</p>
+                            <p><strong>Incorrect:</strong> Typing “Hatton” or “Deniyaya” (these are city names, not specific attractions)</p>
+                          </div>
                         </div>
                       </div>
                     </li>
@@ -14013,9 +14017,9 @@ function App() {
                           <MapPin className="h-4 w-4" aria-hidden="true" />
                         </span>
                         <div>
-                          <h3 className="font-extrabold">2. Select the spot from the search results</h3>
+                          <h3 className="font-extrabold">2. Select from the Drop-Down Suggestions</h3>
                           <p className="mt-1 text-sm leading-relaxed text-slate-600">
-                            Choose the correct landmark from the suggestions list. My Journal will fetch its precise coordinates and nearby area details.
+                            As you type, Google Maps will auto-suggest locations. Click the matching spot from the drop-down list to auto-fill the location and map coordinates.
                           </p>
                         </div>
                       </div>
@@ -14027,9 +14031,9 @@ function App() {
                           <MapIcon className="h-4 w-4" aria-hidden="true" />
                         </span>
                         <div>
-                          <h3 className="font-extrabold">3. Choose the spot category</h3>
+                          <h3 className="font-extrabold">3. Choose the Correct Category</h3>
                           <p className="mt-1 text-sm leading-relaxed text-slate-600">
-                            Select the best category, such as <em>Waterfall</em>, <em>Mountain / Peak</em>, <em>Viewpoint</em>, or <em>Monastery / Temple</em>.
+                            Select the appropriate category for the spot (e.g., Waterfall, Mountain, Viewpoint, Monastery, Hiking Trail, etc.).
                           </p>
                         </div>
                       </div>
@@ -14041,9 +14045,12 @@ function App() {
                           <CheckCircle2 className="h-4 w-4" aria-hidden="true" />
                         </span>
                         <div>
-                          <h3 className="font-extrabold">4. Review the pin and submit</h3>
+                          <h3 className="font-extrabold">4. Verify &amp; Submit</h3>
                           <p className="mt-1 text-sm leading-relaxed text-slate-600">
-                            Double-check that the map pin points to the attraction itself before submitting your suggestion.
+                            Check that the marker on the preview map points directly to the attraction, then click <strong>Submit Spot</strong>. Our system will automatically associate the region and nearby area for you!
+                          </p>
+                          <p className="mt-2 rounded-xl border border-indigo-200 bg-indigo-50 px-3 py-2 text-sm leading-relaxed text-indigo-950">
+                            <strong>Tip:</strong> If the exact spot doesn’t show up in the drop-down menu, try its local name or add a category word (e.g., “Gongala Peak” or “Pitawala Pathana”).
                           </p>
                         </div>
                       </div>
@@ -14052,20 +14059,23 @@ function App() {
 
                   <figure className="flex min-h-[260px] flex-col overflow-hidden rounded-2xl border border-slate-200 bg-slate-50">
                     <div className="flex flex-1 items-center justify-center bg-white p-2 sm:p-4">
-                      <a
-                        href="https://vpslgikpaintiuayajmx.supabase.co/storage/v1/object/public/Instructions/Suggest%20Spot%20Instructions.jpeg"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="flex h-full w-full items-center justify-center"
-                        aria-label="Open the Suggest Spot visual instructions in a new tab"
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSuggestSpotImageZoom(1);
+                          setIsSuggestSpotImageOpen(true);
+                        }}
+                        className="group flex h-full w-full cursor-zoom-in flex-col items-center justify-center gap-2"
+                        aria-label="Enlarge the Suggest Spot visual instructions"
                       >
                         <img
-                          src="https://vpslgikpaintiuayajmx.supabase.co/storage/v1/object/public/Instructions/Suggest%20Spot%20Instructions.jpeg"
+                          src="https://vpslgikpaintiuayajmx.supabase.co/storage/v1/object/public/Instructions/Suggest%20Spot%20Instructions%20-%20Revised.jpeg"
                           alt="Visual instructions showing how to search for and select a new spot"
-                          className="max-h-[52vh] w-full rounded-xl object-contain"
+                          className="max-h-[52vh] w-full rounded-xl object-contain transition group-hover:brightness-[0.98]"
                           loading="eager"
                         />
-                      </a>
+                        <span className="text-xs font-bold text-indigo-700">Tap or click to enlarge</span>
+                      </button>
                     </div>
                     <figcaption className="border-t border-slate-200 px-4 py-3 text-center text-xs font-semibold text-slate-500">
                       Visual guide: choose the attraction itself so the map pin is accurate.
@@ -14087,6 +14097,70 @@ function App() {
                   </button>
                 </footer>
               </section>
+            </div>
+          )}
+
+          {isSuggestSpotImageOpen && (
+            <div
+              className="fixed inset-0 z-[100020] flex flex-col bg-slate-950/95 p-3 text-white sm:p-5"
+              role="dialog"
+              aria-modal="true"
+              aria-label="Enlarged Suggest Spot visual instructions"
+              onClick={(event) => {
+                if (event.target === event.currentTarget) setIsSuggestSpotImageOpen(false);
+              }}
+            >
+              <div className="flex shrink-0 flex-col gap-2 pb-3 sm:flex-row sm:items-center sm:justify-between">
+                <p className="text-sm font-bold sm:text-base">Suggest Spot visual instructions</p>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setSuggestSpotImageZoom((zoom) => Math.max(1, Number((zoom - 0.25).toFixed(2))))}
+                    disabled={suggestSpotImageZoom <= 1}
+                    className="flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-xl font-bold transition hover:bg-white/20 disabled:cursor-not-allowed disabled:opacity-40"
+                    aria-label="Zoom out"
+                  >
+                    −
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setSuggestSpotImageZoom(1)}
+                    className="min-w-14 rounded-full px-2 py-2 text-xs font-bold text-white/80 hover:bg-white/10"
+                    aria-label="Reset zoom"
+                  >
+                    {Math.round(suggestSpotImageZoom * 100)}%
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setSuggestSpotImageZoom((zoom) => Math.min(4, Number((zoom + 0.25).toFixed(2))))}
+                    disabled={suggestSpotImageZoom >= 4}
+                    className="flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-xl font-bold transition hover:bg-white/20 disabled:cursor-not-allowed disabled:opacity-40"
+                    aria-label="Zoom in"
+                  >
+                    +
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setIsSuggestSpotImageOpen(false)}
+                    className="ml-1 flex h-10 w-10 items-center justify-center rounded-full bg-white text-slate-900 transition hover:bg-slate-200"
+                    aria-label="Close enlarged visual instructions"
+                  >
+                    <X className="h-5 w-5" />
+                  </button>
+                </div>
+              </div>
+              <div className="min-h-0 flex-1 overflow-auto rounded-xl">
+                <img
+                  src="https://vpslgikpaintiuayajmx.supabase.co/storage/v1/object/public/Instructions/Suggest%20Spot%20Instructions%20-%20Revised.jpeg"
+                  alt="Enlarged visual instructions showing how to search for and select a new spot"
+                  className={suggestSpotImageZoom === 1 ? 'mx-auto block max-h-full max-w-full object-contain' : 'mx-auto block h-auto max-w-none'}
+                  style={suggestSpotImageZoom === 1 ? undefined : { width: `${suggestSpotImageZoom * 100}%` }}
+                  draggable="false"
+                />
+              </div>
+              <p className="shrink-0 pt-3 text-center text-xs text-white/65">
+                Use the zoom controls to read the guide. Scroll to move around when zoomed in.
+              </p>
             </div>
           )}
 
