@@ -15,6 +15,21 @@ const CATEGORY_TERMS = {
   location: ["destination", "attraction", "place"],
 };
 
+const LOCATION_CATEGORY_NOUNS = [
+  [/waterfall|falls?/, "waterfall"],
+  [/mountain|peak|summit|range/, "mountain or peak"],
+  [/view\s*point|viewpoint|lookout|overlook/, "viewpoint"],
+  [/monastery|temple|shrine|hermitage/, "monastery or temple"],
+  [/trail|trek|hike|hiking/, "hiking trail"],
+  [/archaeolog|historic|historical|heritage|ruins/, "heritage site"],
+  [/beach|coast|shore/, "beach"],
+  [/reservoir|tank|lake|water\s*body/, "lake or reservoir"],
+  [/plateau|tableland/, "plateau"],
+  [/forest|park|reserve/, "nature area"],
+  [/pool/, "natural pool"],
+  [/stream|creek|brook/, "stream"],
+];
+
 const NARRATIVE_OPENING = /^(?:the )?(?:morning|evening|afternoon|sun|sunrise|sunset|journey|trip|day|weather|wind|rain)\b|^(?:we|i)\s+(?:arrived|started|set off|reached|began|found)\b|\bwas already making its presence felt\b/i;
 
 // Only descriptions in this registry may make factual claims in location
@@ -65,6 +80,42 @@ function getVerifiedLocationDescription(place = {}) {
     if (verified) return verified.description;
   }
   return "";
+}
+
+function getLocationCategoryNoun(category = "") {
+  const normalized = cleanDescription(category).toLowerCase();
+  return LOCATION_CATEGORY_NOUNS.find(([pattern]) => pattern.test(normalized))?.[1]
+    || "destination";
+}
+
+function buildLocationGalleryMetaDescription(placeName, categoryNoun) {
+  const candidates = [
+    `View the ${placeName} photo gallery on My Journal. Explore its images, mapped coordinates and destination information for this ${categoryNoun} in Sri Lanka.`,
+    `View the ${placeName} photo gallery on My Journal. Explore its photos, mapped coordinates and location information for this ${categoryNoun} in Sri Lanka.`,
+    `View the ${placeName} photo gallery on My Journal. Explore its mapped coordinates, destination and category information for this ${categoryNoun} in Sri Lanka.`,
+    `View the ${placeName} photo gallery on My Journal. Explore its mapped coordinates, category details and location information for this ${categoryNoun} in Sri Lanka.`,
+    `View the ${placeName} photo gallery on My Journal. Explore its mapped coordinates, location, category and destination details for this ${categoryNoun} in Sri Lanka.`,
+    `View the ${placeName} photo gallery on My Journal. Explore its mapped coordinates, location, category and destination information for this ${categoryNoun} in Sri Lanka.`,
+    `The My Journal gallery for ${placeName} includes photos, mapped coordinates, category and location details for this ${categoryNoun} in Sri Lanka.`,
+    `Find ${placeName} photos and mapped location details in the My Journal gallery. This ${categoryNoun} entry also lists category information for Sri Lanka.`,
+    `The My Journal gallery page for ${placeName} includes photos, mapped coordinates, category and location details for this ${categoryNoun} in Sri Lanka.`,
+  ];
+
+  const preferred = candidates.find(
+    (candidate) => candidate.length >= 150 && candidate.length <= 155,
+  );
+  if (preferred) return preferred;
+
+  // Long names or uncommon categories may not fit the preferred range. Keep
+  // the closest complete sentence that still fits the app's 155-char cap.
+  const underLimit = candidates.filter((candidate) => candidate.length <= 155);
+  if (underLimit.length) {
+    return underLimit.reduce((best, current) =>
+      current.length > best.length ? current : best,
+    );
+  }
+
+  return trimToLimit(candidates[0], 155);
 }
 
 function cleanDescription(value) {
@@ -195,22 +246,17 @@ export function buildLocationMetaDescription(place = {}, { isGallery = false } =
   const placeName = cleanDescription(place.place_name || place.name || "");
   if (!placeName) return "Explore this destination in My Journal.";
 
-  const verifiedDescription = getVerifiedLocationDescription(place);
-  if (verifiedDescription) {
-    return `${isGallery ? `Photo gallery for ${placeName}.` : `Travel guide for ${placeName}.`} ${verifiedDescription}`;
+  const categoryNoun = getLocationCategoryNoun(place.category);
+  if (isGallery) {
+    return buildLocationGalleryMetaDescription(placeName, categoryNoun);
   }
 
-  const category = cleanDescription(place.category || "");
-  const locality = cleanDescription(place.locality || "");
-  const genericCategories = new Set(["location", "destination", "attraction"]);
-  const classification = category && !genericCategories.has(category.toLowerCase())
-    ? `listed under ${category}`
-    : "a destination";
-  const location = [locality, "Sri Lanka"].filter(Boolean).join(", ");
+  const verifiedDescription = getVerifiedLocationDescription(place);
+  if (verifiedDescription) {
+    return `Travel guide for ${placeName}. ${verifiedDescription}`;
+  }
 
-  return isGallery
-    ? `Photo gallery for ${placeName}, ${classification} in ${location}. View this destination's photos on My Journal.`
-    : `Travel guide for ${placeName}, ${classification} in ${location}. Read its location details on My Journal.`;
+  return `Read the My Journal travel guide for ${placeName}, a ${categoryNoun} in Sri Lanka. Find map coordinates, photos and destination information on this page.`;
 }
 
 export function buildConciseVideoSchemaDescription(video = {}, title = "") {
