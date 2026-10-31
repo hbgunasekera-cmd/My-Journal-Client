@@ -9064,6 +9064,8 @@ function App() {
   // 23. CONTENT CREATION & NEW LOCATION FORM STATE
   // ============================================================================
   const [isAddOpen, setIsAddOpen] = useState(initialRouteState.isAddOpen);
+  const [isSuggestSpotInstructionsOpen, setIsSuggestSpotInstructionsOpen] =
+    useState(initialAddVisitType === 'Suggest Spot');
   const [addMapInstance, setAddMapInstance] = useState(null);
 
   const [formData, setFormData] = useState({
@@ -11590,6 +11592,7 @@ function App() {
     if (!isAddOpen) {
       hasLoggedAddOpen.current = false;
       pendingAddVisitTypeRef.current = null;
+      setIsSuggestSpotInstructionsOpen(false);
       if (window.location.pathname === '/suggest-spot') {
         window.history.pushState({ modalOpen: false }, '', '/');
       }
@@ -12560,6 +12563,7 @@ function App() {
                       onClick={(event) => {
                         event.preventDefault();
                         pendingAddVisitTypeRef.current = 'Suggest Spot';
+                        setIsSuggestSpotInstructionsOpen(true);
                         setIsAddOpen(true);
                       }}
                       className="text-slate-600 hover:text-indigo-600 dark:text-slate-300 dark:hover:text-indigo-400"
@@ -13945,6 +13949,144 @@ function App() {
                   </form>
                 </div>
               </div>
+            </div>
+          )}
+
+          {isAddOpen && isSuggestSpotInstructionsOpen && (
+            <div
+              className="fixed inset-0 z-[100010] flex items-center justify-center bg-slate-950/65 p-3 backdrop-blur-sm sm:p-6"
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="suggest-spot-instructions-title"
+            >
+              <section className="flex max-h-[94dvh] w-full max-w-5xl flex-col overflow-hidden rounded-3xl border border-white/70 bg-white text-slate-900 shadow-2xl">
+                <header className="flex shrink-0 items-start justify-between gap-4 border-b border-slate-100 px-5 py-4 sm:px-7 sm:py-5">
+                  <div>
+                    <p className="mb-1 text-[10px] font-black uppercase tracking-[0.2em] text-indigo-600">
+                      Before you submit
+                    </p>
+                    <h2
+                      id="suggest-spot-instructions-title"
+                      className="text-xl font-black tracking-tight sm:text-2xl"
+                    >
+                      How to Suggest a New Spot
+                    </h2>
+                    <p className="mt-1 text-sm text-slate-500">
+                      Follow these steps to submit a location to My Journal.
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    aria-label="Close Suggest Spot instructions"
+                    onClick={() => {
+                      setIsSuggestSpotInstructionsOpen(false);
+                      setIsAddOpen(false);
+                    }}
+                    className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-slate-100 text-slate-600 transition hover:bg-slate-200 hover:text-slate-900"
+                  >
+                    <X className="h-5 w-5" />
+                  </button>
+                </header>
+
+                <div className="grid min-h-0 flex-1 gap-5 overflow-y-auto p-4 sm:p-6 lg:grid-cols-[1.05fr_.95fr] lg:gap-7">
+                  <ol className="space-y-3" aria-label="Suggestion steps">
+                    <li className="rounded-2xl border border-indigo-100 bg-indigo-50/70 p-4 sm:p-5">
+                      <div className="flex items-start gap-3">
+                        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-indigo-600 text-white">
+                          <Search className="h-4 w-4" aria-hidden="true" />
+                        </span>
+                        <div>
+                          <h3 className="font-extrabold">1. Search for the specific attraction name</h3>
+                          <p className="mt-1 text-sm leading-relaxed text-slate-600">
+                            Enter the exact name of the place, such as <strong>“Laxapana Falls”</strong> or <strong>“Gongala Mountain.”</strong>
+                          </p>
+                          <p className="mt-2 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-sm leading-relaxed text-amber-950">
+                            <strong>Do not search for a general area, town, or city</strong> (for example, “Deniyaya” or “Hatton”). A town search can pin the town center instead of the actual attraction.
+                          </p>
+                        </div>
+                      </div>
+                    </li>
+
+                    <li className="rounded-2xl border border-slate-200 p-4 sm:p-5">
+                      <div className="flex items-start gap-3">
+                        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-slate-900 text-white">
+                          <MapPin className="h-4 w-4" aria-hidden="true" />
+                        </span>
+                        <div>
+                          <h3 className="font-extrabold">2. Select the spot from the search results</h3>
+                          <p className="mt-1 text-sm leading-relaxed text-slate-600">
+                            Choose the correct landmark from the suggestions list. My Journal will fetch its precise coordinates and nearby area details.
+                          </p>
+                        </div>
+                      </div>
+                    </li>
+
+                    <li className="rounded-2xl border border-slate-200 p-4 sm:p-5">
+                      <div className="flex items-start gap-3">
+                        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-slate-900 text-white">
+                          <MapIcon className="h-4 w-4" aria-hidden="true" />
+                        </span>
+                        <div>
+                          <h3 className="font-extrabold">3. Choose the spot category</h3>
+                          <p className="mt-1 text-sm leading-relaxed text-slate-600">
+                            Select the best category, such as <em>Waterfall</em>, <em>Mountain / Peak</em>, <em>Viewpoint</em>, or <em>Monastery / Temple</em>.
+                          </p>
+                        </div>
+                      </div>
+                    </li>
+
+                    <li className="rounded-2xl border border-emerald-100 bg-emerald-50/60 p-4 sm:p-5">
+                      <div className="flex items-start gap-3">
+                        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-emerald-600 text-white">
+                          <CheckCircle2 className="h-4 w-4" aria-hidden="true" />
+                        </span>
+                        <div>
+                          <h3 className="font-extrabold">4. Review the pin and submit</h3>
+                          <p className="mt-1 text-sm leading-relaxed text-slate-600">
+                            Double-check that the map pin points to the attraction itself before submitting your suggestion.
+                          </p>
+                        </div>
+                      </div>
+                    </li>
+                  </ol>
+
+                  <figure className="flex min-h-[260px] flex-col overflow-hidden rounded-2xl border border-slate-200 bg-slate-50">
+                    <div className="flex flex-1 items-center justify-center bg-white p-2 sm:p-4">
+                      <a
+                        href="https://vpslgikpaintiuayajmx.supabase.co/storage/v1/object/public/Instructions/Suggest%20Spot%20Instructions.jpeg"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex h-full w-full items-center justify-center"
+                        aria-label="Open the Suggest Spot visual instructions in a new tab"
+                      >
+                        <img
+                          src="https://vpslgikpaintiuayajmx.supabase.co/storage/v1/object/public/Instructions/Suggest%20Spot%20Instructions.jpeg"
+                          alt="Visual instructions showing how to search for and select a new spot"
+                          className="max-h-[52vh] w-full rounded-xl object-contain"
+                          loading="eager"
+                        />
+                      </a>
+                    </div>
+                    <figcaption className="border-t border-slate-200 px-4 py-3 text-center text-xs font-semibold text-slate-500">
+                      Visual guide: choose the attraction itself so the map pin is accurate.
+                    </figcaption>
+                  </figure>
+                </div>
+
+                <footer className="flex shrink-0 flex-col-reverse gap-3 border-t border-slate-100 bg-white px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-7">
+                  <p className="text-center text-xs text-slate-500 sm:text-left">
+                    Accurate attraction pins help everyone find the right place.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => setIsSuggestSpotInstructionsOpen(false)}
+                    className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl bg-indigo-600 px-6 py-3 text-sm font-extrabold text-white shadow-lg shadow-indigo-600/20 transition hover:bg-indigo-700 active:scale-[0.98]"
+                  >
+                    Got it — continue to Suggest Spot
+                    <ChevronRight className="h-4 w-4" aria-hidden="true" />
+                  </button>
+                </footer>
+              </section>
             </div>
           )}
 
