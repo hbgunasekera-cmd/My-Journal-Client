@@ -208,5 +208,51 @@
   "newsletter": {
     "title": "Bergabunglah dengan Ekspedisi",
     "subtitle": "Dapatkan koordinat, catatan lapangan, dan pelacakan medan terpencil langsung ke kotak masuk Anda."
+  },
+  "instructions": {
+    "close_aria": "Tutup petunjuk dan lanjutkan",
+    "steps_aria": "Langkah-langkah petunjuk",
+    "tap_to_enlarge": "Ketuk atau klik untuk memperbesar",
+    "enlarge_aria": "Perbesar petunjuk visual",
+    "viewer": {
+      "zoom_in": "Perbesar",
+      "zoom_out": "Perkecil",
+      "zoom_reset": "Atur ulang zoom",
+      "close": "Tutup petunjuk yang diperbesar",
+      "zoom_hint": "Gunakan kontrol zoom untuk membaca panduan. Gulir untuk berpindah saat gambar diperbesar."
+    },
+    "suggest": {
+      "kicker": "Sebelum mengirim",
+      "title": "Cara menyarankan tempat baru",
+      "intro": "Bantu kami menambahkan air terjun, gunung, titik pandang, biara, dan tempat tersembunyi ke peta perjalanan!\nIkuti langkah berikut agar saran Anda muncul di lokasi yang tepat:",
+      "step1": "1. Cari nama tempat wisata yang spesifik (bukan nama kota)\nKetik nama persis objek wisata, bukan wilayah umum atau kota.\n\nBenar: ketik “Laxapana Falls” atau “Gongala Mountain”\nSalah: ketik “Hatton” atau “Deniyaya”; keduanya nama kota, bukan objek wisata tertentu.",
+      "step2": "2. Pilih saran dari daftar tarik-turun\nGoogle Maps akan menyarankan tempat saat Anda mengetik. Pilih objek yang cocok agar lokasi dan koordinat peta terisi.",
+      "step3": "3. Pilih kategori yang tepat\nPilih kategori yang sesuai, seperti air terjun, gunung, titik pandang, biara, atau jalur pendakian.",
+      "step4": "4. Periksa dan kirim\nPastikan penanda peta menunjuk langsung ke objek wisata, lalu klik Submit Spot. Wilayah dan area sekitarnya akan kami kaitkan otomatis.",
+      "tip": "Tips: Jika tempat tidak muncul, coba nama lokalnya atau tambahkan kata kategori, misalnya “Gongala Peak” atau “Pitawala Pathana”.",
+      "image_alt": "Panduan visual untuk mencari dan memilih objek wisata tertentu",
+      "visual_caption": "Pilih objek wisatanya agar penanda peta berada tepat.",
+      "footer": "Penanda yang akurat membantu semua orang menemukan tempat yang benar.",
+      "continue": "Mengerti — lanjut ke Suggest Spot",
+      "viewer_title": "Petunjuk visual Suggest Spot"
+    },
+    "route": {
+      "kicker": "Panduan pengguna",
+      "title": "Perencana Rute: Panduan dan Petunjuk",
+      "intro": "Rencanakan perjalanan darat di Sri Lanka dan temukan air terjun, puncak, titik pandang, serta biara!",
+      "step1": "Langkah 1: Cari tujuan dengan Bucket List Search (disarankan)\nBiarkan Bucket List Only aktif (+ MAPS mati). Ketik nama seperti “LAXAPA” untuk menyaring katalog gratis dan terverifikasi.",
+      "benefits_title": "Mengapa memakai pencarian Bucket List?",
+      "benefits": "• 100% gratis dan cepat: cari tempat pilihan dengan koordinat GPS terverifikasi.\n• Didukung komunitas: hindari panggilan Google Maps API yang tidak perlu dan bantu menjaga platform nirlaba tetap gratis.",
+      "step2": "Langkah 2: Tambahkan perhentian ke rencana perjalanan\nTempat yang cocok muncul di Available Locations & Attractions. Klik + di samping tempat seperti Laxapana Falls untuk menambahkannya ke rute.",
+      "step3": "Langkah 3: Kelola perhentian dan cuaca langsung\nTitik rute muncul di Active Route Stops.\n• Urutkan ulang: seret dengan pegangan (::).\n• Cuaca: lihat suhu saat ini (NOW) dan esok hari (TMW) untuk tiap perhentian.\n• Hapus: klik −.",
+      "step4": "Langkah 4: Tampilkan fasilitas sekitar\nAktifkan Nearby Locations & Amenities untuk menemukan SPBU, restoran, dan penginapan di sepanjang rute.",
+      "step5": "Langkah 5: Ekspor dan bagikan rute\nSaat rute siap, pilih cara mengekspor atau membagikannya:\n• Ekspor: unduh file GPX atau KML, atau buka rute langsung di MAPS.\n• Bagikan: klik SHARE untuk membuat kode QR, menyalin tautan, atau membagikannya lewat WhatsApp.",
+      "global_maps_note": "Pencarian global: aktifkan + MAPS untuk mencari tempat di Google Maps di luar katalog. Sebisa mungkin gunakan Bucket List agar My Journal tetap berjalan lancar.",
+      "image_alt": "Panduan visual untuk mencari tujuan, mengelola perhentian, melihat fasilitas, serta mengekspor atau membagikan rute",
+      "visual_caption": "Panduan Perencana Rute: cari, susun, ekspor, dan bagikan perjalanan.",
+      "footer": "Gunakan Bucket List untuk objek terverifikasi; aktifkan + MAPS untuk pencarian global.",
+      "continue": "Mengerti — lanjut ke Perencana Rute",
+      "viewer_title": "Petunjuk visual Perencana Rute"
+    }
   }
 }

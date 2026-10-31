@@ -208,5 +208,51 @@
   "newsletter": {
     "title": "Pridružite se ekspediciji",
     "subtitle": "Dobijajte koordinate, terenske beleške i praćenje udaljenog terena direktno u svoje prijemno sanduče."
+  },
+  "instructions": {
+    "close_aria": "Zatvori uputstva i nastavi",
+    "steps_aria": "Koraci uputstva",
+    "tap_to_enlarge": "Dodirnite ili kliknite da uvećate",
+    "enlarge_aria": "Uvećaj vizuelna uputstva",
+    "viewer": {
+      "zoom_in": "Uvećaj",
+      "zoom_out": "Umanji",
+      "zoom_reset": "Vrati zum",
+      "close": "Zatvori uvećana uputstva",
+      "zoom_hint": "Koristite kontrole zuma da pročitate vodič. Pomerajte sliku kada je uvećana."
+    },
+    "suggest": {
+      "kicker": "Pre slanja",
+      "title": "Kako predložiti novo mesto",
+      "intro": "Pomozite nam da mapu proširimo vodopadima, planinama, vidikovcima, manastirima i skrivenim draguljima!\nPratite korake kako bi se predlog pravilno prikazao na mapi:",
+      "step1": "1. Pretražite tačan naziv atrakcije (ne grada)\nUnesite tačan naziv mesta, a ne šire oblasti ili grada.\n\nIspravno: unesite “Laxapana Falls” ili “Gongala Mountain”\nPogrešno: unesite “Hatton” ili “Deniyaya” — to su gradovi, a ne konkretne atrakcije.",
+      "step2": "2. Izaberite predlog iz padajuće liste\nGoogle Maps će predlagati mesta dok kucate. Izaberite odgovarajuću atrakciju da se popune lokacija i koordinate.",
+      "step3": "3. Izaberite odgovarajuću kategoriju\nIzaberite kategoriju kao što su vodopad, planina, vidikovac, manastir ili pešačka staza.",
+      "step4": "4. Proverite i pošaljite\nProverite da li oznaka na mapi pokazuje samu atrakciju, pa kliknite Submit Spot. Automatski ćemo povezati region i okolinu.",
+      "tip": "Savet: Ako se mesto ne pojavljuje, probajte lokalni naziv ili dodajte kategoriju, na primer “Gongala Peak” ili “Pitawala Pathana”.",
+      "image_alt": "Vizuelni vodič za pretragu i izbor konkretne atrakcije",
+      "visual_caption": "Izaberite samu atrakciju kako bi oznaka na mapi bila precizna.",
+      "footer": "Precizne oznake pomažu svima da pronađu pravo mesto.",
+      "continue": "Razumem — nastavi na Suggest Spot",
+      "viewer_title": "Vizuelna uputstva za Suggest Spot"
+    },
+    "route": {
+      "kicker": "Korisnički vodič",
+      "title": "Planer rute: korisnički vodič i uputstva",
+      "intro": "Isplanirajte putovanja kroz Šri Lanku i otkrijte vodopade, vrhove, vidikovce i manastire!",
+      "step1": "Korak 1: Pretražite odredišta pomoću Bucket List Search (preporučeno)\nOstavite Bucket List Only uključeno (+ MAPS isključeno). Unesite naziv, na primer “LAXAPA”, da filtrirate naš provereni besplatni katalog.",
+      "benefits_title": "Zašto koristiti Bucket List pretragu?",
+      "benefits": "• 100% besplatno i brzo: pretražujte odabrana mesta sa proverenim GPS koordinatama.\n• Podrška zajednice: izbegnite nepotrebne Google Maps API pozive i pomozite da platforma ostane besplatna.",
+      "step2": "Korak 2: Dodajte stanice u plan\nPoklapanja se prikazuju u Available Locations & Attractions. Kliknite + pored mesta, kao što je Laxapana Falls, da ga dodate na rutu.",
+      "step3": "Korak 3: Upravljajte stanicama i vremenskom prognozom\nTačke se prikazuju u Active Route Stops.\n• Promenite redosled: prevucite pomoću ručice (::).\n• Vreme: pogledajte trenutnu (NOW) i sutrašnju (TMW) temperaturu na svakoj stanici.\n• Uklonite: kliknite −.",
+      "step4": "Korak 4: Prikažite sadržaje u blizini\nUključite Nearby Locations & Amenities da pronađete pumpe, restorane i smeštaj duž rute.",
+      "step5": "Korak 5: Izvezite i podelite plan rute\nKada ruta bude spremna, izaberite izvoz ili deljenje:\n• Izvoz: preuzmite GPX ili KML datoteku ili otvorite rutu direktno u MAPS.\n• Deljenje: kliknite SHARE za QR kod, kopiranje direktne veze ili deljenje preko WhatsApp-a.",
+      "global_maps_note": "Globalna pretraga: uključite + MAPS da tražite mesta van kataloga na Google Maps-u. Kad god možete, koristite Bucket List da bi My Journal radio nesmetano.",
+      "image_alt": "Vizuelni vodič za pretragu, upravljanje stanicama, prikaz sadržaja i deljenje ili izvoz rute",
+      "visual_caption": "Planer rute: pretražite, uredite, izvezite i podelite putovanje.",
+      "footer": "Koristite Bucket List za proverene atrakcije; uključite + MAPS za globalnu pretragu.",
+      "continue": "Razumem — nastavi na planer rute",
+      "viewer_title": "Vizuelna uputstva za planer rute"
+    }
   }
 }

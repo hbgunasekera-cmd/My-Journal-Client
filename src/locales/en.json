@@ -208,5 +208,51 @@
   "newsletter": {
     "title": "Join the Expedition",
     "subtitle": "Get coordinates, field notes, and remote terrain tracking straight to your inbox."
+  },
+  "instructions": {
+    "close_aria": "Close instructions and continue to the feature",
+    "steps_aria": "Instruction steps",
+    "tap_to_enlarge": "Tap or click to enlarge",
+    "enlarge_aria": "Enlarge visual instructions",
+    "viewer": {
+      "zoom_in": "Zoom in",
+      "zoom_out": "Zoom out",
+      "zoom_reset": "Reset zoom",
+      "close": "Close enlarged visual instructions",
+      "zoom_hint": "Use the zoom controls to read the guide. Scroll to move around when zoomed in."
+    },
+    "suggest": {
+      "kicker": "Before you submit",
+      "title": "How to Suggest a New Spot",
+      "intro": "Help us grow our travel map by adding missing waterfalls, mountains, viewpoints, monasteries, and hidden gems!\nTo make sure your suggestion appears correctly on the map, follow these steps:",
+      "step1": "1. Search for the Specific Spot Name (Not the Town/City)\nType the exact attraction name in the search bar, not a broad area or city name.\n\nCorrect: Type “Laxapana Falls” or “Gongala Mountain”\nIncorrect: Type “Hatton” or “Deniyaya”—these are city names, not specific attractions.",
+      "step2": "2. Select from the Drop-Down Suggestions\nAs you type, Google Maps will suggest places. Choose the matching attraction to fill in its location and map coordinates.",
+      "step3": "3. Choose the Correct Category\nChoose the right category, such as Waterfall, Mountain, Viewpoint, Monastery, or Hiking Trail.",
+      "step4": "4. Verify & Submit\nCheck that the preview map marker points to the attraction, then click Submit Spot. We will associate its region and nearby area for you.",
+      "tip": "Tip: If the spot is missing from the suggestions, try its local name or add a category word, such as “Gongala Peak” or “Pitawala Pathana”.",
+      "image_alt": "Visual guide to searching for and selecting a specific attraction",
+      "visual_caption": "Visual guide: choose the attraction itself so the map pin is accurate.",
+      "footer": "Accurate attraction pins help everyone find the right place.",
+      "continue": "Got it — continue to Suggest Spot",
+      "viewer_title": "Suggest Spot visual instructions"
+    },
+    "route": {
+      "kicker": "User guide",
+      "title": "Route Planner: User Guide & Instructions",
+      "intro": "Plan your road trips across Sri Lanka seamlessly while discovering top waterfalls, peaks, viewpoints, and monasteries!",
+      "step1": "Step 1: Search Destinations using Bucket List Search (Recommended)\nKeep the search set to Bucket List Only (+ MAPS toggle off). Type in the search bar (for example, “LAXAPA”) to filter our verified, free attractions catalog.",
+      "benefits_title": "Why use Bucket List search?",
+      "benefits": "• 100% Free & Fast: Search curated local spots with verified GPS coordinates.\n• Community Powered: Avoid unnecessary Google Maps API calls and help keep our non-commercial platform free for everyone.",
+      "step2": "Step 2: Add Stops to Your Itinerary\nMatching places appear in Available Locations & Attractions. Click the + button beside a spot, such as Laxapana Falls, to add it to your route.",
+      "step3": "Step 3: Manage Active Route Stops & Live Weather\nYour waypoints appear in Active Route Stops.\n• Reorder Stops: Drag and drop using the handle (::).\n• Weather Forecast: See current (NOW) and next-day (TMW) temperatures for each stop.\n• Remove Stops: Click the − button to remove a waypoint.",
+      "step4": "Step 4: Display Nearby Amenities\nTurn on Nearby Locations & Amenities to find gas stations, restaurants, and stays along your active route.",
+      "step5": "Step 5: Export & Share Your Route Plan\nWhen the route is ready, choose how to export or share it:\n• Export Data: Download GPX or KML files, or open the route directly in MAPS.\n• Share Plan: Click SHARE to create a QR code, copy the route link, or share it via WhatsApp.",
+      "global_maps_note": "Note on Global Maps Search: Turn on + MAPS to search Google Maps for places outside our catalog. Please use Bucket List search whenever possible to help My Journal run smoothly.",
+      "image_alt": "Visual guide to searching destinations, managing route stops, viewing amenities, and exporting or sharing a route",
+      "visual_caption": "Route Planner visual guide: search, organize, export, and share your trip.",
+      "footer": "Use Bucket List search for verified local attractions; enable + MAPS when you need global search.",
+      "continue": "Got it — continue to Route Planner",
+      "viewer_title": "Route Planner visual instructions"
+    }
   }
 }

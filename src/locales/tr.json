@@ -208,5 +208,51 @@
   "newsletter": {
     "title": "Sefere Katılın",
     "subtitle": "Koordinatları, saha notlarını ve uzak arazi takibini doğrudan gelen kutunuza alın."
+  },
+  "instructions": {
+    "close_aria": "Talimatları kapat ve devam et",
+    "steps_aria": "Talimat adımları",
+    "tap_to_enlarge": "Büyütmek için dokun veya tıkla",
+    "enlarge_aria": "Görsel talimatları büyüt",
+    "viewer": {
+      "zoom_in": "Yakınlaştır",
+      "zoom_out": "Uzaklaştır",
+      "zoom_reset": "Yakınlaştırmayı sıfırla",
+      "close": "Büyütülmüş talimatları kapat",
+      "zoom_hint": "Rehberi okumak için yakınlaştırma düğmelerini kullanın. Büyütülmüş görüntüde kaydırarak hareket edin."
+    },
+    "suggest": {
+      "kicker": "Göndermeden önce",
+      "title": "Yeni bir yer nasıl önerilir",
+      "intro": "Şelaleler, dağlar, manzara noktaları, manastırlar ve gizli güzelliklerle seyahat haritamızı büyütmemize yardım edin!\nÖnerinizin haritada doğru görünmesi için şu adımları izleyin:",
+      "step1": "1. Belirli noktanın adını arayın (şehir adını değil)\nArama alanına genel bölge veya şehir değil, turistik noktanın tam adını yazın.\n\nDoğru: “Laxapana Falls” veya “Gongala Mountain” yazın\nYanlış: “Hatton” veya “Deniyaya” yazın; bunlar belirli turistik yerler değil, şehir adlarıdır.",
+      "step2": "2. Açılır listedeki öneriyi seçin\nYazarken Google Maps yer önerileri sunar. Konum ve koordinatların otomatik doldurulması için doğru noktayı seçin.",
+      "step3": "3. Doğru kategoriyi seçin\nŞelale, dağ, manzara noktası, manastır veya yürüyüş rotası gibi uygun kategoriyi seçin.",
+      "step4": "4. Kontrol edin ve gönderin\nHarita işaretçisinin doğrudan noktayı gösterdiğini kontrol edin ve Submit Spot düğmesine basın. Bölge ve yakın çevreyi otomatik ekleyeceğiz.",
+      "tip": "İpucu: Nokta listede yoksa yerel adını deneyin veya “Gongala Peak” ya da “Pitawala Pathana” gibi kategori sözcüğü ekleyin.",
+      "image_alt": "Belirli bir noktayı arayıp seçmeyi gösteren görsel rehber",
+      "visual_caption": "Harita işaretçisinin doğru olması için doğrudan turistik noktayı seçin.",
+      "footer": "Doğru işaretçiler herkesin doğru yeri bulmasına yardımcı olur.",
+      "continue": "Anladım — Suggest Spot’a devam et",
+      "viewer_title": "Suggest Spot görsel talimatları"
+    },
+    "route": {
+      "kicker": "Kullanıcı rehberi",
+      "title": "Rota Planlayıcı: Kullanıcı Rehberi ve Talimatlar",
+      "intro": "Sri Lanka yol gezilerinizi planlayın; şelaleleri, zirveleri, manzara noktalarını ve manastırları keşfedin!",
+      "step1": "1. Adım: Bucket List Search ile hedefleri arayın (önerilen)\nBucket List Only seçili kalsın (+ MAPS kapalı). Ücretsiz ve doğrulanmış gezi noktaları kataloğunda aramak için “LAXAPA” gibi bir ad yazın.",
+      "benefits_title": "Bucket List aramasını neden kullanmalısınız?",
+      "benefits": "• %100 ücretsiz ve hızlı: doğrulanmış GPS koordinatlarına sahip seçilmiş yerlerde arama yapın.\n• Topluluk destekli: Gereksiz Google Maps API çağrılarını önleyin ve ticari olmayan platformumuzun ücretsiz kalmasına yardımcı olun.",
+      "step2": "2. Adım: Güzergâhınıza durak ekleyin\nEşleşen yerler Available Locations & Attractions bölümünde görünür. Laxapana Falls gibi bir yerin yanındaki + düğmesine basarak rotaya ekleyin.",
+      "step3": "3. Adım: Aktif durakları ve canlı hava durumunu yönetin\nDuraklarınız Active Route Stops bölümünde görünür.\n• Sıralayın: tutamacı (::) kullanarak sürükleyin.\n• Hava durumu: Her durak için şu anki (NOW) ve ertesi günün (TMW) sıcaklığını görün.\n• Kaldırın: − düğmesine basın.",
+      "step4": "4. Adım: Yakındaki olanakları gösterin\nYakındaki benzin istasyonlarını, restoranları ve konaklama yerlerini görmek için Nearby Locations & Amenities seçeneğini açın.",
+      "step5": "5. Adım: Rotanızı dışa aktarın ve paylaşın\nRota hazır olduğunda dışa aktarma veya paylaşma yolunu seçin:\n• Dışa aktar: GPX veya KML dosyalarını indirin ya da rotayı doğrudan MAPS’te açın.\n• Paylaş: QR kodu oluşturmak, rota bağlantısını kopyalamak veya WhatsApp ile paylaşmak için SHARE düğmesine basın.",
+      "global_maps_note": "Global arama: Kataloğumuz dışındaki yerleri Google Maps’te aramak için + MAPS’i açın. My Journal’ın sorunsuz çalışmasına yardımcı olmak için mümkün olduğunda Bucket List aramasını kullanın.",
+      "image_alt": "Hedef arama, durak yönetimi, olanak görüntüleme ve rota dışa aktarma veya paylaşmayı gösteren görsel rehber",
+      "visual_caption": "Rota Planlayıcı görsel rehberi: arayın, düzenleyin, dışa aktarın ve paylaşın.",
+      "footer": "Doğrulanmış yerler için Bucket List’i kullanın; global arama için + MAPS’i açın.",
+      "continue": "Anladım — Rota Planlayıcı’ya devam et",
+      "viewer_title": "Rota Planlayıcı görsel talimatları"
+    }
   }
 }

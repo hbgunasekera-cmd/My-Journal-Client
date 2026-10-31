@@ -590,6 +590,11 @@ const getSafeHttpUrl = (value) => {
   }
 };
 
+const splitInstructionText = (value = '') => {
+  const [title = '', ...body] = String(value).split('\n');
+  return { title, body: body.join('\n').trim() };
+};
+
 const getInitialAppRouteState = () => {
   const initialState = {
     isPrivacyOpen: false,
@@ -13409,21 +13414,21 @@ function App() {
                 <header className="flex shrink-0 items-start justify-between gap-4 border-b border-slate-100 px-5 py-4 sm:px-7 sm:py-5">
                   <div>
                     <p className="mb-1 text-[10px] font-black uppercase tracking-[0.2em] text-orange-600">
-                      User guide
+                      {t('instructions.route.kicker')}
                     </p>
                     <h2
                       id="route-planner-instructions-title"
                       className="text-xl font-black tracking-tight sm:text-2xl"
                     >
-                      Route Planner: User Guide &amp; Instructions
+                      {t('instructions.route.title')}
                     </h2>
                     <p className="mt-1 text-sm leading-relaxed text-slate-600">
-                      Plan your road trips across Sri Lanka seamlessly while discovering top waterfalls, peaks, viewpoints, and monasteries!
+                      {t('instructions.route.intro')}
                     </p>
                   </div>
                   <button
                     type="button"
-                    aria-label="Close instructions and continue to Route Planner"
+                    aria-label={t('instructions.close_aria')}
                     onClick={() => setIsRoutePlannerInstructionsOpen(false)}
                     className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-slate-100 text-slate-600 transition hover:bg-slate-200 hover:text-slate-900"
                   >
@@ -13432,23 +13437,20 @@ function App() {
                 </header>
 
                 <div className="grid min-h-0 flex-1 gap-5 overflow-y-auto p-4 sm:p-6 lg:grid-cols-[1.08fr_.92fr] lg:gap-7">
-                  <ol className="space-y-3" aria-label="Route planning instructions">
+                  <ol className="space-y-3" aria-label={t('instructions.steps_aria')}>
                     <li className="rounded-2xl border border-orange-100 bg-orange-50/70 p-4 sm:p-5">
                       <div className="flex items-start gap-3">
                         <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-orange-500 text-white">
                           <Search className="h-4 w-4" aria-hidden="true" />
                         </span>
                         <div>
-                          <h3 className="font-extrabold">Step 1: Search Destinations using Bucket List Search (Recommended)</h3>
-                          <p className="mt-1 text-sm leading-relaxed text-slate-600">
-                            Keep the search set to <strong>Bucket List Only</strong> (<strong>+ MAPS</strong> toggle turned off). Typing in the search bar (for example, <strong>“LAXAPA”</strong>) filters our verified, free database of attractions.
+                          <h3 className="font-extrabold">{splitInstructionText(t('instructions.route.step1')).title}</h3>
+                          <p className="mt-1 whitespace-pre-line text-sm leading-relaxed text-slate-600">
+                            {splitInstructionText(t('instructions.route.step1')).body}
                           </p>
                           <div className="mt-2 rounded-xl border border-orange-200 bg-white/80 px-3 py-2 text-sm leading-relaxed text-slate-700">
-                            <p className="font-bold text-slate-900">Why use Bucket List search?</p>
-                            <ul className="mt-1 list-disc space-y-1 pl-5">
-                              <li><strong>100% Free &amp; Fast:</strong> Search curated local spots with verified GPS coordinates.</li>
-                              <li><strong>Community Powered:</strong> Avoid unnecessary Google Maps API calls and help keep our non-commercial platform free for everyone.</li>
-                            </ul>
+                            <p className="font-bold text-slate-900">{t('instructions.route.benefits_title')}</p>
+                            <p className="mt-1 whitespace-pre-line">{t('instructions.route.benefits')}</p>
                           </div>
                         </div>
                       </div>
@@ -13460,9 +13462,9 @@ function App() {
                           <Plus className="h-4 w-4" aria-hidden="true" />
                         </span>
                         <div>
-                          <h3 className="font-extrabold">Step 2: Add Stops to Your Itinerary</h3>
-                          <p className="mt-1 text-sm leading-relaxed text-slate-600">
-                            Matching places appear under <strong>Available Locations &amp; Attractions</strong>. Click the <strong>+</strong> button next to a spot (such as <em>Laxapana Falls</em>) to add it to your route.
+                          <h3 className="font-extrabold">{splitInstructionText(t('instructions.route.step2')).title}</h3>
+                          <p className="mt-1 whitespace-pre-line text-sm leading-relaxed text-slate-600">
+                            {splitInstructionText(t('instructions.route.step2')).body}
                           </p>
                         </div>
                       </div>
@@ -13474,13 +13476,10 @@ function App() {
                           <MapPin className="h-4 w-4" aria-hidden="true" />
                         </span>
                         <div>
-                          <h3 className="font-extrabold">Step 3: Manage Active Route Stops &amp; Live Weather</h3>
-                          <p className="mt-1 text-sm leading-relaxed text-slate-600">Your selected waypoints appear under <strong>Active Route Stops</strong>:</p>
-                          <ul className="mt-2 list-disc space-y-1 pl-5 text-sm leading-relaxed text-slate-600">
-                            <li><strong>Reorder Stops:</strong> Drag and drop waypoints using the handle (<strong>::</strong>) to resequence your trip.</li>
-                            <li><strong>Weather Forecast:</strong> View current (<strong>NOW</strong>) and next-day (<strong>TMW</strong>) temperatures for each stop.</li>
-                            <li><strong>Remove Stops:</strong> Click the <strong>−</strong> button to remove a waypoint.</li>
-                          </ul>
+                          <h3 className="font-extrabold">{splitInstructionText(t('instructions.route.step3')).title}</h3>
+                          <p className="mt-1 whitespace-pre-line text-sm leading-relaxed text-slate-600">
+                            {splitInstructionText(t('instructions.route.step3')).body}
+                          </p>
                         </div>
                       </div>
                     </li>
@@ -13491,9 +13490,9 @@ function App() {
                           <MapIcon className="h-4 w-4" aria-hidden="true" />
                         </span>
                         <div>
-                          <h3 className="font-extrabold">Step 4: Display Nearby Amenities</h3>
+                          <h3 className="font-extrabold">{splitInstructionText(t('instructions.route.step4')).title}</h3>
                           <p className="mt-1 text-sm leading-relaxed text-slate-600">
-                            Turn on <strong>Nearby Locations &amp; Amenities</strong> to automatically find and display gas stations, restaurants, and stays along your active route.
+                            {splitInstructionText(t('instructions.route.step4')).body}
                           </p>
                         </div>
                       </div>
@@ -13505,14 +13504,12 @@ function App() {
                           <Share2 className="h-4 w-4" aria-hidden="true" />
                         </span>
                         <div>
-                          <h3 className="font-extrabold">Step 5: Export &amp; Share Your Route Plan</h3>
-                          <p className="mt-1 text-sm leading-relaxed text-slate-600">When your route is ready, choose how to export or share it:</p>
-                          <ul className="mt-2 list-disc space-y-1 pl-5 text-sm leading-relaxed text-slate-600">
-                            <li><strong>Export Data:</strong> Download route files in <strong>GPX</strong> or <strong>KML</strong> format, or open directly in <strong>MAPS</strong>.</li>
-                            <li><strong>Share Plan:</strong> Click <strong>SHARE</strong> to generate a QR code, copy the direct route link, or share via <strong>WhatsApp</strong>.</li>
-                          </ul>
+                          <h3 className="font-extrabold">{splitInstructionText(t('instructions.route.step5')).title}</h3>
+                          <p className="mt-1 whitespace-pre-line text-sm leading-relaxed text-slate-600">
+                            {splitInstructionText(t('instructions.route.step5')).body}
+                          </p>
                           <p className="mt-2 rounded-xl border border-indigo-200 bg-indigo-50 px-3 py-2 text-sm leading-relaxed text-indigo-950">
-                            <strong>Note on Global Maps Search:</strong> Switch on the <strong>+ MAPS</strong> toggle to search Google Maps for places outside our database. Please use the default Bucket List search whenever possible to help keep My Journal running smoothly.
+                            {t('instructions.route.global_maps_note')}
                           </p>
                         </div>
                       </div>
@@ -13528,33 +13525,33 @@ function App() {
                           setIsRoutePlannerImageOpen(true);
                         }}
                         className="group flex h-full w-full cursor-zoom-in flex-col items-center justify-center gap-2"
-                        aria-label="Enlarge the Route Planner visual instructions"
+                        aria-label={t('instructions.enlarge_aria')}
                       >
                         <img
                           src="https://vpslgikpaintiuayajmx.supabase.co/storage/v1/object/public/Instructions/Route%20Plan%20Instruction.jpeg"
-                          alt="Visual instructions for searching Bucket List destinations, managing route stops, viewing nearby amenities, and exporting or sharing a route"
+                          alt={t('instructions.route.image_alt')}
                           className="max-h-[52vh] w-full rounded-xl object-contain transition group-hover:brightness-[0.98]"
                           loading="eager"
                         />
-                        <span className="text-xs font-bold text-orange-700">Tap or click to enlarge</span>
+                        <span className="text-xs font-bold text-orange-700">{t('instructions.tap_to_enlarge')}</span>
                       </button>
                     </div>
                     <figcaption className="border-t border-slate-200 px-4 py-3 text-center text-xs font-semibold text-slate-500">
-                      Route Planner visual guide: search, organize, export, and share your trip.
+                      {t('instructions.route.visual_caption')}
                     </figcaption>
                   </figure>
                 </div>
 
                 <footer className="flex shrink-0 flex-col-reverse gap-3 border-t border-slate-100 bg-white px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-7">
                   <p className="text-center text-xs text-slate-500 sm:text-left">
-                    Use Bucket List search for verified local attractions; enable + MAPS when you need a global search.
+                    {t('instructions.route.footer')}
                   </p>
                   <button
                     type="button"
                     onClick={() => setIsRoutePlannerInstructionsOpen(false)}
                     className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl bg-orange-500 px-6 py-3 text-sm font-extrabold text-white shadow-lg shadow-orange-500/20 transition hover:bg-orange-600 active:scale-[0.98]"
                   >
-                    Got it — continue to Route Planner
+                    {t('instructions.route.continue')}
                     <ChevronRight className="h-4 w-4" aria-hidden="true" />
                   </button>
                 </footer>
@@ -13567,20 +13564,20 @@ function App() {
               className="fixed inset-0 z-[100020] flex flex-col bg-slate-950/95 p-3 text-white sm:p-5"
               role="dialog"
               aria-modal="true"
-              aria-label="Enlarged Route Planner visual instructions"
+              aria-label={t('instructions.route.viewer_title')}
               onClick={(event) => {
                 if (event.target === event.currentTarget) setIsRoutePlannerImageOpen(false);
               }}
             >
               <div className="flex shrink-0 flex-col gap-2 pb-3 sm:flex-row sm:items-center sm:justify-between">
-                <p className="text-sm font-bold sm:text-base">Route Planner visual instructions</p>
+                <p className="text-sm font-bold sm:text-base">{t('instructions.route.viewer_title')}</p>
                 <div className="flex items-center gap-2">
                   <button
                     type="button"
                     onClick={() => setRoutePlannerImageZoom((zoom) => Math.max(1, Number((zoom - 0.25).toFixed(2))))}
                     disabled={routePlannerImageZoom <= 1}
                     className="flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-xl font-bold transition hover:bg-white/20 disabled:cursor-not-allowed disabled:opacity-40"
-                    aria-label="Zoom out"
+                    aria-label={t('instructions.viewer.zoom_out')}
                   >
                     −
                   </button>
@@ -13588,7 +13585,7 @@ function App() {
                     type="button"
                     onClick={() => setRoutePlannerImageZoom(1)}
                     className="min-w-14 rounded-full px-2 py-2 text-xs font-bold text-white/80 hover:bg-white/10"
-                    aria-label="Reset zoom"
+                    aria-label={t('instructions.viewer.zoom_reset')}
                   >
                     {Math.round(routePlannerImageZoom * 100)}%
                   </button>
@@ -13597,7 +13594,7 @@ function App() {
                     onClick={() => setRoutePlannerImageZoom((zoom) => Math.min(4, Number((zoom + 0.25).toFixed(2))))}
                     disabled={routePlannerImageZoom >= 4}
                     className="flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-xl font-bold transition hover:bg-white/20 disabled:cursor-not-allowed disabled:opacity-40"
-                    aria-label="Zoom in"
+                    aria-label={t('instructions.viewer.zoom_in')}
                   >
                     +
                   </button>
@@ -13605,7 +13602,7 @@ function App() {
                     type="button"
                     onClick={() => setIsRoutePlannerImageOpen(false)}
                     className="ml-1 flex h-10 w-10 items-center justify-center rounded-full bg-white text-slate-900 transition hover:bg-slate-200"
-                    aria-label="Close enlarged visual instructions"
+                    aria-label={t('instructions.viewer.close')}
                   >
                     <X className="h-5 w-5" />
                   </button>
@@ -13614,14 +13611,14 @@ function App() {
               <div className="min-h-0 flex-1 overflow-auto rounded-xl">
                 <img
                   src="https://vpslgikpaintiuayajmx.supabase.co/storage/v1/object/public/Instructions/Route%20Plan%20Instruction.jpeg"
-                  alt="Enlarged visual instructions for searching Bucket List destinations, managing route stops, viewing nearby amenities, and exporting or sharing a route"
+                  alt={t('instructions.route.image_alt')}
                   className={routePlannerImageZoom === 1 ? 'mx-auto block max-h-full max-w-full object-contain' : 'mx-auto block h-auto max-w-none'}
                   style={routePlannerImageZoom === 1 ? undefined : { width: `${routePlannerImageZoom * 100}%` }}
                   draggable="false"
                 />
               </div>
               <p className="shrink-0 pt-3 text-center text-xs text-white/65">
-                Use the zoom controls to read the guide. Scroll to move around when zoomed in.
+                {t('instructions.viewer.zoom_hint')}
               </p>
             </div>
           )}
@@ -14203,24 +14200,21 @@ function App() {
                 <header className="flex shrink-0 items-start justify-between gap-4 border-b border-slate-100 px-5 py-4 sm:px-7 sm:py-5">
                   <div>
                     <p className="mb-1 text-[10px] font-black uppercase tracking-[0.2em] text-indigo-600">
-                      Before you submit
+                      {t('instructions.suggest.kicker')}
                     </p>
                     <h2
                       id="suggest-spot-instructions-title"
                       className="text-xl font-black tracking-tight sm:text-2xl"
                     >
-                      How to Suggest a New Spot
+                      {t('instructions.suggest.title')}
                     </h2>
-                    <p className="mt-1 text-sm text-slate-500">
-                      Help us grow our travel map by adding missing waterfalls, mountains, viewpoints, monasteries, and hidden gems!
-                    </p>
-                    <p className="mt-2 text-sm leading-relaxed text-slate-600">
-                      To make sure your suggestion appears correctly on the map, please follow these steps:
+                    <p className="mt-1 text-sm leading-relaxed text-slate-600">
+                      {t('instructions.suggest.intro')}
                     </p>
                   </div>
                   <button
                     type="button"
-                    aria-label="Close instructions and continue to Suggest Spot"
+                    aria-label={t('instructions.close_aria')}
                     onClick={() => setIsSuggestSpotInstructionsOpen(false)}
                     className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-slate-100 text-slate-600 transition hover:bg-slate-200 hover:text-slate-900"
                   >
@@ -14229,20 +14223,16 @@ function App() {
                 </header>
 
                 <div className="grid min-h-0 flex-1 gap-5 overflow-y-auto p-4 sm:p-6 lg:grid-cols-[1.05fr_.95fr] lg:gap-7">
-                  <ol className="space-y-3" aria-label="Suggestion steps">
+                  <ol className="space-y-3" aria-label={t('instructions.steps_aria')}>
                     <li className="rounded-2xl border border-indigo-100 bg-indigo-50/70 p-4 sm:p-5">
                       <div className="flex items-start gap-3">
                         <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-indigo-600 text-white">
                           <Search className="h-4 w-4" aria-hidden="true" />
                         </span>
                         <div>
-                          <h3 className="font-extrabold">1. Search for the Specific Spot Name (Not the Town/City)</h3>
-                          <p className="mt-1 text-sm leading-relaxed text-slate-600">
-                            Type the exact name of the place in the search bar—not the broad area or city name.
-                          </p>
-                          <div className="mt-2 space-y-1.5 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-sm leading-relaxed text-amber-950">
-                            <p><strong>Correct:</strong> Type “Laxapana Falls” or “Gongala Mountain”</p>
-                            <p><strong>Incorrect:</strong> Typing “Hatton” or “Deniyaya” (these are city names, not specific attractions)</p>
+                          <h3 className="font-extrabold">{splitInstructionText(t('instructions.suggest.step1')).title}</h3>
+                          <div className="mt-2 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-sm leading-relaxed text-amber-950 whitespace-pre-line">
+                            {splitInstructionText(t('instructions.suggest.step1')).body}
                           </div>
                         </div>
                       </div>
@@ -14254,9 +14244,9 @@ function App() {
                           <MapPin className="h-4 w-4" aria-hidden="true" />
                         </span>
                         <div>
-                          <h3 className="font-extrabold">2. Select from the Drop-Down Suggestions</h3>
+                          <h3 className="font-extrabold">{splitInstructionText(t('instructions.suggest.step2')).title}</h3>
                           <p className="mt-1 text-sm leading-relaxed text-slate-600">
-                            As you type, Google Maps will auto-suggest locations. Click the matching spot from the drop-down list to auto-fill the location and map coordinates.
+                            {splitInstructionText(t('instructions.suggest.step2')).body}
                           </p>
                         </div>
                       </div>
@@ -14268,9 +14258,9 @@ function App() {
                           <MapIcon className="h-4 w-4" aria-hidden="true" />
                         </span>
                         <div>
-                          <h3 className="font-extrabold">3. Choose the Correct Category</h3>
+                          <h3 className="font-extrabold">{splitInstructionText(t('instructions.suggest.step3')).title}</h3>
                           <p className="mt-1 text-sm leading-relaxed text-slate-600">
-                            Select the appropriate category for the spot (e.g., Waterfall, Mountain, Viewpoint, Monastery, Hiking Trail, etc.).
+                            {splitInstructionText(t('instructions.suggest.step3')).body}
                           </p>
                         </div>
                       </div>
@@ -14282,12 +14272,12 @@ function App() {
                           <CheckCircle2 className="h-4 w-4" aria-hidden="true" />
                         </span>
                         <div>
-                          <h3 className="font-extrabold">4. Verify &amp; Submit</h3>
+                          <h3 className="font-extrabold">{splitInstructionText(t('instructions.suggest.step4')).title}</h3>
                           <p className="mt-1 text-sm leading-relaxed text-slate-600">
-                            Check that the marker on the preview map points directly to the attraction, then click <strong>Submit Spot</strong>. Our system will automatically associate the region and nearby area for you!
+                            {splitInstructionText(t('instructions.suggest.step4')).body}
                           </p>
                           <p className="mt-2 rounded-xl border border-indigo-200 bg-indigo-50 px-3 py-2 text-sm leading-relaxed text-indigo-950">
-                            <strong>Tip:</strong> If the exact spot doesn’t show up in the drop-down menu, try its local name or add a category word (e.g., “Gongala Peak” or “Pitawala Pathana”).
+                            {t('instructions.suggest.tip')}
                           </p>
                         </div>
                       </div>
@@ -14303,33 +14293,33 @@ function App() {
                           setIsSuggestSpotImageOpen(true);
                         }}
                         className="group flex h-full w-full cursor-zoom-in flex-col items-center justify-center gap-2"
-                        aria-label="Enlarge the Suggest Spot visual instructions"
+                        aria-label={t('instructions.enlarge_aria')}
                       >
                         <img
                           src="https://vpslgikpaintiuayajmx.supabase.co/storage/v1/object/public/Instructions/Suggest%20Spot%20Instructions%20-%20Revised.jpeg"
-                          alt="Visual instructions showing how to search for and select a new spot"
+                          alt={t('instructions.suggest.image_alt')}
                           className="max-h-[52vh] w-full rounded-xl object-contain transition group-hover:brightness-[0.98]"
                           loading="eager"
                         />
-                        <span className="text-xs font-bold text-indigo-700">Tap or click to enlarge</span>
+                        <span className="text-xs font-bold text-indigo-700">{t('instructions.tap_to_enlarge')}</span>
                       </button>
                     </div>
                     <figcaption className="border-t border-slate-200 px-4 py-3 text-center text-xs font-semibold text-slate-500">
-                      Visual guide: choose the attraction itself so the map pin is accurate.
+                      {t('instructions.suggest.visual_caption')}
                     </figcaption>
                   </figure>
                 </div>
 
                 <footer className="flex shrink-0 flex-col-reverse gap-3 border-t border-slate-100 bg-white px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-7">
                   <p className="text-center text-xs text-slate-500 sm:text-left">
-                    Accurate attraction pins help everyone find the right place.
+                    {t('instructions.suggest.footer')}
                   </p>
                   <button
                     type="button"
                     onClick={() => setIsSuggestSpotInstructionsOpen(false)}
                     className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl bg-indigo-600 px-6 py-3 text-sm font-extrabold text-white shadow-lg shadow-indigo-600/20 transition hover:bg-indigo-700 active:scale-[0.98]"
                   >
-                    Got it — continue to Suggest Spot
+                    {t('instructions.suggest.continue')}
                     <ChevronRight className="h-4 w-4" aria-hidden="true" />
                   </button>
                 </footer>
@@ -14342,20 +14332,20 @@ function App() {
               className="fixed inset-0 z-[100020] flex flex-col bg-slate-950/95 p-3 text-white sm:p-5"
               role="dialog"
               aria-modal="true"
-              aria-label="Enlarged Suggest Spot visual instructions"
+              aria-label={t('instructions.suggest.viewer_title')}
               onClick={(event) => {
                 if (event.target === event.currentTarget) setIsSuggestSpotImageOpen(false);
               }}
             >
               <div className="flex shrink-0 flex-col gap-2 pb-3 sm:flex-row sm:items-center sm:justify-between">
-                <p className="text-sm font-bold sm:text-base">Suggest Spot visual instructions</p>
+                <p className="text-sm font-bold sm:text-base">{t('instructions.suggest.viewer_title')}</p>
                 <div className="flex items-center gap-2">
                   <button
                     type="button"
                     onClick={() => setSuggestSpotImageZoom((zoom) => Math.max(1, Number((zoom - 0.25).toFixed(2))))}
                     disabled={suggestSpotImageZoom <= 1}
                     className="flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-xl font-bold transition hover:bg-white/20 disabled:cursor-not-allowed disabled:opacity-40"
-                    aria-label="Zoom out"
+                    aria-label={t('instructions.viewer.zoom_out')}
                   >
                     −
                   </button>
@@ -14363,7 +14353,7 @@ function App() {
                     type="button"
                     onClick={() => setSuggestSpotImageZoom(1)}
                     className="min-w-14 rounded-full px-2 py-2 text-xs font-bold text-white/80 hover:bg-white/10"
-                    aria-label="Reset zoom"
+                    aria-label={t('instructions.viewer.zoom_reset')}
                   >
                     {Math.round(suggestSpotImageZoom * 100)}%
                   </button>
@@ -14372,7 +14362,7 @@ function App() {
                     onClick={() => setSuggestSpotImageZoom((zoom) => Math.min(4, Number((zoom + 0.25).toFixed(2))))}
                     disabled={suggestSpotImageZoom >= 4}
                     className="flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-xl font-bold transition hover:bg-white/20 disabled:cursor-not-allowed disabled:opacity-40"
-                    aria-label="Zoom in"
+                    aria-label={t('instructions.viewer.zoom_in')}
                   >
                     +
                   </button>
@@ -14380,7 +14370,7 @@ function App() {
                     type="button"
                     onClick={() => setIsSuggestSpotImageOpen(false)}
                     className="ml-1 flex h-10 w-10 items-center justify-center rounded-full bg-white text-slate-900 transition hover:bg-slate-200"
-                    aria-label="Close enlarged visual instructions"
+                    aria-label={t('instructions.viewer.close')}
                   >
                     <X className="h-5 w-5" />
                   </button>
@@ -14389,14 +14379,14 @@ function App() {
               <div className="min-h-0 flex-1 overflow-auto rounded-xl">
                 <img
                   src="https://vpslgikpaintiuayajmx.supabase.co/storage/v1/object/public/Instructions/Suggest%20Spot%20Instructions%20-%20Revised.jpeg"
-                  alt="Enlarged visual instructions showing how to search for and select a new spot"
+                  alt={t('instructions.suggest.image_alt')}
                   className={suggestSpotImageZoom === 1 ? 'mx-auto block max-h-full max-w-full object-contain' : 'mx-auto block h-auto max-w-none'}
                   style={suggestSpotImageZoom === 1 ? undefined : { width: `${suggestSpotImageZoom * 100}%` }}
                   draggable="false"
                 />
               </div>
               <p className="shrink-0 pt-3 text-center text-xs text-white/65">
-                Use the zoom controls to read the guide. Scroll to move around when zoomed in.
+                {t('instructions.viewer.zoom_hint')}
               </p>
             </div>
           )}

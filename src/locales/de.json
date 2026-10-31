@@ -208,5 +208,51 @@
   "newsletter": {
     "title": "An der Expedition teilnehmen",
     "subtitle": "Erhalten Sie Koordinaten, Feldnotizen und Tracking des abgelegenen Geländes direkt in Ihren Posteingang."
+  },
+  "instructions": {
+    "close_aria": "Anleitung schließen und fortfahren",
+    "steps_aria": "Anleitungsschritte",
+    "tap_to_enlarge": "Zum Vergrößern tippen oder klicken",
+    "enlarge_aria": "Visuelle Anleitung vergrößern",
+    "viewer": {
+      "zoom_in": "Vergrößern",
+      "zoom_out": "Verkleinern",
+      "zoom_reset": "Zoom zurücksetzen",
+      "close": "Vergrößerte Anleitung schließen",
+      "zoom_hint": "Nutze die Zoom-Tasten zum Lesen. Bei Vergrößerung kannst du scrollen."
+    },
+    "suggest": {
+      "kicker": "Vor dem Einreichen",
+      "title": "Einen neuen Ort vorschlagen",
+      "intro": "Hilf uns, unsere Reisekarte um Wasserfälle, Berge, Aussichtspunkte, Klöster und versteckte Schätze zu erweitern!\nDamit dein Vorschlag korrekt auf der Karte erscheint, folge diesen Schritten:",
+      "step1": "1. Suche nach dem genauen Namen des Ortes (nicht nach einer Stadt)\nGib den genauen Namen der Sehenswürdigkeit ein, nicht den Namen eines größeren Gebiets oder einer Stadt.\n\nRichtig: „Laxapana Falls“ oder „Gongala Mountain“ eingeben\nFalsch: „Hatton“ oder „Deniyaya“ eingeben – das sind Städtenamen, keine bestimmten Sehenswürdigkeiten.",
+      "step2": "2. Wähle einen Vorschlag aus der Liste\nGoogle Maps schlägt während der Eingabe Orte vor. Wähle die passende Sehenswürdigkeit, damit Ort und Kartenkoordinaten übernommen werden.",
+      "step3": "3. Wähle die passende Kategorie\nWähle eine passende Kategorie, zum Beispiel Wasserfall, Berg, Aussichtspunkt, Kloster oder Wanderweg.",
+      "step4": "4. Prüfen und absenden\nPrüfe, ob die Markierung auf der Vorschaukarte genau auf die Sehenswürdigkeit zeigt, und klicke dann auf Submit Spot. Wir ordnen die Region und Umgebung automatisch zu.",
+      "tip": "Tipp: Wird der Ort nicht vorgeschlagen, versuche den lokalen Namen oder ergänze eine Kategorie, etwa „Gongala Peak“ oder „Pitawala Pathana“.",
+      "image_alt": "Visuelle Anleitung zur Suche und Auswahl einer bestimmten Sehenswürdigkeit",
+      "visual_caption": "Wähle die Sehenswürdigkeit selbst aus, damit die Kartenmarkierung stimmt.",
+      "footer": "Präzise Markierungen helfen allen, den richtigen Ort zu finden.",
+      "continue": "Verstanden — weiter zu Suggest Spot",
+      "viewer_title": "Visuelle Anleitung für Suggest Spot"
+    },
+    "route": {
+      "kicker": "Benutzerhandbuch",
+      "title": "Routenplaner: Benutzerhandbuch",
+      "intro": "Plane deine Rundreisen durch Sri Lanka und entdecke Wasserfälle, Gipfel, Aussichtspunkte und Klöster!",
+      "step1": "Schritt 1: Ziele mit der Bucket-List-Suche finden (empfohlen)\nLass die Suche auf Bucket List Only (+ MAPS ausgeschaltet). Gib einen Namen ein, zum Beispiel „LAXAPA“, um unseren geprüften, kostenlosen Sehenswürdigkeitenkatalog zu filtern.",
+      "benefits_title": "Warum die Bucket-List-Suche nutzen?",
+      "benefits": "• 100 % kostenlos und schnell: Durchsuche ausgewählte Orte mit geprüften GPS-Koordinaten.\n• Von der Community getragen: Vermeide unnötige Google-Maps-API-Aufrufe und hilf, unsere gemeinnützige Plattform kostenlos zu halten.",
+      "step2": "Schritt 2: Haltepunkte zur Route hinzufügen\nPassende Orte erscheinen unter Available Locations & Attractions. Klicke neben einem Ort wie Laxapana Falls auf +, um ihn zur Route hinzuzufügen.",
+      "step3": "Schritt 3: Aktive Routenstopps und Wetter verwalten\nDeine Wegpunkte stehen unter Active Route Stops.\n• Stopps neu ordnen: Ziehe sie am Griff (::) an die gewünschte Stelle.\n• Wetter: Sieh die aktuellen (NOW) und morgigen (TMW) Temperaturen für jeden Halt.\n• Stopps entfernen: Klicke auf −.",
+      "step4": "Schritt 4: Orte in der Nähe anzeigen\nAktiviere Nearby Locations & Amenities, um Tankstellen, Restaurants und Unterkünfte entlang deiner Route zu finden.",
+      "step5": "Schritt 5: Route exportieren und teilen\nWenn deine Route fertig ist, kannst du sie exportieren oder teilen:\n• Export: Lade GPX- oder KML-Dateien herunter oder öffne die Route direkt in MAPS.\n• Teilen: Klicke auf SHARE, um einen QR-Code zu erstellen, den Routenlink zu kopieren oder ihn über WhatsApp zu teilen.",
+      "global_maps_note": "Hinweis zur globalen Kartensuche: Aktiviere + MAPS, um Google Maps nach Orten außerhalb unseres Katalogs zu durchsuchen. Nutze möglichst die Bucket-List-Suche, damit My Journal reibungslos läuft.",
+      "image_alt": "Visuelle Anleitung zur Suche, Routenverwaltung, Anzeige von Annehmlichkeiten sowie Export und Teilen",
+      "visual_caption": "Routenplaner: suchen, ordnen, exportieren und teilen.",
+      "footer": "Nutze die Bucket-List-Suche für geprüfte Orte; aktiviere + MAPS für eine weltweite Suche.",
+      "continue": "Verstanden — weiter zum Routenplaner",
+      "viewer_title": "Visuelle Anleitung für den Routenplaner"
+    }
   }
 }

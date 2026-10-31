@@ -20,7 +20,6 @@
     "search_placeholder": "Sök destinationer...",
     "sort_newest": "Nyast först",
     "sort_nearest": "Närmast först",
-    "sort_nearest": "Närmast först",
     "apply_close": "Tillämpa och stäng filter"
   },
   "places": {
@@ -209,5 +208,51 @@
   "newsletter": {
     "title": "Gå med i expeditionen",
     "subtitle": "Få koordinater, fältanteckningar och spårning av avlägsna terränger direkt till din inkorg."
+  },
+  "instructions": {
+    "close_aria": "Stäng instruktionerna och fortsätt",
+    "steps_aria": "Instruktionssteg",
+    "tap_to_enlarge": "Tryck eller klicka för att förstora",
+    "enlarge_aria": "Förstora visuella instruktioner",
+    "viewer": {
+      "zoom_in": "Zooma in",
+      "zoom_out": "Zooma ut",
+      "zoom_reset": "Återställ zoom",
+      "close": "Stäng förstorade instruktioner",
+      "zoom_hint": "Använd zoomkontrollerna för att läsa guiden. Rulla för att flytta bilden när den är förstorad."
+    },
+    "suggest": {
+      "kicker": "Innan du skickar",
+      "title": "Så föreslår du en ny plats",
+      "intro": "Hjälp oss att utöka resekartan med vattenfall, berg, utsiktsplatser, kloster och gömda pärlor!\nFölj stegen så att ditt förslag visas på rätt plats på kartan:",
+      "step1": "1. Sök efter den specifika platsens namn (inte staden)\nSkriv attraktionens exakta namn, inte ett större områdes- eller stadsnamn.\n\nRätt: skriv “Laxapana Falls” eller “Gongala Mountain”\nFel: skriv “Hatton” eller “Deniyaya” – det är städer, inte specifika sevärdheter.",
+      "step2": "2. Välj ett förslag i listan\nGoogle Maps föreslår platser medan du skriver. Välj rätt sevärdhet för att fylla i plats och koordinater.",
+      "step3": "3. Välj rätt kategori\nVälj en passande kategori, till exempel vattenfall, berg, utsiktsplats, kloster eller vandringsled.",
+      "step4": "4. Kontrollera och skicka\nKontrollera att kartnålen pekar direkt på sevärdheten och klicka på Submit Spot. Vi kopplar automatiskt rätt region och närområde.",
+      "tip": "Tips: Om platsen saknas kan du prova det lokala namnet eller lägga till en kategori, till exempel “Gongala Peak” eller “Pitawala Pathana”.",
+      "image_alt": "Visuell guide för att söka efter och välja en specifik sevärdhet",
+      "visual_caption": "Välj själva sevärdheten så att kartnålen hamnar rätt.",
+      "footer": "Exakta kartnålar hjälper alla att hitta rätt plats.",
+      "continue": "Jag förstår — fortsätt till Suggest Spot",
+      "viewer_title": "Visuella instruktioner för Suggest Spot"
+    },
+    "route": {
+      "kicker": "Användarguide",
+      "title": "Ruttplanerare: användarguide och instruktioner",
+      "intro": "Planera dina bilresor på Sri Lanka och upptäck vattenfall, bergstoppar, utsiktsplatser och kloster!",
+      "step1": "Steg 1: Sök resmål med Bucket List Search (rekommenderas)\nLåt Bucket List Only vara valt (+ MAPS av). Skriv ett namn, till exempel “LAXAPA”, för att filtrera vår verifierade, kostnadsfria katalog.",
+      "benefits_title": "Varför använda Bucket List-sökning?",
+      "benefits": "• 100 % gratis och snabbt: sök bland utvalda platser med verifierade GPS-koordinater.\n• Drivs av gemenskapen: undvik onödiga Google Maps API-anrop och hjälp till att hålla plattformen kostnadsfri.",
+      "step2": "Steg 2: Lägg till stopp i resplanen\nMatchande platser visas under Available Locations & Attractions. Klicka på + vid en plats, till exempel Laxapana Falls, för att lägga till den.",
+      "step3": "Steg 3: Hantera aktiva stopp och väder\nDina waypoints visas under Active Route Stops.\n• Ändra ordning: dra med handtaget (::).\n• Väder: se aktuell (NOW) och nästa dags (TMW) temperatur vid varje stopp.\n• Ta bort: klicka på −.",
+      "step4": "Steg 4: Visa närliggande bekvämligheter\nSlå på Nearby Locations & Amenities för att hitta bensinstationer, restauranger och boenden längs rutten.",
+      "step5": "Steg 5: Exportera och dela rutten\nNär rutten är klar kan du exportera eller dela den:\n• Exportera: ladda ned GPX- eller KML-filer eller öppna rutten direkt i MAPS.\n• Dela: klicka på SHARE för en QR-kod, kopiera rutlänken eller dela via WhatsApp.",
+      "global_maps_note": "Global sökning: slå på + MAPS för att söka på Google Maps efter platser utanför katalogen. Använd helst Bucket List Search så att My Journal fungerar smidigt.",
+      "image_alt": "Visuell guide för sökning, hantering av stopp, närliggande bekvämligheter och export eller delning av rutten",
+      "visual_caption": "Ruttplanerare: sök, ordna, exportera och dela din resa.",
+      "footer": "Använd Bucket List för verifierade platser; slå på + MAPS för global sökning.",
+      "continue": "Jag förstår — fortsätt till ruttplaneraren",
+      "viewer_title": "Visuella instruktioner för ruttplaneraren"
+    }
   }
 }

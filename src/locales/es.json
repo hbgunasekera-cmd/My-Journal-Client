@@ -208,5 +208,51 @@
   "newsletter": {
     "title": "Únete a la expedición",
     "subtitle": "Obtén coordenadas, notas de campo y seguimiento de terreno remoto directamente en tu bandeja de entrada."
+  },
+  "instructions": {
+    "close_aria": "Cerrar instrucciones y continuar",
+    "steps_aria": "Pasos de las instrucciones",
+    "tap_to_enlarge": "Toca o haz clic para ampliar",
+    "enlarge_aria": "Ampliar instrucciones visuales",
+    "viewer": {
+      "zoom_in": "Acercar",
+      "zoom_out": "Alejar",
+      "zoom_reset": "Restablecer zoom",
+      "close": "Cerrar instrucciones ampliadas",
+      "zoom_hint": "Usa los controles de zoom para leer la guía. Desplázate para moverte cuando esté ampliada."
+    },
+    "suggest": {
+      "kicker": "Antes de enviar",
+      "title": "Cómo sugerir un lugar nuevo",
+      "intro": "Ayúdanos a ampliar nuestro mapa con cascadas, montañas, miradores, monasterios y rincones escondidos.\nPara que tu sugerencia aparezca correctamente en el mapa, sigue estos pasos:",
+      "step1": "1. Busca el nombre exacto del lugar (no el de la ciudad)\nEscribe el nombre exacto de la atracción, no el de una zona amplia o una ciudad.\n\nCorrecto: escribe “Laxapana Falls” o “Gongala Mountain”\nIncorrecto: escribe “Hatton” o “Deniyaya”; son ciudades, no atracciones concretas.",
+      "step2": "2. Elige una sugerencia del menú\nAl escribir, Google Maps sugerirá lugares. Selecciona la atracción correcta para completar su ubicación y coordenadas.",
+      "step3": "3. Elige la categoría correcta\nSelecciona la categoría adecuada, por ejemplo cascada, montaña, mirador, monasterio o ruta de senderismo.",
+      "step4": "4. Verifica y envía\nComprueba que el marcador del mapa apunte a la atracción y pulsa Submit Spot. Asociaremos automáticamente la región y el área cercana.",
+      "tip": "Consejo: Si no aparece, prueba el nombre local o añade una palabra de categoría, como “Gongala Peak” o “Pitawala Pathana”.",
+      "image_alt": "Guía visual para buscar y seleccionar una atracción concreta",
+      "visual_caption": "Elige la atracción exacta para que el marcador del mapa sea preciso.",
+      "footer": "Un marcador preciso ayuda a todos a encontrar el lugar correcto.",
+      "continue": "Entendido — continuar a Suggest Spot",
+      "viewer_title": "Instrucciones visuales de Suggest Spot"
+    },
+    "route": {
+      "kicker": "Guía de usuario",
+      "title": "Planificador de rutas: guía e instrucciones",
+      "intro": "Planifica viajes por carretera en Sri Lanka y descubre cascadas, montañas, miradores y monasterios.",
+      "step1": "Paso 1: Busca destinos con Bucket List Search (recomendado)\nDeja la búsqueda en Bucket List Only (interruptor + MAPS apagado). Escribe un nombre, por ejemplo “LAXAPA”, para filtrar nuestro catálogo gratuito y verificado.",
+      "benefits_title": "¿Por qué usar la búsqueda Bucket List?",
+      "benefits": "• 100 % gratis y rápida: busca lugares seleccionados con coordenadas GPS verificadas.\n• Impulsada por la comunidad: evita llamadas innecesarias a la API de Google Maps y ayuda a mantener gratuita nuestra plataforma sin fines comerciales.",
+      "step2": "Paso 2: Añade paradas a tu itinerario\nLos lugares coincidentes aparecen en Available Locations & Attractions. Pulsa + junto a un lugar, como Laxapana Falls, para añadirlo a la ruta.",
+      "step3": "Paso 3: Gestiona las paradas y consulta el tiempo\nTus puntos aparecen en Active Route Stops.\n• Reordena: arrastra con el asa (::).\n• Tiempo: consulta temperaturas actuales (NOW) y del día siguiente (TMW) en cada parada.\n• Elimina: pulsa − para quitar un punto.",
+      "step4": "Paso 4: Muestra servicios cercanos\nActiva Nearby Locations & Amenities para encontrar gasolineras, restaurantes y alojamientos en la ruta.",
+      "step5": "Paso 5: Exporta y comparte la ruta\nCuando esté lista, elige cómo exportarla o compartirla:\n• Exportar: descarga archivos GPX o KML, o abre la ruta directamente en MAPS.\n• Compartir: pulsa SHARE para crear un código QR, copiar el enlace de la ruta o compartirlo por WhatsApp.",
+      "global_maps_note": "Nota sobre la búsqueda global: Activa + MAPS para buscar en Google Maps lugares fuera de nuestro catálogo. Siempre que puedas, usa Bucket List para ayudar a que My Journal funcione sin problemas.",
+      "image_alt": "Guía visual para buscar destinos, gestionar paradas, ver servicios y exportar o compartir una ruta",
+      "visual_caption": "Guía del planificador: busca, organiza, exporta y comparte tu viaje.",
+      "footer": "Usa Bucket List para atracciones locales verificadas; activa + MAPS para buscar en todo el mapa.",
+      "continue": "Entendido — continuar al planificador",
+      "viewer_title": "Instrucciones visuales del planificador de rutas"
+    }
   }
 }

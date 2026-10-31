@@ -208,5 +208,51 @@
   "newsletter": {
     "title": "Word lid van de Expeditie",
     "subtitle": "Ontvang coördinaten, veldnotities en terreintracking rechtstreeks in je inbox."
+  },
+  "instructions": {
+    "close_aria": "Instructies sluiten en doorgaan",
+    "steps_aria": "Instructiestappen",
+    "tap_to_enlarge": "Tik of klik om te vergroten",
+    "enlarge_aria": "Visuele instructies vergroten",
+    "viewer": {
+      "zoom_in": "Inzoomen",
+      "zoom_out": "Uitzoomen",
+      "zoom_reset": "Zoom herstellen",
+      "close": "Vergrote instructies sluiten",
+      "zoom_hint": "Gebruik de zoomknoppen om de gids te lezen. Scroll om te bewegen wanneer de afbeelding is vergroot."
+    },
+    "suggest": {
+      "kicker": "Voordat je instuurt",
+      "title": "Een nieuwe plek voorstellen",
+      "intro": "Help onze reiskaart uit te breiden met watervallen, bergen, uitzichtpunten, kloosters en verborgen parels!\nVolg deze stappen zodat je suggestie goed op de kaart verschijnt:",
+      "step1": "1. Zoek op de exacte naam van de plek (niet de stad)\nTyp de exacte naam van de attractie, niet een algemene regio of stadsnaam.\n\nGoed: typ “Laxapana Falls” of “Gongala Mountain”\nFout: typ “Hatton” of “Deniyaya”; dit zijn steden, geen specifieke attracties.",
+      "step2": "2. Kies een suggestie uit de lijst\nGoogle Maps stelt tijdens het typen locaties voor. Kies de juiste attractie om locatie en kaartcoördinaten in te vullen.",
+      "step3": "3. Kies de juiste categorie\nKies de passende categorie, zoals waterval, berg, uitzichtpunt, klooster of wandelroute.",
+      "step4": "4. Controleer en verstuur\nControleer of de kaartmarkering precies naar de attractie wijst en klik op Submit Spot. We koppelen automatisch de regio en omgeving.",
+      "tip": "Tip: Staat de plek er niet bij? Probeer de lokale naam of voeg een categoriewoord toe, zoals “Gongala Peak” of “Pitawala Pathana”.",
+      "image_alt": "Visuele gids voor het zoeken en kiezen van een specifieke attractie",
+      "visual_caption": "Kies de attractie zelf zodat de kaartmarkering klopt.",
+      "footer": "Met een nauwkeurige markering vindt iedereen de juiste plek.",
+      "continue": "Begrepen — doorgaan naar Suggest Spot",
+      "viewer_title": "Visuele instructies voor Suggest Spot"
+    },
+    "route": {
+      "kicker": "Gebruikersgids",
+      "title": "Routeplanner: gebruikersgids en instructies",
+      "intro": "Plan je roadtrips door Sri Lanka en ontdek watervallen, bergtoppen, uitzichtpunten en kloosters!",
+      "step1": "Stap 1: Zoek bestemmingen met Bucket List Search (aanbevolen)\nLaat Bucket List Only aanstaan (+ MAPS uit). Typ een naam, bijvoorbeeld “LAXAPA”, om onze gecontroleerde, gratis attractiecatalogus te filteren.",
+      "benefits_title": "Waarom Bucket List Search gebruiken?",
+      "benefits": "• 100% gratis en snel: zoek samengestelde lokale plekken met gecontroleerde GPS-coördinaten.\n• Gedragen door de community: voorkom onnodige Google Maps API-aanroepen en help ons non-commerciële platform gratis te houden.",
+      "step2": "Stap 2: Voeg stops toe aan je route\nOvereenkomende plekken verschijnen bij Available Locations & Attractions. Klik op + naast een plek, zoals Laxapana Falls, om deze toe te voegen.",
+      "step3": "Stap 3: Beheer actieve stops en live weer\nJe punten staan bij Active Route Stops.\n• Herschikken: sleep stops met de greep (::).\n• Weer: bekijk huidige (NOW) en volgende-dagtemperaturen (TMW) per stop.\n• Verwijderen: klik op −.",
+      "step4": "Stap 4: Toon voorzieningen in de buurt\nZet Nearby Locations & Amenities aan om tankstations, restaurants en accommodaties langs je route te vinden.",
+      "step5": "Stap 5: Exporteer en deel je route\nKies hoe je de route wilt exporteren of delen:\n• Exporteren: download GPX- of KML-bestanden of open de route direct in MAPS.\n• Delen: klik op SHARE voor een QR-code, om de routekoppeling te kopiëren of via WhatsApp te delen.",
+      "global_maps_note": "Wereldwijd zoeken: zet + MAPS aan om Google Maps-plaatsen buiten onze catalogus te zoeken. Gebruik waar mogelijk Bucket List Search om My Journal soepel te laten werken.",
+      "image_alt": "Visuele gids voor bestemmingen zoeken, stops beheren, voorzieningen bekijken en een route delen of exporteren",
+      "visual_caption": "Routeplanner: zoek, orden, exporteer en deel je reis.",
+      "footer": "Gebruik Bucket List voor gecontroleerde attracties; zet + MAPS aan voor wereldwijd zoeken.",
+      "continue": "Begrepen — doorgaan naar de routeplanner",
+      "viewer_title": "Visuele instructies voor de routeplanner"
+    }
   }
 }

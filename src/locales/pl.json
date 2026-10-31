@@ -208,5 +208,51 @@
   "newsletter": {
     "title": "Dołącz do wyprawy",
     "subtitle": "Otrzymuj współrzędne, notatki terenowe i śledzenie odległego terenu bezpośrednio do swojej skrzynki odbiorczej."
+  },
+  "instructions": {
+    "close_aria": "Zamknij instrukcje i kontynuuj",
+    "steps_aria": "Kroki instrukcji",
+    "tap_to_enlarge": "Dotknij lub kliknij, aby powiększyć",
+    "enlarge_aria": "Powiększ instrukcje wizualne",
+    "viewer": {
+      "zoom_in": "Powiększ",
+      "zoom_out": "Pomniejsz",
+      "zoom_reset": "Resetuj powiększenie",
+      "close": "Zamknij powiększone instrukcje",
+      "zoom_hint": "Użyj przycisków powiększenia, aby przeczytać przewodnik. Po powiększeniu przewijaj, aby przesuwać obraz."
+    },
+    "suggest": {
+      "kicker": "Przed wysłaniem",
+      "title": "Jak zgłosić nowe miejsce",
+      "intro": "Pomóż nam rozwijać mapę o wodospady, góry, punkty widokowe, klasztory i ukryte skarby!\nWykonaj te kroki, aby Twoja propozycja pojawiła się na mapie we właściwym miejscu:",
+      "step1": "1. Wyszukaj dokładną nazwę atrakcji (nie miasta)\nWpisz dokładną nazwę miejsca, a nie nazwę ogólnego obszaru lub miasta.\n\nDobrze: wpisz „Laxapana Falls” lub „Gongala Mountain”\nŹle: wpisz „Hatton” lub „Deniyaya” — to nazwy miast, nie konkretnych atrakcji.",
+      "step2": "2. Wybierz podpowiedź z listy\nPodczas wpisywania Google Maps podpowiada miejsca. Wybierz właściwą atrakcję, aby uzupełnić lokalizację i współrzędne.",
+      "step3": "3. Wybierz właściwą kategorię\nWybierz odpowiednią kategorię, np. wodospad, góra, punkt widokowy, klasztor lub szlak.",
+      "step4": "4. Sprawdź i wyślij\nSprawdź, czy znacznik wskazuje atrakcję, a następnie kliknij Submit Spot. Automatycznie przypiszemy region i pobliski obszar.",
+      "tip": "Wskazówka: jeśli miejsca nie ma na liście, spróbuj nazwy lokalnej lub dodaj kategorię, np. „Gongala Peak” albo „Pitawala Pathana”.",
+      "image_alt": "Ilustracja pokazująca wyszukiwanie i wybór konkretnej atrakcji",
+      "visual_caption": "Wybierz samą atrakcję, aby znacznik mapy wskazywał właściwe miejsce.",
+      "footer": "Dokładne znaczniki pomagają wszystkim znaleźć właściwe miejsce.",
+      "continue": "Rozumiem — przejdź do Suggest Spot",
+      "viewer_title": "Instrukcje wizualne Suggest Spot"
+    },
+    "route": {
+      "kicker": "Przewodnik użytkownika",
+      "title": "Planer trasy: przewodnik i instrukcje",
+      "intro": "Planuj podróże po Sri Lance i odkrywaj wodospady, szczyty, punkty widokowe oraz klasztory!",
+      "step1": "Krok 1: Wyszukuj miejsca przez Bucket List Search (zalecane)\nPozostaw Bucket List Only włączone (+ MAPS wyłączone). Wpisz nazwę, np. „LAXAPA”, aby filtrować bezpłatny, zweryfikowany katalog atrakcji.",
+      "benefits_title": "Dlaczego warto używać Bucket List?",
+      "benefits": "• 100% bezpłatne i szybkie: wyszukuj wybrane miejsca ze zweryfikowanymi współrzędnymi GPS.\n• Społecznościowe: unikaj niepotrzebnych wywołań API Google Maps i pomóż utrzymać darmową, niekomercyjną platformę.",
+      "step2": "Krok 2: Dodawaj przystanki do planu\nPasujące miejsca pojawią się w Available Locations & Attractions. Kliknij + obok miejsca, np. Laxapana Falls, aby dodać je do trasy.",
+      "step3": "Krok 3: Zarządzaj przystankami i pogodą\nPunkty trasy zobaczysz w Active Route Stops.\n• Zmieniaj kolejność: przeciągaj uchwytem (::).\n• Pogoda: sprawdzaj bieżącą (NOW) i jutrzejszą (TMW) temperaturę.\n• Usuwaj: kliknij −.",
+      "step4": "Krok 4: Pokaż pobliskie udogodnienia\nWłącz Nearby Locations & Amenities, aby znaleźć stacje paliw, restauracje i noclegi przy trasie.",
+      "step5": "Krok 5: Eksportuj i udostępniaj trasę\nWybierz sposób eksportu lub udostępnienia gotowej trasy:\n• Eksport: pobierz plik GPX lub KML albo otwórz trasę w MAPS.\n• Udostępnij: kliknij SHARE, aby utworzyć kod QR, skopiować link lub wysłać go przez WhatsApp.",
+      "global_maps_note": "Wyszukiwanie globalne: włącz + MAPS, aby szukać w Google Maps miejsc spoza katalogu. Jeśli to możliwe, używaj Bucket List, aby My Journal działało sprawnie.",
+      "image_alt": "Ilustracja pokazująca wyszukiwanie, zarządzanie przystankami, udogodnienia oraz eksport lub udostępnianie trasy",
+      "visual_caption": "Planer trasy: wyszukuj, porządkuj, eksportuj i udostępniaj podróż.",
+      "footer": "Używaj Bucket List dla sprawdzonych atrakcji; włącz + MAPS, aby szukać globalnie.",
+      "continue": "Rozumiem — przejdź do planera trasy",
+      "viewer_title": "Instrukcje wizualne planera trasy"
+    }
   }
 }

@@ -208,5 +208,51 @@
   "newsletter": {
     "title": "加入远征",
     "subtitle": "将坐标、实地笔记和偏远地形追踪直接发送到您的收件箱。"
+  },
+  "instructions": {
+    "close_aria": "关闭说明并继续",
+    "steps_aria": "说明步骤",
+    "tap_to_enlarge": "点击或轻触以放大",
+    "enlarge_aria": "放大图文说明",
+    "viewer": {
+      "zoom_in": "放大",
+      "zoom_out": "缩小",
+      "zoom_reset": "重置缩放",
+      "close": "关闭放大的说明",
+      "zoom_hint": "使用缩放按钮阅读指南。放大后可滚动查看图像。"
+    },
+    "suggest": {
+      "kicker": "提交前须知",
+      "title": "如何推荐新地点",
+      "intro": "帮助我们在旅行地图中添加瀑布、山峰、观景点、寺庙和隐藏景点！\n请按以下步骤操作，确保推荐地点在地图上准确显示：",
+      "step1": "1. 搜索具体景点名称（不要搜索城镇）\n在搜索框中输入景点的准确名称，不要输入大范围地区或城市名称。\n\n正确：输入 Laxapana Falls 或 Gongala Mountain\n错误：输入 Hatton 或 Deniyaya；它们是城市名称，不是具体景点。",
+      "step2": "2. 从下拉建议中选择地点\n输入时 Google Maps 会推荐地点。选择匹配的景点以自动填写位置和地图坐标。",
+      "step3": "3. 选择正确的类别\n选择合适类别，例如瀑布、山峰、观景点、寺庙或徒步路线。",
+      "step4": "4. 检查并提交\n确认地图预览中的标记正对景点，然后点击 Submit Spot。系统会自动关联区域和附近地点。",
+      "tip": "提示：如果下拉列表中没有该地点，请尝试当地名称或添加类别词，例如 Gongala Peak 或 Pitawala Pathana。",
+      "image_alt": "搜索并选择具体景点的图文指南",
+      "visual_caption": "请选择景点本身，确保地图标记准确。",
+      "footer": "准确的地图标记能帮助大家找到正确地点。",
+      "continue": "知道了 — 继续到 Suggest Spot",
+      "viewer_title": "Suggest Spot 图文说明"
+    },
+    "route": {
+      "kicker": "用户指南",
+      "title": "路线规划器：用户指南与说明",
+      "intro": "轻松规划斯里兰卡自驾路线，探索瀑布、山峰、观景点和寺庙！",
+      "step1": "第 1 步：使用 Bucket List Search 搜索目的地（推荐）\n保持 Bucket List Only 开启（关闭 + MAPS）。输入名称（例如 LAXAPA），筛选免费且经过验证的景点目录。",
+      "benefits_title": "为什么使用 Bucket List 搜索？",
+      "benefits": "• 100% 免费快捷：搜索经过整理且 GPS 坐标已核实的本地地点。\n• 社区共建：避免不必要的 Google Maps API 请求，帮助非商业平台持续免费运行。",
+      "step2": "第 2 步：将地点添加到行程\n匹配地点会显示在 Available Locations & Attractions 中。点击 Laxapana Falls 等地点旁边的 +，即可添加到路线。",
+      "step3": "第 3 步：管理路线停靠点和实时天气\n所选地点会显示在 Active Route Stops 中。\n• 调整顺序：拖动手柄 (::) 重新排序。\n• 天气：查看每个停靠点当前 (NOW) 和次日 (TMW) 的温度。\n• 移除：点击 − 删除停靠点。",
+      "step4": "第 4 步：显示附近设施\n开启 Nearby Locations & Amenities，即可查找路线沿途的加油站、餐厅和住宿。",
+      "step5": "第 5 步：导出并分享路线\n路线准备好后，选择导出或分享方式：\n• 导出数据：下载 GPX 或 KML 文件，或直接在 MAPS 中打开路线。\n• 分享计划：点击 SHARE 生成二维码、复制路线链接，或通过 WhatsApp 分享。",
+      "global_maps_note": "全球地图搜索：开启 + MAPS，可在 Google Maps 中搜索目录以外的地点。请尽可能使用 Bucket List 搜索，帮助 My Journal 顺畅运行。",
+      "image_alt": "搜索目的地、管理停靠点、查看附近设施以及导出或分享路线的图文指南",
+      "visual_caption": "路线规划器图文指南：搜索、安排、导出并分享行程。",
+      "footer": "已核实景点请使用 Bucket List；需要全球搜索时再开启 + MAPS。",
+      "continue": "知道了 — 继续到路线规划器",
+      "viewer_title": "路线规划器图文说明"
+    }
   }
 }

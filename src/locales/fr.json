@@ -208,5 +208,51 @@
   "newsletter": {
     "title": "Rejoignez l'expédition",
     "subtitle": "Recevez des coordonnées, des notes de terrain et un suivi du terrain accidenté directement dans votre boîte de réception."
+  },
+  "instructions": {
+    "close_aria": "Fermer les instructions et continuer",
+    "steps_aria": "Étapes des instructions",
+    "tap_to_enlarge": "Touchez ou cliquez pour agrandir",
+    "enlarge_aria": "Agrandir les instructions visuelles",
+    "viewer": {
+      "zoom_in": "Zoom avant",
+      "zoom_out": "Zoom arrière",
+      "zoom_reset": "Réinitialiser le zoom",
+      "close": "Fermer les instructions agrandies",
+      "zoom_hint": "Utilisez les commandes de zoom pour lire le guide. Faites défiler pour vous déplacer lorsque l’image est agrandie."
+    },
+    "suggest": {
+      "kicker": "Avant de proposer",
+      "title": "Comment suggérer un nouveau lieu",
+      "intro": "Aidez-nous à enrichir notre carte avec des cascades, montagnes, points de vue, monastères et lieux cachés !\nPour que votre suggestion apparaisse correctement sur la carte, suivez ces étapes :",
+      "step1": "1. Recherchez le nom précis du lieu (pas celui d’une ville)\nSaisissez le nom exact de l’attraction, pas celui d’une zone générale ou d’une ville.\n\nCorrect : saisissez « Laxapana Falls » ou « Gongala Mountain »\nIncorrect : saisissez « Hatton » ou « Deniyaya » : ce sont des villes, pas des attractions précises.",
+      "step2": "2. Choisissez une suggestion dans la liste\nGoogle Maps propose des lieux pendant la saisie. Sélectionnez la bonne attraction pour renseigner son emplacement et ses coordonnées.",
+      "step3": "3. Choisissez la bonne catégorie\nSélectionnez une catégorie adaptée : cascade, montagne, point de vue, monastère ou sentier de randonnée, par exemple.",
+      "step4": "4. Vérifiez et envoyez\nVérifiez que le repère de la carte pointe sur l’attraction, puis cliquez sur Submit Spot. Nous associerons automatiquement la région et les environs.",
+      "tip": "Conseil : si le lieu n’apparaît pas, essayez son nom local ou ajoutez une catégorie, comme « Gongala Peak » ou « Pitawala Pathana ».",
+      "image_alt": "Guide visuel pour rechercher et sélectionner une attraction précise",
+      "visual_caption": "Choisissez l’attraction elle-même pour placer correctement le repère.",
+      "footer": "Un repère précis aide chacun à trouver le bon endroit.",
+      "continue": "Compris — continuer vers Suggest Spot",
+      "viewer_title": "Instructions visuelles de Suggest Spot"
+    },
+    "route": {
+      "kicker": "Guide utilisateur",
+      "title": "Planificateur d’itinéraire : guide et instructions",
+      "intro": "Planifiez facilement vos trajets au Sri Lanka et découvrez cascades, sommets, points de vue et monastères !",
+      "step1": "Étape 1 : Rechercher des destinations avec Bucket List Search (recommandé)\nGardez Bucket List Only sélectionné (+ MAPS désactivé). Saisissez un nom, par exemple « LAXAPA », pour filtrer notre catalogue gratuit et vérifié.",
+      "benefits_title": "Pourquoi utiliser Bucket List ?",
+      "benefits": "• 100 % gratuit et rapide : recherchez des lieux sélectionnés avec des coordonnées GPS vérifiées.\n• Porté par la communauté : évitez les appels inutiles à l’API Google Maps et aidez à maintenir notre plateforme non commerciale gratuite.",
+      "step2": "Étape 2 : Ajouter des étapes à votre itinéraire\nLes lieux correspondants apparaissent dans Available Locations & Attractions. Cliquez sur + près d’un lieu, comme Laxapana Falls, pour l’ajouter à l’itinéraire.",
+      "step3": "Étape 3 : Gérer les étapes et consulter la météo\nVos points apparaissent dans Active Route Stops.\n• Réorganiser : faites glisser les étapes avec la poignée (::).\n• Météo : consultez les températures actuelles (NOW) et du lendemain (TMW) pour chaque étape.\n• Supprimer : cliquez sur −.",
+      "step4": "Étape 4 : Afficher les services à proximité\nActivez Nearby Locations & Amenities pour trouver stations-service, restaurants et hébergements le long de l’itinéraire.",
+      "step5": "Étape 5 : Exporter et partager votre itinéraire\nUne fois prêt, choisissez comment exporter ou partager l’itinéraire :\n• Exporter : téléchargez un fichier GPX ou KML, ou ouvrez directement l’itinéraire dans MAPS.\n• Partager : cliquez sur SHARE pour créer un QR code, copier le lien ou partager via WhatsApp.",
+      "global_maps_note": "Recherche mondiale : activez + MAPS pour chercher dans Google Maps des lieux absents de notre catalogue. Privilégiez Bucket List lorsque possible pour aider My Journal à fonctionner correctement.",
+      "image_alt": "Guide visuel pour rechercher, gérer les étapes, afficher les services et exporter ou partager un itinéraire",
+      "visual_caption": "Planificateur : recherchez, organisez, exportez et partagez votre trajet.",
+      "footer": "Utilisez Bucket List pour les attractions vérifiées ; activez + MAPS pour une recherche mondiale.",
+      "continue": "Compris — continuer vers le planificateur",
+      "viewer_title": "Instructions visuelles du planificateur d’itinéraire"
+    }
   }
 }
