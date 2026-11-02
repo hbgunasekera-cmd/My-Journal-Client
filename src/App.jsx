@@ -13174,29 +13174,6 @@ function App() {
                             </section>
                           )}
 
-                          {/* BEHIND THE SHOT */}
-                          {article.behind_the_shot && (
-                            <section className="bg-slate-900 dark:bg-black text-white p-6 rounded-3xl shadow-xl">
-                              <h3 className="text-[11px] font-black uppercase tracking-widest text-slate-400 mb-4">Behind The Shot</h3>
-                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 text-xs">
-                                <div>
-                                  <p className="text-slate-300 italic mb-3">"{article.behind_the_shot.why_i_took_it}"</p>
-                                  <div className="space-y-1 text-slate-400">
-                                    <p><strong>Device:</strong> {article.behind_the_shot.device}</p>
-                                    <p><strong>Time:</strong> {article.behind_the_shot.captured_time}</p>
-                                    <p><strong>Conditions:</strong> {article.behind_the_shot.conditions}</p>
-                                  </div>
-                                </div>
-                                <div className="bg-slate-800/50 p-4 rounded-xl border border-slate-700/50 flex flex-col justify-center">
-                                  <span className="block text-[10px] font-black uppercase tracking-widest text-indigo-400 mb-2">Post-Processing</span>
-                                  <p className="text-slate-300">{article.behind_the_shot.editing}</p>
-                                </div>
-                              </div>
-                            </section>
-                          )}
-
-
-
                           {/* HISTORY & HERITAGE */}
                           {historyText && (
                             <section className="mt-8 border-t border-slate-100 dark:border-slate-800 pt-6">
