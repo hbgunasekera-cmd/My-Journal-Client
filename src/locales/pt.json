@@ -233,7 +233,7 @@
       "image_alt": "Guia visual para pesquisar e selecionar uma atração específica",
       "visual_caption": "Escolha a própria atração para posicionar o marcador corretamente.",
       "footer": "Marcadores precisos ajudam todos a encontrar o lugar certo.",
-      "continue": "Entendi — continuar para Suggest Spot",
+      "continue": "Continuar",
       "viewer_title": "Instruções visuais do Suggest Spot"
     },
     "route": {
@@ -251,7 +251,7 @@
       "image_alt": "Guia visual para pesquisar destinos, gerenciar paradas, ver comodidades e exportar ou compartilhar a rota",
       "visual_caption": "Guia do planejador: pesquise, organize, exporte e compartilhe sua viagem.",
       "footer": "Use Bucket List para atrações verificadas; ative + MAPS para buscar no mundo todo.",
-      "continue": "Entendi — continuar para o planejador",
+      "continue": "Continuar",
       "viewer_title": "Instruções visuais do planejador de rotas"
     }
   }

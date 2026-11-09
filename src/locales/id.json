@@ -233,7 +233,7 @@
       "image_alt": "Panduan visual untuk mencari dan memilih objek wisata tertentu",
       "visual_caption": "Pilih objek wisatanya agar penanda peta berada tepat.",
       "footer": "Penanda yang akurat membantu semua orang menemukan tempat yang benar.",
-      "continue": "Mengerti — lanjut ke Suggest Spot",
+      "continue": "Lanjutkan",
       "viewer_title": "Petunjuk visual Suggest Spot"
     },
     "route": {
@@ -251,7 +251,7 @@
       "image_alt": "Panduan visual untuk mencari tujuan, mengelola perhentian, melihat fasilitas, serta mengekspor atau membagikan rute",
       "visual_caption": "Panduan Perencana Rute: cari, susun, ekspor, dan bagikan perjalanan.",
       "footer": "Gunakan Bucket List untuk objek terverifikasi; aktifkan + MAPS untuk pencarian global.",
-      "continue": "Mengerti — lanjut ke Perencana Rute",
+      "continue": "Lanjutkan",
       "viewer_title": "Petunjuk visual Perencana Rute"
     }
   }

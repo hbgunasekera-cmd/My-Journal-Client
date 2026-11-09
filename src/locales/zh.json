@@ -233,7 +233,7 @@
       "image_alt": "搜索并选择具体景点的图文指南",
       "visual_caption": "请选择景点本身，确保地图标记准确。",
       "footer": "准确的地图标记能帮助大家找到正确地点。",
-      "continue": "知道了 — 继续到 Suggest Spot",
+      "continue": "继续",
       "viewer_title": "Suggest Spot 图文说明"
     },
     "route": {
@@ -251,7 +251,7 @@
       "image_alt": "搜索目的地、管理停靠点、查看附近设施以及导出或分享路线的图文指南",
       "visual_caption": "路线规划器图文指南：搜索、安排、导出并分享行程。",
       "footer": "已核实景点请使用 Bucket List；需要全球搜索时再开启 + MAPS。",
-      "continue": "知道了 — 继续到路线规划器",
+      "continue": "继续",
       "viewer_title": "路线规划器图文说明"
     }
   }

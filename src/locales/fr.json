@@ -233,7 +233,7 @@
       "image_alt": "Guide visuel pour rechercher et sélectionner une attraction précise",
       "visual_caption": "Choisissez l’attraction elle-même pour placer correctement le repère.",
       "footer": "Un repère précis aide chacun à trouver le bon endroit.",
-      "continue": "Compris — continuer vers Suggest Spot",
+      "continue": "Continuer",
       "viewer_title": "Instructions visuelles de Suggest Spot"
     },
     "route": {
@@ -251,7 +251,7 @@
       "image_alt": "Guide visuel pour rechercher, gérer les étapes, afficher les services et exporter ou partager un itinéraire",
       "visual_caption": "Planificateur : recherchez, organisez, exportez et partagez votre trajet.",
       "footer": "Utilisez Bucket List pour les attractions vérifiées ; activez + MAPS pour une recherche mondiale.",
-      "continue": "Compris — continuer vers le planificateur",
+      "continue": "Continuer",
       "viewer_title": "Instructions visuelles du planificateur d’itinéraire"
     }
   }

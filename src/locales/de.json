@@ -233,7 +233,7 @@
       "image_alt": "Visuelle Anleitung zur Suche und Auswahl einer bestimmten Sehenswürdigkeit",
       "visual_caption": "Wähle die Sehenswürdigkeit selbst aus, damit die Kartenmarkierung stimmt.",
       "footer": "Präzise Markierungen helfen allen, den richtigen Ort zu finden.",
-      "continue": "Verstanden — weiter zu Suggest Spot",
+      "continue": "Weiter",
       "viewer_title": "Visuelle Anleitung für Suggest Spot"
     },
     "route": {
@@ -251,7 +251,7 @@
       "image_alt": "Visuelle Anleitung zur Suche, Routenverwaltung, Anzeige von Annehmlichkeiten sowie Export und Teilen",
       "visual_caption": "Routenplaner: suchen, ordnen, exportieren und teilen.",
       "footer": "Nutze die Bucket-List-Suche für geprüfte Orte; aktiviere + MAPS für eine weltweite Suche.",
-      "continue": "Verstanden — weiter zum Routenplaner",
+      "continue": "Weiter",
       "viewer_title": "Visuelle Anleitung für den Routenplaner"
     }
   }

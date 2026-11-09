@@ -233,7 +233,7 @@
       "image_alt": "Vizuelni vodič za pretragu i izbor konkretne atrakcije",
       "visual_caption": "Izaberite samu atrakciju kako bi oznaka na mapi bila precizna.",
       "footer": "Precizne oznake pomažu svima da pronađu pravo mesto.",
-      "continue": "Razumem — nastavi na Suggest Spot",
+      "continue": "Nastavi",
       "viewer_title": "Vizuelna uputstva za Suggest Spot"
     },
     "route": {
@@ -251,7 +251,7 @@
       "image_alt": "Vizuelni vodič za pretragu, upravljanje stanicama, prikaz sadržaja i deljenje ili izvoz rute",
       "visual_caption": "Planer rute: pretražite, uredite, izvezite i podelite putovanje.",
       "footer": "Koristite Bucket List za proverene atrakcije; uključite + MAPS za globalnu pretragu.",
-      "continue": "Razumem — nastavi na planer rute",
+      "continue": "Nastavi",
       "viewer_title": "Vizuelna uputstva za planer rute"
     }
   }

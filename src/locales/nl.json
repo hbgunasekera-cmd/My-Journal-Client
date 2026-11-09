@@ -233,7 +233,7 @@
       "image_alt": "Visuele gids voor het zoeken en kiezen van een specifieke attractie",
       "visual_caption": "Kies de attractie zelf zodat de kaartmarkering klopt.",
       "footer": "Met een nauwkeurige markering vindt iedereen de juiste plek.",
-      "continue": "Begrepen — doorgaan naar Suggest Spot",
+      "continue": "Doorgaan",
       "viewer_title": "Visuele instructies voor Suggest Spot"
     },
     "route": {
@@ -251,7 +251,7 @@
       "image_alt": "Visuele gids voor bestemmingen zoeken, stops beheren, voorzieningen bekijken en een route delen of exporteren",
       "visual_caption": "Routeplanner: zoek, orden, exporteer en deel je reis.",
       "footer": "Gebruik Bucket List voor gecontroleerde attracties; zet + MAPS aan voor wereldwijd zoeken.",
-      "continue": "Begrepen — doorgaan naar de routeplanner",
+      "continue": "Doorgaan",
       "viewer_title": "Visuele instructies voor de routeplanner"
     }
   }

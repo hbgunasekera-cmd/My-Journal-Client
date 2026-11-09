@@ -233,7 +233,7 @@
       "image_alt": "Visual guide to searching for and selecting a specific attraction",
       "visual_caption": "Visual guide: choose the attraction itself so the map pin is accurate.",
       "footer": "Accurate attraction pins help everyone find the right place.",
-      "continue": "Got it — continue to Suggest Spot",
+      "continue": "Continue",
       "viewer_title": "Suggest Spot visual instructions"
     },
     "route": {
@@ -251,7 +251,7 @@
       "image_alt": "Visual guide to searching destinations, managing route stops, viewing amenities, and exporting or sharing a route",
       "visual_caption": "Route Planner visual guide: search, organize, export, and share your trip.",
       "footer": "Use Bucket List search for verified local attractions; enable + MAPS when you need global search.",
-      "continue": "Got it — continue to Route Planner",
+      "continue": "Continue",
       "viewer_title": "Route Planner visual instructions"
     }
   }

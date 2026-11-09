@@ -233,7 +233,7 @@
       "image_alt": "특정 명소를 검색하고 선택하는 시각 안내",
       "visual_caption": "지도 핀이 정확하도록 명소 자체를 선택하세요.",
       "footer": "정확한 지도 핀은 모두가 올바른 장소를 찾도록 돕습니다.",
-      "continue": "확인 — Suggest Spot으로 계속",
+      "continue": "계속",
       "viewer_title": "Suggest Spot 시각 안내"
     },
     "route": {
@@ -251,7 +251,7 @@
       "image_alt": "목적지 검색, 정류장 관리, 편의시설 확인, 경로 내보내기와 공유를 안내하는 이미지",
       "visual_caption": "경로 플래너 안내: 검색, 정렬, 내보내기, 공유.",
       "footer": "검증된 명소는 Bucket List를, 전 세계 검색은 + MAPS를 사용하세요.",
-      "continue": "확인 — 경로 플래너로 계속",
+      "continue": "계속",
       "viewer_title": "경로 플래너 시각 안내"
     }
   }

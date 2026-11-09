@@ -233,7 +233,7 @@
       "image_alt": "Ilustracja pokazująca wyszukiwanie i wybór konkretnej atrakcji",
       "visual_caption": "Wybierz samą atrakcję, aby znacznik mapy wskazywał właściwe miejsce.",
       "footer": "Dokładne znaczniki pomagają wszystkim znaleźć właściwe miejsce.",
-      "continue": "Rozumiem — przejdź do Suggest Spot",
+      "continue": "Kontynuuj",
       "viewer_title": "Instrukcje wizualne Suggest Spot"
     },
     "route": {
@@ -251,7 +251,7 @@
       "image_alt": "Ilustracja pokazująca wyszukiwanie, zarządzanie przystankami, udogodnienia oraz eksport lub udostępnianie trasy",
       "visual_caption": "Planer trasy: wyszukuj, porządkuj, eksportuj i udostępniaj podróż.",
       "footer": "Używaj Bucket List dla sprawdzonych atrakcji; włącz + MAPS, aby szukać globalnie.",
-      "continue": "Rozumiem — przejdź do planera trasy",
+      "continue": "Kontynuuj",
       "viewer_title": "Instrukcje wizualne planera trasy"
     }
   }

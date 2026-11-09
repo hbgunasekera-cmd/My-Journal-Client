@@ -233,7 +233,7 @@
       "image_alt": "Visuell guide för att söka efter och välja en specifik sevärdhet",
       "visual_caption": "Välj själva sevärdheten så att kartnålen hamnar rätt.",
       "footer": "Exakta kartnålar hjälper alla att hitta rätt plats.",
-      "continue": "Jag förstår — fortsätt till Suggest Spot",
+      "continue": "Fortsätt",
       "viewer_title": "Visuella instruktioner för Suggest Spot"
     },
     "route": {
@@ -251,7 +251,7 @@
       "image_alt": "Visuell guide för sökning, hantering av stopp, närliggande bekvämligheter och export eller delning av rutten",
       "visual_caption": "Ruttplanerare: sök, ordna, exportera och dela din resa.",
       "footer": "Använd Bucket List för verifierade platser; slå på + MAPS för global sökning.",
-      "continue": "Jag förstår — fortsätt till ruttplaneraren",
+      "continue": "Fortsätt",
       "viewer_title": "Visuella instruktioner för ruttplaneraren"
     }
   }

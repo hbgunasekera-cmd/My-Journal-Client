@@ -233,7 +233,7 @@
       "image_alt": "Belirli bir noktayı arayıp seçmeyi gösteren görsel rehber",
       "visual_caption": "Harita işaretçisinin doğru olması için doğrudan turistik noktayı seçin.",
       "footer": "Doğru işaretçiler herkesin doğru yeri bulmasına yardımcı olur.",
-      "continue": "Anladım — Suggest Spot’a devam et",
+      "continue": "Devam et",
       "viewer_title": "Suggest Spot görsel talimatları"
     },
     "route": {
@@ -251,7 +251,7 @@
       "image_alt": "Hedef arama, durak yönetimi, olanak görüntüleme ve rota dışa aktarma veya paylaşmayı gösteren görsel rehber",
       "visual_caption": "Rota Planlayıcı görsel rehberi: arayın, düzenleyin, dışa aktarın ve paylaşın.",
       "footer": "Doğrulanmış yerler için Bucket List’i kullanın; global arama için + MAPS’i açın.",
-      "continue": "Anladım — Rota Planlayıcı’ya devam et",
+      "continue": "Devam et",
       "viewer_title": "Rota Planlayıcı görsel talimatları"
     }
   }

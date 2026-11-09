@@ -233,7 +233,7 @@
       "image_alt": "Guida visiva per cercare e selezionare un’attrazione specifica",
       "visual_caption": "Scegli l’attrazione stessa per posizionare correttamente il segnaposto.",
       "footer": "Un segnaposto preciso aiuta tutti a trovare il luogo giusto.",
-      "continue": "Ho capito — continua a Suggest Spot",
+      "continue": "Continua",
       "viewer_title": "Istruzioni visive di Suggest Spot"
     },
     "route": {
@@ -251,7 +251,7 @@
       "image_alt": "Guida visiva per cercare destinazioni, gestire tappe, vedere i servizi ed esportare o condividere il percorso",
       "visual_caption": "Guida al pianificatore: cerca, organizza, esporta e condividi il viaggio.",
       "footer": "Usa Bucket List per le attrazioni verificate; attiva + MAPS per la ricerca globale.",
-      "continue": "Ho capito — continua al pianificatore",
+      "continue": "Continua",
       "viewer_title": "Istruzioni visive del pianificatore"
     }
   }
