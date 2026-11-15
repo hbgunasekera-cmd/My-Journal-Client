@@ -16,6 +16,27 @@
     "add": "Toevoegen",
     "plan": "Plannen"
   },
+  "bucket_list": {
+    "title": "Mijn bucketlist",
+    "read_only": "Openbaar, alleen bekijken",
+    "completed": "Afgerond",
+    "pending": "In afwachting",
+    "progress": "Voortgang",
+    "gallery": "Galerij",
+    "article": "Artikel",
+    "close": "Lijst sluiten",
+    "empty": "Geen afgeronde of openstaande locaties gevonden.",
+    "no_mapped": "Er zijn geen locaties met geldige kaartcoördinaten.",
+    "map_aria": "Interactieve kaart van afgeronde en openstaande locaties",
+    "unmapped": "{{count}} locaties konden niet worden getoond omdat kaartcoördinaten ontbreken.",
+    "route_plans": "Mijn routeplannen",
+    "route_plans_loading": "Routeplannen laden…",
+    "route_plans_empty": "Er zijn nog geen routeplannen opgeslagen.",
+    "route_plans_error": "Routeplannen konden niet worden geladen.",
+    "route_plan_selected": "Weergegeven op de kaart",
+    "route_drawing": "Autoroute zoeken…",
+    "route_unavailable": "Er is geen autoroute beschikbaar voor deze tussenstops."
+  },
   "filters": {
     "search_placeholder": "Zoek bestemmingen...",
     "sort_newest": "Nieuwste eerst",

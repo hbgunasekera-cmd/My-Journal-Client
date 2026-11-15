@@ -525,6 +525,197 @@ const getCategoryBreadcrumb = (category, t) => {
   };
 };
 
+const normalizeSavedRoutePlans = (rows = []) => rows.flatMap((row, rowIndex) => {
+  let waypoints = row?.waypoints;
+  if (typeof waypoints === 'string') {
+    try {
+      waypoints = JSON.parse(waypoints);
+    } catch {
+      waypoints = [];
+    }
+  }
+
+  if (!Array.isArray(waypoints)) return [];
+  const stops = waypoints.flatMap((waypoint) => {
+    const name = typeof waypoint === 'string'
+      ? waypoint.trim()
+      : String(waypoint?.place_name || waypoint?.n || waypoint?.name || '').trim();
+    if (!name) return [];
+    const latitude = Number(waypoint?.latitude ?? waypoint?.lt);
+    const longitude = Number(waypoint?.longitude ?? waypoint?.ln);
+    return [{
+      name,
+      category: String(waypoint?.category || '').trim(),
+      latitude: Number.isFinite(latitude) && latitude >= -90 && latitude <= 90
+        ? latitude
+        : null,
+      longitude: Number.isFinite(longitude) && longitude >= -180 && longitude <= 180
+        ? longitude
+        : null,
+    }];
+  });
+
+  return stops.length > 0
+    ? [{ id: row?.id || `route-plan-${rowIndex}`, stops }]
+    : [];
+});
+
+const osrmRoadRouteCache = new Map();
+let osrmRequestQueue = Promise.resolve();
+let lastOsrmRequestAt = 0;
+
+const waitForOsrmRequestSlot = (signal) => {
+  const waitForSlot = async () => {
+    if (signal?.aborted) throw new DOMException('The request was aborted.', 'AbortError');
+    const waitMs = Math.max(0, 1100 - (Date.now() - lastOsrmRequestAt));
+    if (waitMs > 0) {
+      await new Promise((resolve, reject) => {
+        const timeoutId = window.setTimeout(() => {
+          signal?.removeEventListener('abort', onAbort);
+          resolve();
+        }, waitMs);
+        const onAbort = () => {
+          window.clearTimeout(timeoutId);
+          signal?.removeEventListener('abort', onAbort);
+          reject(new DOMException('The request was aborted.', 'AbortError'));
+        };
+        signal?.addEventListener('abort', onAbort, { once: true });
+      });
+    }
+    if (signal?.aborted) throw new DOMException('The request was aborted.', 'AbortError');
+    lastOsrmRequestAt = Date.now();
+  };
+
+  const slot = osrmRequestQueue.then(waitForSlot, waitForSlot);
+  osrmRequestQueue = slot.catch(() => undefined);
+  return slot;
+};
+
+const getOsrmRoadRouteCoordinates = async (validStops, signal) => {
+  const coordinatePairs = validStops.map((stop) => [stop.longitude, stop.latitude]);
+  const cacheKey = coordinatePairs.map(([longitude, latitude]) =>
+    `${longitude.toFixed(6)},${latitude.toFixed(6)}`,
+  ).join(';');
+  const cachedCoordinates = osrmRoadRouteCache.get(cacheKey);
+  if (cachedCoordinates) return cachedCoordinates;
+
+  await waitForOsrmRequestSlot(signal);
+  const response = await fetch(
+    `https://router.project-osrm.org/route/v1/driving/${cacheKey}?overview=full&geometries=geojson&steps=false`,
+    { signal, headers: { Accept: 'application/json' } },
+  );
+  if (!response.ok) throw new Error(`OpenStreetMap routing returned ${response.status}.`);
+
+  const data = await response.json();
+  const coordinates = data?.routes?.[0]?.geometry?.coordinates;
+  if (data?.code !== 'Ok' || !Array.isArray(coordinates) || coordinates.length < 2) {
+    throw new Error(data?.message || 'OpenStreetMap routing returned no road geometry.');
+  }
+
+  const roadCoordinates = coordinates.map(([longitude, latitude]) => [latitude, longitude]);
+  if (osrmRoadRouteCache.size >= 100) {
+    osrmRoadRouteCache.delete(osrmRoadRouteCache.keys().next().value);
+  }
+  osrmRoadRouteCache.set(cacheKey, roadCoordinates);
+  return roadCoordinates;
+};
+
+const getRoadRouteCoordinates = async (stops, signal) => {
+  const validStops = stops.filter((stop) =>
+    Number.isFinite(stop.latitude) && Number.isFinite(stop.longitude),
+  );
+  if (validStops.length < 2) {
+    throw new Error('At least two saved route stops need valid coordinates.');
+  }
+
+  let orsError = null;
+  let osrmError = null;
+  const orsKey = import.meta.env.VITE_ORS_KEY;
+  if (orsKey) {
+    try {
+      const response = await fetch(
+        'https://api.openrouteservice.org/v2/directions/driving-car/geojson',
+        {
+          method: 'POST',
+          headers: {
+            Authorization: orsKey,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            coordinates: validStops.map((stop) => [stop.longitude, stop.latitude]),
+          }),
+          signal,
+        },
+      );
+      if (!response.ok) throw new Error(`OpenRouteService returned ${response.status}.`);
+
+      const data = await response.json();
+      const roadCoordinates = data?.features?.[0]?.geometry?.coordinates?.map(
+        ([longitude, latitude]) => [latitude, longitude],
+      );
+      if (roadCoordinates?.length > 1) return roadCoordinates;
+      throw new Error('OpenRouteService returned no road geometry.');
+    } catch (error) {
+      if (signal?.aborted) throw error;
+      orsError = error;
+    }
+  }
+
+  try {
+    return await getOsrmRoadRouteCoordinates(validStops, signal);
+  } catch (error) {
+    if (signal?.aborted || error?.name === 'AbortError') throw error;
+    osrmError = error;
+  }
+
+  const googleMaps = window.google?.maps;
+  if (!googleMaps?.DirectionsService || !googleMaps?.LatLng) {
+    const details = [orsError, osrmError]
+      .filter(Boolean)
+      .map((error) => error.message)
+      .join(' ');
+    throw new Error(`Road routing is temporarily unavailable.${details ? ` ${details}` : ''}`);
+  }
+
+  try {
+    return await new Promise((resolve, reject) => {
+      const directionsService = new googleMaps.DirectionsService();
+      directionsService.route(
+        {
+          origin: new googleMaps.LatLng(validStops[0].latitude, validStops[0].longitude),
+          destination: new googleMaps.LatLng(
+            validStops[validStops.length - 1].latitude,
+            validStops[validStops.length - 1].longitude,
+          ),
+          waypoints: validStops.slice(1, -1).map((stop) => ({
+            location: new googleMaps.LatLng(stop.latitude, stop.longitude),
+            stopover: true,
+          })),
+          optimizeWaypoints: false,
+          travelMode: googleMaps.TravelMode.DRIVING,
+        },
+        (response, status) => {
+          const path = response?.routes?.[0]?.overview_path;
+          if (status !== 'OK' || !path?.length) {
+            reject(new Error(`Google Directions could not find a road route (${status}).`));
+            return;
+          }
+          resolve(path.map((point) => [point.lat(), point.lng()]));
+        },
+      );
+    });
+  } catch (error) {
+    if (signal?.aborted) throw error;
+    throw new Error(
+      `Road routing is temporarily unavailable. ${[orsError, osrmError, error]
+        .filter(Boolean)
+        .map((routingError) => routingError.message)
+        .join(' ')}`,
+      { cause: error },
+    );
+  }
+};
+
 const Breadcrumbs = ({ items = [], className = "" }) => {
   const visibleItems = items.filter((item) => item?.label);
   if (visibleItems.length === 0) return null;
@@ -601,6 +792,7 @@ const getInitialAppRouteState = () => {
     legalView: "privacy",
     isPlannerOpen: false,
     isAddOpen: false,
+    isBucketListOpen: false,
   };
   if (typeof window === "undefined") return initialState;
 
@@ -619,6 +811,9 @@ const getInitialAppRouteState = () => {
   }
   if (view === "suggest_spot" || path === "/suggest-spot" || path === "/add") {
     return { ...initialState, isAddOpen: true };
+  }
+  if (path === "/bucketlist") {
+    return { ...initialState, isBucketListOpen: true };
   }
   return initialState;
 };
@@ -2655,6 +2850,7 @@ export const updateSEO = (
     isVideo = false,
     isSuggestSpot = false,
     isPlanner = false,
+    isBucketList = false,
     video = null,
     videoIndex = 0,
     galleryPhotos = [],
@@ -2759,6 +2955,13 @@ export const updateSEO = (
     ogTitle = "Plan Your Sri Lanka Journey";
     description = "Plan a Sri Lanka journey with mapped destinations, route information, and travel details from My Journal.";
     rawCanonicalUrl = `${BASE_URL}/route-planner`;
+  }
+
+  else if (isBucketList) {
+    title = `My Bucket List: Sri Lanka Destinations${BRAND_SUFFIX}`;
+    ogTitle = "My Bucket List of Sri Lanka Destinations";
+    description = "Explore completed and planned Sri Lanka destinations on the My Journal Bucket List, with an interactive map, destination categories, articles, and photo galleries.";
+    rawCanonicalUrl = `${BASE_URL}/bucketlist`;
   }
 
   // ---------------------------------------------------------------------
@@ -8945,6 +9148,477 @@ function SafetyOverlay({ location, isOpen, onClose }) {
   );
 }
 
+function BucketListMapView({
+  locations,
+  selectedRoutePlan,
+  t,
+  language,
+  onArticle,
+  onGallery,
+}) {
+  const mapElementRef = useRef(null);
+  const mapInstanceRef = useRef(null);
+  const routePolylineRef = useRef(null);
+  const callbacksRef = useRef({ t, language, onArticle, onGallery });
+  callbacksRef.current = { t, language, onArticle, onGallery };
+  const [mapRevision, setMapRevision] = useState(0);
+  const [routeStatus, setRouteStatus] = useState('idle');
+
+  useEffect(() => {
+    const container = mapElementRef.current;
+    if (!container) return undefined;
+
+    const map = L.map(container, {
+      zoomControl: true,
+      scrollWheelZoom: true,
+    }).setView([7.8731, 80.7718], 7);
+    mapInstanceRef.current = map;
+
+    L.tileLayer(
+      'https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}',
+      { attribution: 'Tiles &copy; Esri' },
+    ).addTo(map);
+
+    const points = [];
+    const markers = [];
+    const { t: translate, language: activeLanguage } = callbacksRef.current;
+
+    locations.forEach((place) => {
+      const isCompleted = ['done', 'completed', 'visited'].includes(
+        String(place.status || '').trim().toLowerCase(),
+      );
+      const name = getLocalizedValue(place, 'place_name', activeLanguage) || place.place_name;
+      const category = place.category || 'Location';
+      const categoryKey = String(category)
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, '_')
+        .replace(/^_+|_+$/g, '');
+      const popupContent = document.createElement('div');
+      popupContent.className = 'min-w-40 space-y-2 text-slate-900';
+
+      const details = document.createElement('div');
+      const nameElement = document.createElement('p');
+      nameElement.className = 'font-extrabold leading-tight';
+      nameElement.textContent = name || '';
+      const categoryElement = document.createElement('p');
+      categoryElement.className = 'mt-1 text-xs font-semibold text-slate-500';
+      categoryElement.textContent = translate(`categories.${categoryKey}`, {
+        defaultValue: category,
+      });
+      details.append(nameElement, categoryElement);
+      popupContent.append(details);
+
+      if (isCompleted) {
+        const actions = document.createElement('div');
+        actions.className = 'flex gap-2 border-t border-slate-100 pt-2';
+
+        const galleryButton = document.createElement('button');
+        galleryButton.type = 'button';
+        galleryButton.className = 'rounded-lg bg-indigo-600 px-2.5 py-1.5 text-[11px] font-bold text-white transition hover:bg-indigo-700';
+        galleryButton.textContent = translate('bucket_list.gallery');
+        galleryButton.addEventListener('click', (event) => {
+          event.stopPropagation();
+          callbacksRef.current.onGallery(place);
+        });
+
+        const articleButton = document.createElement('button');
+        articleButton.type = 'button';
+        articleButton.className = 'rounded-lg bg-slate-900 px-2.5 py-1.5 text-[11px] font-bold text-white transition hover:bg-slate-700';
+        articleButton.textContent = translate('bucket_list.article');
+        articleButton.addEventListener('click', (event) => {
+          event.stopPropagation();
+          callbacksRef.current.onArticle(place);
+        });
+
+        actions.append(galleryButton, articleButton);
+        popupContent.append(actions);
+      }
+
+      const marker = L.circleMarker([place.latitude, place.longitude], {
+        radius: 8,
+        color: '#ffffff',
+        weight: 2,
+        fillColor: isCompleted ? '#16a34a' : '#f97316',
+        fillOpacity: 0.95,
+      });
+
+      marker.bindPopup(popupContent, {
+        autoPan: false,
+        minWidth: 180,
+        maxWidth: 260,
+        className: 'bucket-list-marker-popup',
+      });
+      marker.on('mouseover', () => marker.openPopup());
+      marker.addTo(map);
+      markers.push({ marker, place });
+      points.push([place.latitude, place.longitude]);
+    });
+
+    if (points.length === 1) {
+      map.setView(points[0], 12);
+    } else if (points.length > 1) {
+      map.fitBounds(L.latLngBounds(points), { padding: [36, 36], maxZoom: 12 });
+    }
+
+    // Touch devices do not have a hover state. After a user finishes panning
+    // or zooming, show the popup for the visible marker closest to the map
+    // center so the currently focused location remains discoverable.
+    const isTouchMap =
+      window.matchMedia?.('(pointer: coarse)').matches ||
+      (typeof navigator !== 'undefined' && navigator.maxTouchPoints > 0);
+    if (isTouchMap && markers.length > 0) {
+      let userMovedMap = false;
+      const markUserInteraction = () => {
+        userMovedMap = true;
+      };
+      const showFocusedLocation = () => {
+        if (!userMovedMap) return;
+        userMovedMap = false;
+
+        const visibleMarkers = markers.filter(({ marker }) =>
+          map.getBounds().contains(marker.getLatLng()),
+        );
+        if (visibleMarkers.length === 0) {
+          map.closePopup();
+          return;
+        }
+
+        const centerPoint = map.latLngToContainerPoint(map.getCenter());
+        const focusedMarker = visibleMarkers.reduce((closest, candidate) => {
+          const point = map.latLngToContainerPoint(candidate.marker.getLatLng());
+          const distance =
+            (point.x - centerPoint.x) ** 2 + (point.y - centerPoint.y) ** 2;
+          return !closest || distance < closest.distance
+            ? { marker: candidate.marker, distance }
+            : closest;
+        }, null);
+
+        focusedMarker?.marker.openPopup();
+      };
+
+      map.on('dragstart zoomstart', markUserInteraction);
+      map.on('moveend zoomend', showFocusedLocation);
+    }
+
+    setMapRevision((revision) => revision + 1);
+    const resizeFrame = window.requestAnimationFrame(() => map.invalidateSize());
+    return () => {
+      window.cancelAnimationFrame(resizeFrame);
+      if (routePolylineRef.current && map.hasLayer(routePolylineRef.current)) {
+        map.removeLayer(routePolylineRef.current);
+      }
+      routePolylineRef.current = null;
+      if (mapInstanceRef.current === map) mapInstanceRef.current = null;
+      map.remove();
+    };
+  }, [locations, language]);
+
+  useEffect(() => {
+    const map = mapInstanceRef.current;
+    if (!map) return undefined;
+
+    if (routePolylineRef.current && map.hasLayer(routePolylineRef.current)) {
+      map.removeLayer(routePolylineRef.current);
+    }
+    routePolylineRef.current = null;
+
+    if (!selectedRoutePlan) {
+      setRouteStatus('idle');
+      return undefined;
+    }
+
+    const abortController = new AbortController();
+    let isCurrent = true;
+    setRouteStatus('loading');
+
+    void getRoadRouteCoordinates(selectedRoutePlan.stops, abortController.signal)
+      .then((coordinates) => {
+        if (!isCurrent || mapInstanceRef.current !== map) return;
+        const routeLine = L.polyline(coordinates, {
+          color: '#ef4444',
+          weight: 5,
+          opacity: 0.95,
+          lineCap: 'round',
+          lineJoin: 'round',
+        }).addTo(map);
+        routePolylineRef.current = routeLine;
+        map.fitBounds(routeLine.getBounds(), { padding: [44, 44], maxZoom: 13 });
+        setRouteStatus('ready');
+      })
+      .catch((error) => {
+        if (!isCurrent || error?.name === 'AbortError') return;
+        setRouteStatus('error');
+        reportClientError(error, {
+          errorType: 'api_network_error',
+          context: {
+            operation: 'draw_saved_bucket_list_road_route',
+            route_plan_id: selectedRoutePlan.id,
+          },
+        });
+      });
+
+    return () => {
+      isCurrent = false;
+      abortController.abort();
+      if (routePolylineRef.current && map.hasLayer(routePolylineRef.current)) {
+        map.removeLayer(routePolylineRef.current);
+      }
+      routePolylineRef.current = null;
+    };
+  }, [selectedRoutePlan, mapRevision]);
+
+  return (
+    <div className="relative h-full w-full">
+      <div
+        ref={mapElementRef}
+        className="h-full w-full"
+        role="application"
+        aria-label={t('bucket_list.map_aria')}
+      />
+      {selectedRoutePlan && routeStatus === 'loading' && (
+        <div className="pointer-events-none absolute left-1/2 top-3 z-[700] -translate-x-1/2 rounded-full bg-white/95 px-3 py-1.5 text-[10px] font-bold text-slate-700 shadow">
+          {t('bucket_list.route_drawing', 'Finding road route…')}
+        </div>
+      )}
+      {selectedRoutePlan && routeStatus === 'error' && (
+        <div role="status" className="pointer-events-none absolute left-1/2 top-3 z-[700] -translate-x-1/2 rounded-full bg-white/95 px-3 py-1.5 text-center text-[10px] font-bold text-rose-700 shadow">
+          {t('bucket_list.route_unavailable', 'Road route is unavailable for these stops.')}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function BucketListWindow({
+  locations,
+  mappedLocations,
+  routePlans,
+  routePlansLoading,
+  routePlansError,
+  completedCount,
+  pendingCount,
+  unmappedCount,
+  covered,
+  onClose,
+  onArticle,
+  onGallery,
+}) {
+  const { t, i18n } = useTranslation();
+  const [selectedRoutePlanId, setSelectedRoutePlanId] = useState(null);
+  const selectedRoutePlan = routePlans.find((plan) => plan.id === selectedRoutePlanId) || null;
+  const totalCount = completedCount + pendingCount;
+  const completedPercent = totalCount
+    ? Math.round((completedCount / totalCount) * 100)
+    : 0;
+  const pendingPercent = totalCount ? 100 - completedPercent : 0;
+
+  useEffect(() => {
+    const handleKeyDown = (event) => {
+      if (event.key === 'Escape' && !covered) onClose();
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [covered, onClose]);
+
+  return (
+    <div
+      className="fixed inset-0 z-[50] flex items-center justify-center bg-slate-950/70 p-2 backdrop-blur-sm sm:p-5"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="my-bucket-list-title"
+      onClick={(event) => {
+        if (event.target === event.currentTarget) onClose();
+      }}
+    >
+      <section className="flex h-[94dvh] max-h-[1000px] w-full max-w-6xl flex-col overflow-hidden rounded-2xl border border-white/70 bg-white shadow-2xl sm:rounded-3xl">
+        <header className="flex shrink-0 items-start justify-between gap-4 border-b border-slate-100 px-4 py-3 sm:px-6 sm:py-4">
+          <div>
+            <Breadcrumbs
+              className="mb-1 text-[10px] text-slate-500 sm:text-xs"
+              items={[
+                { label: t('common.title', 'My Journal'), href: '/' },
+                { label: t('bucket_list.title', 'My Bucket List') },
+              ]}
+            />
+            <h2 id="my-bucket-list-title" className="text-lg font-black text-slate-900 sm:text-2xl">
+              {t('bucket_list.title')}
+            </h2>
+            <p className="mt-0.5 text-xs font-medium text-slate-500 sm:text-sm">
+              {t('bucket_list.read_only')}
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label={t('bucket_list.close')}
+            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-slate-100 text-slate-700 transition hover:bg-slate-200"
+          >
+            <X className="h-5 w-5" />
+          </button>
+        </header>
+
+        <div className="shrink-0 space-y-3 px-4 py-3 sm:px-6 sm:py-4">
+          <div className="grid grid-cols-2 gap-3 text-xs sm:text-sm">
+            <div className="rounded-xl border border-emerald-100 bg-emerald-50 p-3 text-emerald-800">
+              <p className="font-bold">{t('bucket_list.completed')}</p>
+              <p className="mt-1 text-lg font-black tabular-nums">
+                {completedCount} <span className="text-sm font-bold">({completedPercent}%)</span>
+              </p>
+            </div>
+            <div className="rounded-xl border border-orange-100 bg-orange-50 p-3 text-orange-800">
+              <p className="font-bold">{t('bucket_list.pending')}</p>
+              <p className="mt-1 text-lg font-black tabular-nums">
+                {pendingCount} <span className="text-sm font-bold">({pendingPercent}%)</span>
+              </p>
+            </div>
+          </div>
+          <div
+            className="h-2.5 overflow-hidden rounded-full bg-orange-200"
+            role="progressbar"
+            aria-label={t('bucket_list.progress')}
+            aria-valuemin={0}
+            aria-valuemax={100}
+            aria-valuenow={completedPercent}
+          >
+            <div
+              className="h-full rounded-full bg-emerald-500 transition-[width] duration-500"
+              style={{ width: `${completedPercent}%` }}
+            />
+          </div>
+        </div>
+
+        <main className="flex min-h-0 flex-1 flex-col lg:flex-row">
+          <div className="relative h-[44%] min-h-[180px] shrink-0 bg-slate-100 lg:h-auto lg:min-h-0 lg:flex-[1.35]">
+            <BucketListMapView
+              locations={mappedLocations}
+              selectedRoutePlan={selectedRoutePlan}
+              t={t}
+              language={i18n.language}
+              onArticle={onArticle}
+              onGallery={onGallery}
+            />
+            {mappedLocations.length === 0 && (
+              <div className="pointer-events-none absolute inset-0 z-[500] flex items-center justify-center p-6">
+                <p className="rounded-xl bg-white/95 px-4 py-3 text-center text-sm font-bold text-slate-600 shadow-lg">
+                  {locations.length === 0
+                    ? t('bucket_list.empty')
+                    : t('bucket_list.no_mapped')}
+                </p>
+              </div>
+            )}
+          </div>
+
+          <section
+            className="flex min-h-0 flex-1 flex-col border-t border-slate-200 bg-white lg:border-l lg:border-t-0"
+            aria-labelledby="bucket-list-route-plans-title"
+          >
+            <header className="flex shrink-0 items-center justify-between gap-3 border-b border-slate-100 px-4 py-3 sm:px-5">
+              <h3 id="bucket-list-route-plans-title" className="text-sm font-black text-slate-900 sm:text-base">
+                {t('bucket_list.route_plans', 'My Route Plans')}
+              </h3>
+              {!routePlansLoading && routePlans.length > 0 && (
+                <span className="rounded-full bg-slate-100 px-2.5 py-1 text-[10px] font-bold text-slate-600">
+                  {routePlans.length}
+                </span>
+              )}
+            </header>
+
+            <div className="min-h-0 flex-1 overflow-y-auto overscroll-y-contain p-3 sm:p-4">
+              {routePlansLoading ? (
+                <p className="rounded-xl bg-slate-50 px-3 py-4 text-center text-xs font-semibold text-slate-500">
+                  {t('bucket_list.route_plans_loading', 'Loading route plans…')}
+                </p>
+              ) : routePlansError ? (
+                <p className="rounded-xl bg-rose-50 px-3 py-4 text-center text-xs font-semibold text-rose-700">
+                  {t('bucket_list.route_plans_error', 'Could not load route plans.')}
+                </p>
+              ) : routePlans.length === 0 ? (
+                <p className="rounded-xl bg-slate-50 px-3 py-4 text-center text-xs font-semibold text-slate-500">
+                  {t('bucket_list.route_plans_empty', 'No saved route plans yet.')}
+                </p>
+              ) : (
+                <ol className="space-y-3">
+                  {routePlans.map((plan) => {
+                    const isSelected = plan.id === selectedRoutePlanId;
+                    const toggleSelectedRoute = () => {
+                      setSelectedRoutePlanId((currentId) => currentId === plan.id ? null : plan.id);
+                    };
+                    return (
+                    <li
+                      key={plan.id}
+                      role="button"
+                      tabIndex={0}
+                      aria-pressed={isSelected}
+                      onClick={toggleSelectedRoute}
+                      onKeyDown={(event) => {
+                        if (event.key === 'Enter' || event.key === ' ') {
+                          event.preventDefault();
+                          toggleSelectedRoute();
+                        }
+                      }}
+                      className={`cursor-pointer rounded-xl border p-3 shadow-sm outline-none transition focus-visible:ring-2 focus-visible:ring-red-400 ${isSelected ? 'border-red-300 bg-red-50' : 'border-slate-100 bg-white hover:border-slate-300'}`}
+                    >
+                      {isSelected && (
+                        <span className="mb-2 inline-flex rounded-full bg-red-100 px-2 py-0.5 text-[9px] font-bold text-red-700">
+                          {t('bucket_list.route_plan_selected', 'Shown on map')}
+                        </span>
+                      )}
+                      <ol className="space-y-2">
+                        {plan.stops.map((stop, index) => {
+                          const categoryKey = stop.category
+                            .toLowerCase()
+                            .replace(/[^a-z0-9]+/g, '_')
+                            .replace(/^_+|_+$/g, '');
+                          return (
+                            <li key={`${plan.id}-${index}`} className="flex items-start gap-2.5">
+                              <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-indigo-50 text-[10px] font-black text-indigo-700">
+                                {index + 1}
+                              </span>
+                              <div className="min-w-0 flex-1">
+                                <p className="text-xs font-bold leading-snug text-slate-800">
+                                  {stop.name}
+                                </p>
+                                {stop.category && (
+                                  <p className="mt-0.5 text-[10px] font-medium text-slate-500">
+                                    {t(`categories.${categoryKey}`, { defaultValue: stop.category })}
+                                  </p>
+                                )}
+                              </div>
+                            </li>
+                          );
+                        })}
+                      </ol>
+                    </li>
+                    );
+                  })}
+                </ol>
+              )}
+            </div>
+          </section>
+        </main>
+
+        <footer className="flex shrink-0 flex-wrap items-center justify-between gap-2 border-t border-slate-100 px-4 py-3 text-[11px] font-semibold text-slate-600 sm:px-6 sm:text-xs">
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+            <span className="inline-flex items-center gap-2">
+              <span className="h-3 w-3 rounded-full bg-emerald-500" />
+              {t('bucket_list.completed')}
+            </span>
+            <span className="inline-flex items-center gap-2">
+              <span className="h-3 w-3 rounded-full bg-orange-500" />
+              {t('bucket_list.pending')}
+            </span>
+          </div>
+          {unmappedCount > 0 && (
+            <span className="basis-full text-[10px] text-slate-400 sm:basis-auto">
+              {t('bucket_list.unmapped', { count: unmappedCount })}
+            </span>
+          )}
+        </footer>
+      </section>
+    </div>
+  );
+}
+
 function App() {
   const [initialRouteState] = useState(getInitialAppRouteState);
   const initialPath = typeof window === 'undefined'
@@ -9022,6 +9696,7 @@ function App() {
   // ============================================================================
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [isArticleOpen, setIsArticleOpen] = useState(false);
+  const [isBucketListOpen, setIsBucketListOpen] = useState(initialRouteState.isBucketListOpen);
   const [viewingArticle, setviewingArticle] = useState(null);
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
   const [sharingData, setSharingData] = useState(null);
@@ -9033,6 +9708,9 @@ function App() {
   // 21. DATA LISTS, FILTERING & PAGINATION STATE
   // ============================================================================
   const [places, setPlaces] = useState([]);
+  const [bucketListRoutePlans, setBucketListRoutePlans] = useState([]);
+  const [bucketListRoutePlansLoading, setBucketListRoutePlansLoading] = useState(false);
+  const [bucketListRoutePlansError, setBucketListRoutePlansError] = useState(false);
   const [visibleCount, setVisibleCount] = useState(20);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterTag, setFilterTag] = useState(() =>
@@ -9265,6 +9943,86 @@ function App() {
   // ============================================================================
   const debouncedSearch = useDebounce(searchTerm, 300);
   const debouncedPlannerSearch = useDebounce(plannerSearch, 300);
+
+  const bucketListPlaces = useMemo(() => {
+    return (places || []).filter((place) =>
+      ['done', 'completed', 'visited', 'pending'].includes(
+        String(place.status || '').trim().toLowerCase(),
+      ),
+    );
+  }, [places]);
+
+  const mappedBucketListPlaces = useMemo(() => {
+    return bucketListPlaces.flatMap((place) => {
+      const latitude = place.latitude == null || String(place.latitude).trim() === ''
+        ? NaN
+        : Number(place.latitude);
+      const longitude = place.longitude == null || String(place.longitude).trim() === ''
+        ? NaN
+        : Number(place.longitude);
+
+      if (
+        !Number.isFinite(latitude) ||
+        latitude < -90 ||
+        latitude > 90 ||
+        !Number.isFinite(longitude) ||
+        longitude < -180 ||
+        longitude > 180
+      ) {
+        return [];
+      }
+
+      return [{ ...place, latitude, longitude }];
+    });
+  }, [bucketListPlaces]);
+
+  const completedBucketListCount = bucketListPlaces.filter((place) =>
+    ['done', 'completed', 'visited'].includes(String(place.status || '').trim().toLowerCase()),
+  ).length;
+  const pendingBucketListCount = bucketListPlaces.filter(
+    (place) => String(place.status || '').trim().toLowerCase() === 'pending',
+  ).length;
+  const unmappedBucketListCount = bucketListPlaces.length - mappedBucketListPlaces.length;
+
+  useEffect(() => {
+    if (!isBucketListOpen) return undefined;
+
+    let isCurrent = true;
+    setBucketListRoutePlansLoading(true);
+    setBucketListRoutePlansError(false);
+
+    const loadSavedRoutePlans = async () => {
+      try {
+        const { data, error } = await supabaseClient
+          .from('saved_travel_routes')
+          .select('id, waypoints, sort_order')
+          .order('sort_order', { ascending: true });
+
+        if (error) throw error;
+        if (isCurrent) setBucketListRoutePlans(normalizeSavedRoutePlans(data || []));
+      } catch (error) {
+        if (!isCurrent) return;
+        setBucketListRoutePlans([]);
+        setBucketListRoutePlansError(true);
+        reportClientError(error, {
+          errorType: 'api_network_error',
+          context: {
+            operation: 'load_bucket_list_route_plans',
+            table: 'saved_travel_routes',
+          },
+        });
+      } finally {
+        if (isCurrent) setBucketListRoutePlansLoading(false);
+      }
+    };
+
+    void loadSavedRoutePlans();
+    return () => {
+      isCurrent = false;
+    };
+  }, [isBucketListOpen]);
+
+  const closeBucketList = useCallback(() => setIsBucketListOpen(false), []);
 
   /**
    * Data Pipeline Step 1: Distance calculation for saved places
@@ -9639,6 +10397,14 @@ function App() {
       console.error("Content Fetch Failure:", err);
       toast.error("Error loading article content");
     }
+  }, []);
+
+  const openBucketListArticle = useCallback((place) => {
+    void handleOpenArticle(place);
+  }, [handleOpenArticle]);
+
+  const openBucketListGallery = useCallback((place) => {
+    if (place?.id) setActiveId(place.id);
   }, []);
 
   // ---------------------------------------------------------------------------
@@ -11574,6 +12340,8 @@ function App() {
     } else if (isArticleOpen && viewingArticle) {
       // 2. Active Place Article Detail View
       updateSEO(viewingArticle, { isGallery: false });
+    } else if (isBucketListOpen) {
+      updateSEO(null, { isBucketList: true });
     } else {
       // 3. Main Catalog View (Handles Filter Tag & Search Queries dynamically)
       updateSEO(null, {
@@ -11593,6 +12361,7 @@ function App() {
     activeVideo,
     isVideoDetailOpen,
     activeVideos,
+    isBucketListOpen,
   ]);
 
   // =======================================================================
@@ -11755,6 +12524,33 @@ function App() {
       window.removeEventListener('popstate', handlePopState);
     };
   }, [isPlannerOpen, debouncedPlannerSearch, places, fetchRouteWeather]);
+
+  useEffect(() => {
+    const getCurrentPath = () =>
+      window.location.pathname.toLowerCase().replace(/\/+$/, '') || '/';
+
+    if (!isBucketListOpen) {
+      if (getCurrentPath() === '/bucketlist') {
+        window.history.replaceState({ modalOpen: false }, '', '/');
+      }
+      return undefined;
+    }
+
+    if (getCurrentPath() !== '/bucketlist') {
+      window.history.pushState({ modalOpen: true, bucketList: true }, '', '/bucketlist');
+    }
+
+    const handlePopState = () => {
+      // The Bucket List can stay open behind a place article or gallery.
+      // Only close it when browser navigation leaves its own route.
+      if (getCurrentPath() !== '/bucketlist') {
+        setIsBucketListOpen(false);
+      }
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, [isBucketListOpen]);
 
 
   useEffect(() => {
@@ -11935,7 +12731,7 @@ function App() {
 
 
                 {/* --- FIXED HUB SYSTEM --- */}
-                {!isAddOpen && !isPlannerOpen && !isArticleOpen && !isShareModalOpen && (
+                {!isAddOpen && !isPlannerOpen && !isArticleOpen && !isShareModalOpen && !isBucketListOpen && (
                   <div className="fixed bottom-4 right-3 z-[4000] flex flex-col items-end gap-2 max-w-[280px]">
 
                     {/* HUB 1: SOCIAL HUB */}
@@ -11965,17 +12761,17 @@ function App() {
                       </div>
 
                       <div className="relative">
+                        <span aria-hidden="true" className="hub-control-pulse hub-pulse-social" />
                         <button
                           onClick={() => {
                             setIsSocialOpen(!isSocialOpen);
                             setIsEngineOpen(false);
                           }}
-                          className={`relative z-10 w-14 h-14 shadow-lg flex items-center justify-center transition-all duration-300 rounded-full ${isSocialOpen
-                            ? 'bg-rose-600 text-white'
-                            : 'bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900'
-                            }`}
+                          className="relative z-10 flex h-12 w-12 items-center justify-center rounded-full bg-black text-white shadow-lg transition-all duration-300 hover:scale-105 active:scale-95 sm:h-14 sm:w-14"
                         >
-                          {isSocialOpen ? <X className="w-5 h-5" /> : <Share2 className="w-5 h-5" />}
+                          {isSocialOpen
+                            ? <X className="h-4 w-4 sm:h-5 sm:w-5" />
+                            : <Share2 className="h-4 w-4 sm:h-5 sm:w-5" />}
                         </button>
                       </div>
                     </div>
@@ -11983,11 +12779,7 @@ function App() {
 
                     {/* HUB 2: DIRECT VIDEO PLAYER */}
                     <div className="relative">
-
-                      {/* Blue Ping Effect */}
-                      {activeVideos.length === 0 && (
-                        <span className="absolute inset-0 rounded-full bg-blue-500 animate-ping opacity-40 z-0"></span>
-                      )}
+                      <span aria-hidden="true" className="hub-control-pulse hub-pulse-video" />
 
                       <button
                         type="button"
@@ -12015,16 +12807,34 @@ function App() {
                             console.warn("No active videos found in hub_videos.");
                           }
                         }}
-                        className="relative z-10 w-14 h-14 shadow-lg flex items-center justify-center transition-all duration-300 rounded-full bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900 hover:scale-105 active:scale-95"
+                        className="relative z-10 flex h-12 w-12 items-center justify-center rounded-full bg-black text-white shadow-lg transition-all duration-300 hover:scale-105 active:scale-95 sm:h-14 sm:w-14"
                         aria-label="Open Video Player"
                         title="Video Journal"
                       >
-                        <Video className="w-5 h-5" />
+                        <Video className="h-4 w-4 sm:h-5 sm:w-5" />
                       </button>
 
                     </div>
 
-                    {/* HUB 3: ENGINE HUB */}
+                    {/* HUB 3: PUBLIC BUCKET LIST */}
+                    <div className="relative">
+                      <span aria-hidden="true" className="hub-control-pulse hub-pulse-bucket-list" />
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setIsSocialOpen(false);
+                          setIsEngineOpen(false);
+                          setIsBucketListOpen(true);
+                        }}
+                        className="relative z-10 flex h-12 w-12 items-center justify-center rounded-full bg-black text-white shadow-lg transition hover:scale-105 active:scale-95 sm:h-14 sm:w-14"
+                        aria-label={t('bucket_list.title')}
+                        title={t('bucket_list.title')}
+                      >
+                        <MapPin className="h-4 w-4 sm:h-5 sm:w-5" />
+                      </button>
+                    </div>
+
+                    {/* HUB 4: ENGINE HUB */}
                     <div className="flex flex-col items-end gap-2 relative">
 
                       <div className={`flex flex-col gap-2 transition-all duration-400 ${isEngineOpen ? 'opacity-100 translate-x-0 scale-100' : 'opacity-0 translate-x-10 scale-90 pointer-events-none absolute'
@@ -12055,21 +12865,18 @@ function App() {
                       </div>
 
                       <div className="relative">
-                        {!isEngineOpen && <span className="absolute inset-0 rounded-full bg-rose-500 animate-ping opacity-40 z-0"></span>}
+                        <span aria-hidden="true" className="hub-control-pulse hub-pulse-engine" />
                         <button
                           onClick={() => {
                             setIsEngineOpen(!isEngineOpen);
                             setIsSocialOpen(false);
                           }}
-                          className={`relative z-10 w-14 h-14 shadow-lg flex items-center justify-center transition-all duration-300 rounded-full ${isEngineOpen
-                            ? 'bg-rose-600 text-white'
-                            : 'bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900'
-                            }`}
+                          className="relative z-10 flex h-12 w-12 items-center justify-center rounded-full bg-black text-white shadow-lg transition-all duration-300 hover:scale-105 active:scale-95 sm:h-14 sm:w-14"
                         >
                           {isEngineOpen ? (
-                            <X className="w-5 h-5" />
+                            <X className="h-4 w-4 sm:h-5 sm:w-5" />
                           ) : (
-                            <svg className="w-5 h-5 text-yellow-400 fill-yellow-400" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                            <svg className="h-4 w-4 fill-white text-white sm:h-5 sm:w-5" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
                               <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
                             </svg>
                           )}
@@ -12565,6 +13372,16 @@ function App() {
                       Videos
                     </a>
                     <a
+                      href="/bucketlist"
+                      onClick={(event) => {
+                        event.preventDefault();
+                        setIsBucketListOpen(true);
+                      }}
+                      className="text-slate-600 hover:text-indigo-600 dark:text-slate-300 dark:hover:text-indigo-400"
+                    >
+                      {t('bucket_list.title', 'My Bucket List')}
+                    </a>
+                    <a
                       href="/route-planner"
                       onClick={(event) => {
                         event.preventDefault();
@@ -12774,6 +13591,23 @@ function App() {
           {/* =======================================================================
         HUMAN VISUAL INTERFACE (DYNAMIC MODAL OVERLAY)
         ======================================================================= */}
+          {isBucketListOpen && (
+            <BucketListWindow
+              locations={bucketListPlaces}
+              mappedLocations={mappedBucketListPlaces}
+              routePlans={bucketListRoutePlans}
+              routePlansLoading={bucketListRoutePlansLoading}
+              routePlansError={bucketListRoutePlansError}
+              completedCount={completedBucketListCount}
+              pendingCount={pendingBucketListCount}
+              unmappedCount={unmappedBucketListCount}
+              covered={isArticleOpen || activeId !== null}
+              onClose={closeBucketList}
+              onArticle={openBucketListArticle}
+              onGallery={openBucketListGallery}
+            />
+          )}
+
           {isArticleOpen && viewingArticle && (() => {
             // ================================================================
             // 1. SAFELY PARSE AI_ARTICLE (Handles Objects & JSON Strings)

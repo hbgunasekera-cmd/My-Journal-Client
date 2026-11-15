@@ -16,6 +16,27 @@
     "add": "Añadir",
     "plan": "Planificar"
   },
+  "bucket_list": {
+    "title": "Mi lista de destinos",
+    "read_only": "Pública, solo lectura",
+    "completed": "Completados",
+    "pending": "Pendientes",
+    "progress": "Progreso de finalización",
+    "gallery": "Galería",
+    "article": "Artículo",
+    "close": "Cerrar lista",
+    "empty": "No se encontraron lugares completados ni pendientes.",
+    "no_mapped": "No hay lugares con coordenadas válidas.",
+    "map_aria": "Mapa interactivo de lugares completados y pendientes",
+    "unmapped": "No se pudieron mostrar {{count}} lugares porque faltan las coordenadas.",
+    "route_plans": "Mis planes de ruta",
+    "route_plans_loading": "Cargando planes de ruta…",
+    "route_plans_empty": "Aún no hay planes de ruta guardados.",
+    "route_plans_error": "No se pudieron cargar los planes de ruta.",
+    "route_plan_selected": "Visible en el mapa",
+    "route_drawing": "Buscando la ruta por carretera…",
+    "route_unavailable": "No hay una ruta por carretera disponible para estas paradas."
+  },
   "filters": {
     "search_placeholder": "Buscar destinos...",
     "sort_newest": "Más recientes primero",

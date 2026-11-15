@@ -16,6 +16,27 @@
     "add": "Add",
     "plan": "Plan"
   },
+  "bucket_list": {
+    "title": "My Bucket List",
+    "read_only": "Public view only",
+    "completed": "Completed",
+    "pending": "Pending",
+    "progress": "Completion progress",
+    "gallery": "Gallery",
+    "article": "Article",
+    "close": "Close Bucket List",
+    "empty": "No completed or pending locations were found.",
+    "no_mapped": "No locations with valid map coordinates are available.",
+    "map_aria": "Interactive map of completed and pending locations",
+    "unmapped": "{{count}} locations could not be shown because map coordinates are missing.",
+    "route_plans": "My Route Plans",
+    "route_plans_loading": "Loading route plans…",
+    "route_plans_empty": "No saved route plans yet.",
+    "route_plans_error": "Could not load route plans.",
+    "route_plan_selected": "Shown on map",
+    "route_drawing": "Finding road route…",
+    "route_unavailable": "Road route is unavailable for these stops."
+  },
   "filters": {
     "search_placeholder": "Search destinations...",
     "sort_newest": "Newest First",

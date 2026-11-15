@@ -16,6 +16,27 @@
     "add": "Dodaj",
     "plan": "Plan"
   },
+  "bucket_list": {
+    "title": "Moja lista putovanja",
+    "read_only": "Javno, samo za pregled",
+    "completed": "Završeno",
+    "pending": "Na čekanju",
+    "progress": "Napredak završetka",
+    "gallery": "Galerija",
+    "article": "Članak",
+    "close": "Zatvori listu",
+    "empty": "Nema završenih ili planiranih lokacija.",
+    "no_mapped": "Nema lokacija sa ispravnim koordinatama.",
+    "map_aria": "Interaktivna mapa završenih i planiranih lokacija",
+    "unmapped": "{{count}} lokacija nije prikazano jer nedostaju koordinate.",
+    "route_plans": "Moji planovi ruta",
+    "route_plans_loading": "Učitavanje planova ruta…",
+    "route_plans_empty": "Još nema sačuvanih planova ruta.",
+    "route_plans_error": "Nije moguće učitati planove ruta.",
+    "route_plan_selected": "Prikazano na mapi",
+    "route_drawing": "Traženje putne rute…",
+    "route_unavailable": "Putna ruta za ove stanice nije dostupna."
+  },
   "filters": {
     "search_placeholder": "Pretraži destinacije...",
     "sort_newest": "Najnovije prvo",

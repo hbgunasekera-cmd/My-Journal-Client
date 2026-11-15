@@ -16,6 +16,27 @@
     "add": "Ajouter",
     "plan": "Planifier"
   },
+  "bucket_list": {
+    "title": "Ma liste de destinations",
+    "read_only": "Publique, en lecture seule",
+    "completed": "Terminées",
+    "pending": "En attente",
+    "progress": "Progression",
+    "gallery": "Galerie",
+    "article": "Article",
+    "close": "Fermer la liste",
+    "empty": "Aucun lieu terminé ou en attente.",
+    "no_mapped": "Aucun lieu ne possède de coordonnées cartographiques valides.",
+    "map_aria": "Carte interactive des lieux terminés et en attente",
+    "unmapped": "{{count}} lieux ne peuvent pas être affichés, car leurs coordonnées manquent.",
+    "route_plans": "Mes itinéraires",
+    "route_plans_loading": "Chargement des itinéraires…",
+    "route_plans_empty": "Aucun itinéraire enregistré pour le moment.",
+    "route_plans_error": "Impossible de charger les itinéraires.",
+    "route_plan_selected": "Affiché sur la carte",
+    "route_drawing": "Recherche de l’itinéraire routier…",
+    "route_unavailable": "Aucun itinéraire routier n’est disponible pour ces étapes."
+  },
   "filters": {
     "search_placeholder": "Rechercher des destinations...",
     "sort_newest": "Plus récents en premier",

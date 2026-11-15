@@ -16,6 +16,27 @@
     "add": "추가",
     "plan": "계획"
   },
+  "bucket_list": {
+    "title": "나의 버킷 리스트",
+    "read_only": "공개 보기 전용",
+    "completed": "완료",
+    "pending": "예정",
+    "progress": "완료 진행률",
+    "gallery": "갤러리",
+    "article": "기사",
+    "close": "버킷 리스트 닫기",
+    "empty": "완료되었거나 예정된 장소가 없습니다.",
+    "no_mapped": "유효한 지도 좌표가 있는 장소가 없습니다.",
+    "map_aria": "완료 및 예정 장소의 대화형 지도",
+    "unmapped": "지도 좌표가 없어 {{count}}개 장소를 표시하지 못했습니다.",
+    "route_plans": "내 경로 계획",
+    "route_plans_loading": "경로 계획 불러오는 중…",
+    "route_plans_empty": "저장된 경로 계획이 없습니다.",
+    "route_plans_error": "경로 계획을 불러오지 못했습니다.",
+    "route_plan_selected": "지도에 표시 중",
+    "route_drawing": "도로 경로를 찾는 중…",
+    "route_unavailable": "이 경유지의 도로 경로를 사용할 수 없습니다."
+  },
   "filters": {
     "search_placeholder": "목적지 검색...",
     "sort_newest": "최신순",

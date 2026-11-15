@@ -16,6 +16,27 @@
     "add": "Ekle",
     "plan": "Planla"
   },
+  "bucket_list": {
+    "title": "Gezi Listem",
+    "read_only": "Herkese açık, salt görüntüleme",
+    "completed": "Tamamlandı",
+    "pending": "Beklemede",
+    "progress": "Tamamlanma ilerlemesi",
+    "gallery": "Galeri",
+    "article": "Makale",
+    "close": "Listeyi kapat",
+    "empty": "Tamamlanmış veya bekleyen konum bulunamadı.",
+    "no_mapped": "Geçerli harita koordinatları olan konum yok.",
+    "map_aria": "Tamamlanan ve bekleyen konumların etkileşimli haritası",
+    "unmapped": "Harita koordinatları eksik olduğu için {{count}} konum gösterilemedi.",
+    "route_plans": "Rota Planlarım",
+    "route_plans_loading": "Rota planları yükleniyor…",
+    "route_plans_empty": "Henüz kaydedilmiş rota planı yok.",
+    "route_plans_error": "Rota planları yüklenemedi.",
+    "route_plan_selected": "Haritada gösteriliyor",
+    "route_drawing": "Yol rotası bulunuyor…",
+    "route_unavailable": "Bu duraklar için yol rotası kullanılamıyor."
+  },
   "filters": {
     "search_placeholder": "Destinasyonları ara...",
     "sort_newest": "En Yeni Önce",

@@ -6,6 +6,62 @@
   color-scheme: light;
 }
 
+@keyframes hub-control-pulse {
+  0% {
+    opacity: 0.65;
+    transform: scale(1);
+  }
+
+  12% {
+    opacity: 0;
+    transform: scale(1.42);
+  }
+
+  12.01%,
+  100% {
+    opacity: 0;
+    transform: scale(1.42);
+  }
+}
+
+.hub-control-pulse {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  border-radius: 9999px;
+  background: var(--hub-pulse-color);
+  box-shadow: 0 0 16px 4px var(--hub-pulse-color);
+  opacity: 0;
+  pointer-events: none;
+  animation: hub-control-pulse 4.8s ease-out infinite;
+}
+
+.hub-pulse-social {
+  --hub-pulse-color: #3b82f6;
+}
+
+.hub-pulse-video {
+  --hub-pulse-color: #ef4444;
+  animation-delay: -3.6s;
+}
+
+.hub-pulse-bucket-list {
+  --hub-pulse-color: #22c55e;
+  animation-delay: -2.4s;
+}
+
+.hub-pulse-engine {
+  --hub-pulse-color: #f59e0b;
+  animation-delay: -1.2s;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hub-control-pulse {
+    display: none;
+    animation: none;
+  }
+}
+
 /* ==========================================================================
    Base Styles & Layout Locking
    ========================================================================== */

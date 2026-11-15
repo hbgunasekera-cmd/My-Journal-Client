@@ -16,6 +16,27 @@
     "add": "Hinzufügen",
     "plan": "Planen"
   },
+  "bucket_list": {
+    "title": "Meine Bucket List",
+    "read_only": "Öffentlich, nur zum Ansehen",
+    "completed": "Abgeschlossen",
+    "pending": "Ausstehend",
+    "progress": "Fortschritt",
+    "gallery": "Galerie",
+    "article": "Artikel",
+    "close": "Liste schließen",
+    "empty": "Keine abgeschlossenen oder ausstehenden Orte gefunden.",
+    "no_mapped": "Keine Orte mit gültigen Kartenkoordinaten verfügbar.",
+    "map_aria": "Interaktive Karte abgeschlossener und ausstehender Orte",
+    "unmapped": "{{count}} Orte konnten wegen fehlender Kartenkoordinaten nicht angezeigt werden.",
+    "route_plans": "Meine Routenpläne",
+    "route_plans_loading": "Routenpläne werden geladen…",
+    "route_plans_empty": "Noch keine Routenpläne gespeichert.",
+    "route_plans_error": "Routenpläne konnten nicht geladen werden.",
+    "route_plan_selected": "Auf der Karte angezeigt",
+    "route_drawing": "Straßenroute wird berechnet…",
+    "route_unavailable": "Für diese Zwischenstopps ist keine Straßenroute verfügbar."
+  },
   "filters": {
     "search_placeholder": "Nach Reisezielen suchen...",
     "sort_newest": "Neueste zuerst",

@@ -16,6 +16,27 @@
     "add": "添加",
     "plan": "计划"
   },
+  "bucket_list": {
+    "title": "我的旅行清单",
+    "read_only": "公开查看",
+    "completed": "已完成",
+    "pending": "待完成",
+    "progress": "完成进度",
+    "gallery": "图库",
+    "article": "文章",
+    "close": "关闭旅行清单",
+    "empty": "未找到已完成或待完成的地点。",
+    "no_mapped": "没有可用有效地图坐标的地点。",
+    "map_aria": "已完成和待完成地点的互动地图",
+    "unmapped": "有 {{count}} 个地点因缺少地图坐标而无法显示。",
+    "route_plans": "我的路线计划",
+    "route_plans_loading": "正在加载路线计划…",
+    "route_plans_empty": "暂无已保存的路线计划。",
+    "route_plans_error": "无法加载路线计划。",
+    "route_plan_selected": "已显示在地图上",
+    "route_drawing": "正在查找道路路线…",
+    "route_unavailable": "这些途经点没有可用的道路路线。"
+  },
   "filters": {
     "search_placeholder": "搜索目的地...",
     "sort_newest": "最新优先",

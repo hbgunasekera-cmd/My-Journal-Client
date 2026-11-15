@@ -36,6 +36,7 @@ export default async function handler(req, res) {
     "/",
     "/videos",
     "/route-planner",
+    "/bucketlist",
     "/suggest-spot",
     "/about",
     "/privacy",

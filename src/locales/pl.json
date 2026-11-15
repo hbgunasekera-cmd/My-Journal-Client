@@ -16,6 +16,27 @@
     "add": "Dodaj",
     "plan": "Plan"
   },
+  "bucket_list": {
+    "title": "Moja lista miejsc",
+    "read_only": "Publiczna, tylko do odczytu",
+    "completed": "Ukończone",
+    "pending": "Oczekujące",
+    "progress": "Postęp realizacji",
+    "gallery": "Galeria",
+    "article": "Artykuł",
+    "close": "Zamknij listę",
+    "empty": "Nie znaleziono ukończonych ani oczekujących miejsc.",
+    "no_mapped": "Brak miejsc z prawidłowymi współrzędnymi mapy.",
+    "map_aria": "Interaktywna mapa ukończonych i oczekujących miejsc",
+    "unmapped": "{{count}} miejsc nie można wyświetlić z powodu braku współrzędnych.",
+    "route_plans": "Moje plany tras",
+    "route_plans_loading": "Wczytywanie planów tras…",
+    "route_plans_empty": "Nie zapisano jeszcze żadnych planów tras.",
+    "route_plans_error": "Nie udało się wczytać planów tras.",
+    "route_plan_selected": "Widoczne na mapie",
+    "route_drawing": "Wyszukiwanie trasy drogowej…",
+    "route_unavailable": "Trasa drogowa dla tych przystanków jest niedostępna."
+  },
   "filters": {
     "search_placeholder": "Szukaj miejsc docelowych...",
     "sort_newest": "Najnowsze najpierw",

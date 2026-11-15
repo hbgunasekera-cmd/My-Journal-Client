@@ -16,6 +16,27 @@
     "add": "追加",
     "plan": "計画"
   },
+  "bucket_list": {
+    "title": "マイバケットリスト",
+    "read_only": "公開・閲覧のみ",
+    "completed": "完了",
+    "pending": "予定",
+    "progress": "完了状況",
+    "gallery": "ギャラリー",
+    "article": "記事",
+    "close": "リストを閉じる",
+    "empty": "完了または予定の場所はありません。",
+    "no_mapped": "有効な地図座標を持つ場所はありません。",
+    "map_aria": "完了・予定場所のインタラクティブマップ",
+    "unmapped": "地図座標がないため、{{count}}件の場所を表示できません。",
+    "route_plans": "マイルートプラン",
+    "route_plans_loading": "ルートプランを読み込み中…",
+    "route_plans_empty": "保存されたルートプランはまだありません。",
+    "route_plans_error": "ルートプランを読み込めませんでした。",
+    "route_plan_selected": "地図に表示中",
+    "route_drawing": "道路ルートを検索中…",
+    "route_unavailable": "これらの経由地の道路ルートは利用できません。"
+  },
   "filters": {
     "search_placeholder": "目的地を検索...",
     "sort_newest": "新しい順",

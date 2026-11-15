@@ -16,6 +16,27 @@
     "add": "Aggiungi",
     "plan": "Pianifica"
   },
+  "bucket_list": {
+    "title": "La mia lista dei luoghi",
+    "read_only": "Pubblica, sola visualizzazione",
+    "completed": "Completati",
+    "pending": "In programma",
+    "progress": "Avanzamento completamento",
+    "gallery": "Galleria",
+    "article": "Articolo",
+    "close": "Chiudi la lista",
+    "empty": "Nessun luogo completato o in programma trovato.",
+    "no_mapped": "Non ci sono luoghi con coordinate valide.",
+    "map_aria": "Mappa interattiva dei luoghi completati e in programma",
+    "unmapped": "{{count}} luoghi non sono visualizzati perché mancano le coordinate.",
+    "route_plans": "I miei itinerari",
+    "route_plans_loading": "Caricamento degli itinerari…",
+    "route_plans_empty": "Nessun itinerario salvato al momento.",
+    "route_plans_error": "Impossibile caricare gli itinerari.",
+    "route_plan_selected": "Visualizzato sulla mappa",
+    "route_drawing": "Ricerca del percorso stradale…",
+    "route_unavailable": "Il percorso stradale non è disponibile per queste tappe."
+  },
   "filters": {
     "search_placeholder": "Cerca destinazioni...",
     "sort_newest": "I più recenti prima",

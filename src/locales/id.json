@@ -16,6 +16,27 @@
     "add": "Tambah",
     "plan": "Rencana"
   },
+  "bucket_list": {
+    "title": "Daftar Tempat Saya",
+    "read_only": "Publik, hanya untuk dilihat",
+    "completed": "Selesai",
+    "pending": "Tertunda",
+    "progress": "Progres penyelesaian",
+    "gallery": "Galeri",
+    "article": "Artikel",
+    "close": "Tutup daftar",
+    "empty": "Tidak ada lokasi selesai atau tertunda.",
+    "no_mapped": "Tidak ada lokasi dengan koordinat peta yang valid.",
+    "map_aria": "Peta interaktif lokasi selesai dan tertunda",
+    "unmapped": "{{count}} lokasi tidak dapat ditampilkan karena koordinat peta tidak tersedia.",
+    "route_plans": "Rencana Rute Saya",
+    "route_plans_loading": "Memuat rencana rute…",
+    "route_plans_empty": "Belum ada rencana rute yang disimpan.",
+    "route_plans_error": "Rencana rute tidak dapat dimuat.",
+    "route_plan_selected": "Ditampilkan di peta",
+    "route_drawing": "Mencari rute jalan…",
+    "route_unavailable": "Rute jalan tidak tersedia untuk titik-titik ini."
+  },
   "filters": {
     "search_placeholder": "Cari destinasi...",
     "sort_newest": "Terbaru Dulu",

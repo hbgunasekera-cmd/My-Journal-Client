@@ -16,6 +16,27 @@
     "add": "Lägg till",
     "plan": "Planera"
   },
+  "bucket_list": {
+    "title": "Min reselista",
+    "read_only": "Offentlig, endast visning",
+    "completed": "Avklarade",
+    "pending": "Planerade",
+    "progress": "Framsteg",
+    "gallery": "Galleri",
+    "article": "Artikel",
+    "close": "Stäng listan",
+    "empty": "Inga avklarade eller planerade platser hittades.",
+    "no_mapped": "Det finns inga platser med giltiga kartkoordinater.",
+    "map_aria": "Interaktiv karta över avklarade och planerade platser",
+    "unmapped": "{{count}} platser kunde inte visas eftersom kartkoordinater saknas.",
+    "route_plans": "Mina resplaner",
+    "route_plans_loading": "Läser in resplaner…",
+    "route_plans_empty": "Inga sparade resplaner ännu.",
+    "route_plans_error": "Det gick inte att läsa in resplanerna.",
+    "route_plan_selected": "Visas på kartan",
+    "route_drawing": "Söker vägrutt…",
+    "route_unavailable": "Det finns ingen vägrutt för dessa stopp."
+  },
   "filters": {
     "search_placeholder": "Sök destinationer...",
     "sort_newest": "Nyast först",
