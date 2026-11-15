@@ -2958,7 +2958,7 @@ export const updateSEO = (
   }
 
   else if (isBucketList) {
-    title = `My Bucket List: Sri Lanka Destinations${BRAND_SUFFIX}`;
+    title = `My Bucket List${BRAND_SUFFIX}`;
     ogTitle = "My Bucket List of Sri Lanka Destinations";
     description = "Explore completed and planned Sri Lanka destinations on the My Journal Bucket List, with an interactive map, destination categories, articles, and photo galleries.";
     rawCanonicalUrl = `${BASE_URL}/bucketlist`;
