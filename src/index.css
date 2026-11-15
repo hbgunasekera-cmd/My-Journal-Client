@@ -6,59 +6,54 @@
   color-scheme: light;
 }
 
-@keyframes hub-control-pulse {
-  0% {
-    opacity: 0.65;
-    transform: scale(1);
-  }
+.hub-icon-blink {
+  color: #fff;
+  transform-origin: center;
+  pointer-events: none;
+  animation: hub-icon-color-blink 4.8s ease-in-out infinite;
+}
 
+@keyframes hub-icon-color-blink {
+  0%,
   12% {
-    opacity: 0;
-    transform: scale(1.42);
+    color: var(--hub-icon-color);
+    filter: drop-shadow(0 0 5px var(--hub-icon-color));
+    transform: scale(1.16);
   }
 
   12.01%,
   100% {
-    opacity: 0;
-    transform: scale(1.42);
+    color: #fff;
+    filter: none;
+    transform: scale(1);
   }
 }
 
-.hub-control-pulse {
-  position: absolute;
-  inset: 0;
-  z-index: 0;
-  border-radius: 9999px;
-  background: var(--hub-pulse-color);
-  box-shadow: 0 0 16px 4px var(--hub-pulse-color);
-  opacity: 0;
-  pointer-events: none;
-  animation: hub-control-pulse 4.8s ease-out infinite;
+.hub-icon-social {
+  --hub-icon-color: #3b82f6;
 }
 
-.hub-pulse-social {
-  --hub-pulse-color: #3b82f6;
-}
-
-.hub-pulse-video {
-  --hub-pulse-color: #ef4444;
+.hub-icon-video {
+  --hub-icon-color: #ef4444;
   animation-delay: -3.6s;
 }
 
-.hub-pulse-bucket-list {
-  --hub-pulse-color: #22c55e;
+.hub-icon-bucket-list {
+  --hub-icon-color: #22c55e;
   animation-delay: -2.4s;
 }
 
-.hub-pulse-engine {
-  --hub-pulse-color: #f59e0b;
+.hub-icon-engine {
+  --hub-icon-color: #f59e0b;
   animation-delay: -1.2s;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .hub-control-pulse {
-    display: none;
+  .hub-icon-blink {
     animation: none;
+    color: #fff;
+    filter: none;
+    transform: none;
   }
 }
 

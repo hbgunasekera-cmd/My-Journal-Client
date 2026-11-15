@@ -12761,7 +12761,6 @@ function App() {
                       </div>
 
                       <div className="relative">
-                        <span aria-hidden="true" className="hub-control-pulse hub-pulse-social" />
                         <button
                           onClick={() => {
                             setIsSocialOpen(!isSocialOpen);
@@ -12770,8 +12769,8 @@ function App() {
                           className="relative z-10 flex h-12 w-12 items-center justify-center rounded-full bg-black text-white shadow-lg transition-all duration-300 hover:scale-105 active:scale-95 sm:h-14 sm:w-14"
                         >
                           {isSocialOpen
-                            ? <X className="h-4 w-4 sm:h-5 sm:w-5" />
-                            : <Share2 className="h-4 w-4 sm:h-5 sm:w-5" />}
+                            ? <X className="hub-icon-blink hub-icon-social h-4 w-4 sm:h-5 sm:w-5" />
+                            : <Share2 className="hub-icon-blink hub-icon-social h-4 w-4 sm:h-5 sm:w-5" />}
                         </button>
                       </div>
                     </div>
@@ -12779,8 +12778,6 @@ function App() {
 
                     {/* HUB 2: DIRECT VIDEO PLAYER */}
                     <div className="relative">
-                      <span aria-hidden="true" className="hub-control-pulse hub-pulse-video" />
-
                       <button
                         type="button"
                         onClick={async () => {
@@ -12811,14 +12808,13 @@ function App() {
                         aria-label="Open Video Player"
                         title="Video Journal"
                       >
-                        <Video className="h-4 w-4 sm:h-5 sm:w-5" />
+                        <Video className="hub-icon-blink hub-icon-video h-4 w-4 sm:h-5 sm:w-5" />
                       </button>
 
                     </div>
 
                     {/* HUB 3: PUBLIC BUCKET LIST */}
                     <div className="relative">
-                      <span aria-hidden="true" className="hub-control-pulse hub-pulse-bucket-list" />
                       <button
                         type="button"
                         onClick={() => {
@@ -12830,7 +12826,7 @@ function App() {
                         aria-label={t('bucket_list.title')}
                         title={t('bucket_list.title')}
                       >
-                        <MapPin className="h-4 w-4 sm:h-5 sm:w-5" />
+                        <MapPin className="hub-icon-blink hub-icon-bucket-list h-4 w-4 sm:h-5 sm:w-5" />
                       </button>
                     </div>
 
@@ -12865,7 +12861,6 @@ function App() {
                       </div>
 
                       <div className="relative">
-                        <span aria-hidden="true" className="hub-control-pulse hub-pulse-engine" />
                         <button
                           onClick={() => {
                             setIsEngineOpen(!isEngineOpen);
@@ -12874,9 +12869,9 @@ function App() {
                           className="relative z-10 flex h-12 w-12 items-center justify-center rounded-full bg-black text-white shadow-lg transition-all duration-300 hover:scale-105 active:scale-95 sm:h-14 sm:w-14"
                         >
                           {isEngineOpen ? (
-                            <X className="h-4 w-4 sm:h-5 sm:w-5" />
+                            <X className="hub-icon-blink hub-icon-engine h-4 w-4 sm:h-5 sm:w-5" />
                           ) : (
-                            <svg className="h-4 w-4 fill-white text-white sm:h-5 sm:w-5" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                            <svg className="hub-icon-blink hub-icon-engine h-4 w-4 fill-current sm:h-5 sm:w-5" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
                               <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
                             </svg>
                           )}
