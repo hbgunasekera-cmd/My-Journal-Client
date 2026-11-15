@@ -6,26 +6,33 @@
   color-scheme: light;
 }
 
-.hub-icon-blink {
+.hub-icon-pulse {
   color: #fff;
   transform-origin: center;
   pointer-events: none;
-  animation: hub-icon-color-blink 4.8s ease-in-out infinite;
+  animation: hub-icon-color-pulse 4.8s ease-in-out infinite;
 }
 
-@keyframes hub-icon-color-blink {
+@keyframes hub-icon-color-pulse {
   0%,
-  12% {
-    color: var(--hub-icon-color);
-    filter: drop-shadow(0 0 5px var(--hub-icon-color));
-    transform: scale(1.16);
-  }
-
-  12.01%,
+  12%,
   100% {
     color: #fff;
     filter: none;
     transform: scale(1);
+  }
+
+  2%,
+  10% {
+    color: var(--hub-icon-color);
+    filter: drop-shadow(0 0 2px var(--hub-icon-color));
+    transform: scale(1.05);
+  }
+
+  6% {
+    color: var(--hub-icon-color);
+    filter: drop-shadow(0 0 7px var(--hub-icon-color));
+    transform: scale(1.2);
   }
 }
 
@@ -49,7 +56,7 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .hub-icon-blink {
+  .hub-icon-pulse {
     animation: none;
     color: #fff;
     filter: none;
