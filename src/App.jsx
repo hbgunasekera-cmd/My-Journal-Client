@@ -4039,6 +4039,12 @@ export const logVisit = async (path = null) => {
   ) {
     loggingPath = 'Plan Function';
 
+  } else if (
+    lowerPath === '/bucket list' ||
+    lowerPath === '/bucketlist'
+  ) {
+    loggingPath = 'Bucket List';
+
     // Place detail
   } else if (
     /^\/place\/[^/]+\/?$/i.test(normalizedPath)
@@ -9402,6 +9408,8 @@ function BucketListWindow({
   onClose,
   onArticle,
   onGallery,
+  onSuggestSpot,
+  onPlanJourney,
 }) {
   const { t, i18n } = useTranslation();
   const [selectedRoutePlanId, setSelectedRoutePlanId] = useState(null);
@@ -9598,21 +9606,41 @@ function BucketListWindow({
         </main>
 
         <footer className="flex shrink-0 flex-wrap items-center justify-between gap-2 border-t border-slate-100 px-4 py-3 text-[11px] font-semibold text-slate-600 sm:px-6 sm:text-xs">
-          <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
-            <span className="inline-flex items-center gap-2">
-              <span className="h-3 w-3 rounded-full bg-emerald-500" />
-              {t('bucket_list.completed')}
-            </span>
-            <span className="inline-flex items-center gap-2">
-              <span className="h-3 w-3 rounded-full bg-orange-500" />
-              {t('bucket_list.pending')}
-            </span>
+          <div className="flex w-full flex-wrap items-center justify-between gap-x-4 gap-y-2">
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+              <span className="inline-flex items-center gap-2">
+                <span className="h-3 w-3 rounded-full bg-emerald-500" />
+                {t('bucket_list.completed')}
+              </span>
+              <span className="inline-flex items-center gap-2">
+                <span className="h-3 w-3 rounded-full bg-orange-500" />
+                {t('bucket_list.pending')}
+              </span>
+            </div>
+            {unmappedCount > 0 && (
+              <span className="text-[10px] text-slate-400">
+                {t('bucket_list.unmapped', { count: unmappedCount })}
+              </span>
+            )}
           </div>
-          {unmappedCount > 0 && (
-            <span className="basis-full text-[10px] text-slate-400 sm:basis-auto">
-              {t('bucket_list.unmapped', { count: unmappedCount })}
-            </span>
-          )}
+          <div className="grid w-full grid-cols-2 gap-2 border-t border-slate-100 pt-2">
+            <button
+              type="button"
+              onClick={onSuggestSpot}
+              className="inline-flex min-h-10 items-center justify-center gap-2 rounded-xl bg-indigo-50 px-3 py-2 text-center text-[10px] font-black leading-tight text-indigo-700 transition hover:bg-indigo-100 sm:text-xs"
+            >
+              <MapPin className="h-4 w-4 shrink-0" />
+              <span>{t('instructions.suggest.title')}</span>
+            </button>
+            <button
+              type="button"
+              onClick={onPlanJourney}
+              className="inline-flex min-h-10 items-center justify-center gap-2 rounded-xl bg-orange-50 px-3 py-2 text-center text-[10px] font-black leading-tight text-orange-700 transition hover:bg-orange-100 sm:text-xs"
+            >
+              <Navigation className="h-4 w-4 shrink-0" />
+              <span>{t('instructions.route.title')}</span>
+            </button>
+          </div>
         </footer>
       </section>
     </div>
@@ -9646,6 +9674,7 @@ function App() {
   const hasHandledDeepLink = useRef(false);
   const hasLoggedAddOpen = useRef(false);
   const hasLoggedPlanOpen = useRef(false);
+  const hasLoggedBucketListOpen = useRef(false);
   const pendingAddVisitTypeRef = useRef(initialAddVisitType);
   const hasLoggedMainPageRef = useRef(false);
   const pendingRouteRef = useRef({ type: null, slug: null, photoKey: null });
@@ -10023,6 +10052,17 @@ function App() {
   }, [isBucketListOpen]);
 
   const closeBucketList = useCallback(() => setIsBucketListOpen(false), []);
+  const openSuggestSpotFromBucketList = useCallback(() => {
+    setIsBucketListOpen(false);
+    pendingAddVisitTypeRef.current = 'Suggest Spot';
+    setIsSuggestSpotInstructionsOpen(true);
+    setIsAddOpen(true);
+  }, []);
+  const openRoutePlannerFromBucketList = useCallback(() => {
+    setIsBucketListOpen(false);
+    setIsRoutePlannerInstructionsOpen(true);
+    setIsPlannerOpen(true);
+  }, []);
 
   /**
    * Data Pipeline Step 1: Distance calculation for saved places
@@ -12530,6 +12570,7 @@ function App() {
       window.location.pathname.toLowerCase().replace(/\/+$/, '') || '/';
 
     if (!isBucketListOpen) {
+      hasLoggedBucketListOpen.current = false;
       if (getCurrentPath() === '/bucketlist') {
         window.history.replaceState({ modalOpen: false }, '', '/');
       }
@@ -12538,6 +12579,11 @@ function App() {
 
     if (getCurrentPath() !== '/bucketlist') {
       window.history.pushState({ modalOpen: true, bucketList: true }, '', '/bucketlist');
+    }
+
+    if (!hasLoggedBucketListOpen.current) {
+      void logVisit('Bucket List');
+      hasLoggedBucketListOpen.current = true;
     }
 
     const handlePopState = () => {
@@ -13600,6 +13646,8 @@ function App() {
               onClose={closeBucketList}
               onArticle={openBucketListArticle}
               onGallery={openBucketListGallery}
+              onSuggestSpot={openSuggestSpotFromBucketList}
+              onPlanJourney={openRoutePlannerFromBucketList}
             />
           )}
 
