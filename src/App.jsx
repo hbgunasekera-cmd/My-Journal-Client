@@ -9144,6 +9144,12 @@ export const LegalAndAboutModal = ({ isOpen, onClose, currentView, setView }) =>
 
         <div className="bg-slate-50 dark:bg-slate-950 px-8 py-4 border-t border-slate-100 dark:border-slate-800 flex flex-wrap justify-center items-center gap-2 shrink-0">
           <button
+            onClick={() => setView('about')}
+            className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${currentView === 'about' ? 'bg-indigo-600 text-white shadow-md' : 'text-slate-500 hover:bg-slate-200/50 dark:hover:bg-slate-800'}`}
+          >
+            {t('legal.btn_about', 'About Journal')}
+          </button>
+          <button
             onClick={() => setView('privacy')}
             className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${currentView === 'privacy' ? 'bg-slate-900 text-white dark:bg-white dark:text-slate-900' : 'text-slate-500 hover:bg-slate-200/50 dark:hover:bg-slate-800'}`}
           >
@@ -9154,12 +9160,6 @@ export const LegalAndAboutModal = ({ isOpen, onClose, currentView, setView }) =>
             className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${currentView === 'terms' ? 'bg-slate-900 text-white dark:bg-white dark:text-slate-900' : 'text-slate-500 hover:bg-slate-200/50 dark:hover:bg-slate-800'}`}
           >
             {t('legal.btn_terms', 'Terms')}
-          </button>
-          <button
-            onClick={() => setView('about')}
-            className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${currentView === 'about' ? 'bg-indigo-600 text-white shadow-md' : 'text-slate-500 hover:bg-slate-200/50 dark:hover:bg-slate-800'}`}
-          >
-            {t('legal.btn_about', 'About Journal')}
           </button>
         </div>
       </div>
@@ -13658,6 +13658,18 @@ function App() {
                 <div className="flex flex-col items-center border-t border-slate-100 dark:border-slate-800 pt-8 gap-6">
                   <nav aria-label="Site information" className="flex flex-wrap justify-center gap-x-8 gap-y-4">
 
+                    {/* About Page Route */}
+                    <a
+                      href="/about"
+                      className="text-[10px] font-black text-indigo-600 hover:text-indigo-800 dark:text-indigo-400 dark:hover:text-indigo-300 uppercase tracking-widest transition-colors"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        handleOpenLegalView('about');
+                      }}
+                    >
+                      {t('footer.about')}
+                    </a>
+
                     {/* Privacy Policy Route */}
                     <a
                       href="/privacy"
@@ -13680,18 +13692,6 @@ function App() {
                       }}
                     >
                       {t('legal.terms_title')}
-                    </a>
-
-                    {/* Ad-Engine Trackable About Summary Route */}
-                    <a
-                      href="/about"
-                      className="text-[10px] font-black text-indigo-600 hover:text-indigo-800 dark:text-indigo-400 dark:hover:text-indigo-300 uppercase tracking-widest transition-colors"
-                      onClick={(e) => {
-                        e.preventDefault();
-                        handleOpenLegalView('about');
-                      }}
-                    >
-                      {t('footer.about')}
                     </a>
 
                     {/* Support Mailbox Routing */}
