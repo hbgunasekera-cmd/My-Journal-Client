@@ -2216,6 +2216,8 @@ export const injectJSONLDSchema = (
     isGallery = false,
     isVideo = false,
     isVideoGallery = false,
+    isLegalPage = false,
+    legalView = 'privacy',
     photos = [],
     galleryVideos = [],
     video = null,
@@ -2292,6 +2294,50 @@ export const injectJSONLDSchema = (
     schemaScript.textContent =
       safeJson;
   };
+
+  if (isLegalPage && LEGAL_PAGE_METADATA[legalView]) {
+    const legalMetadata = LEGAL_PAGE_METADATA[legalView];
+    const legalCanonicalUrl = canonicalUrl || `${BASE_URL}/${legalView}`;
+    const websiteId = `${BASE_URL}/#website`;
+    writeSchema({
+      '@context': 'https://schema.org',
+      '@graph': [
+        {
+          '@type': 'WebSite',
+          '@id': websiteId,
+          name: 'My Journal',
+          url: `${BASE_URL}/`,
+        },
+        {
+          '@type': 'WebPage',
+          '@id': `${legalCanonicalUrl}#webpage`,
+          url: legalCanonicalUrl,
+          name: legalMetadata.name,
+          description: legalMetadata.description,
+          isPartOf: { '@id': websiteId },
+        },
+        {
+          '@type': 'BreadcrumbList',
+          '@id': `${legalCanonicalUrl}#breadcrumb`,
+          itemListElement: [
+            {
+              '@type': 'ListItem',
+              position: 1,
+              name: 'My Journal',
+              item: `${BASE_URL}/`,
+            },
+            {
+              '@type': 'ListItem',
+              position: 2,
+              name: legalMetadata.name,
+              item: legalCanonicalUrl,
+            },
+          ],
+        },
+      ],
+    });
+    return;
+  }
 
   // ---------------------------------------------------------------------
   // 12.4 Individual VideoObject
@@ -2802,6 +2848,24 @@ export const injectJSONLDSchema = (
 // 12A. CONSOLIDATED DOCUMENT SEO MANAGER
 // =======================================================================
 
+const LEGAL_PAGE_METADATA = {
+  privacy: {
+    title: 'Privacy Policy | My Journal',
+    name: 'Privacy Policy',
+    description: 'Learn how My Journal handles visitor information, cookies, location data, and privacy choices.',
+  },
+  terms: {
+    title: 'Terms of Service | My Journal',
+    name: 'Terms of Service',
+    description: 'Read the terms for using My Journal destination guides, maps, articles, photography, and travel information.',
+  },
+  about: {
+    title: 'About | My Journal',
+    name: 'About',
+    description: 'Learn about My Journal, its explorer, and the destinations, field notes, and media shared from Sri Lanka.',
+  },
+};
+
 /**
  * Centralized SEO manager for My Journal.
  *
@@ -2851,6 +2915,8 @@ export const updateSEO = (
     isSuggestSpot = false,
     isPlanner = false,
     isBucketList = false,
+    isLegalPage = false,
+    legalView = 'privacy',
     video = null,
     videoIndex = 0,
     galleryPhotos = [],
@@ -2962,6 +3028,14 @@ export const updateSEO = (
     ogTitle = "My Bucket List of Sri Lanka Destinations";
     description = "Explore completed and planned Sri Lanka destinations on the My Journal Bucket List, with an interactive map, destination categories, articles, and photo galleries.";
     rawCanonicalUrl = `${BASE_URL}/bucketlist`;
+  }
+
+  else if (isLegalPage && LEGAL_PAGE_METADATA[legalView]) {
+    const legalMetadata = LEGAL_PAGE_METADATA[legalView];
+    title = legalMetadata.title;
+    ogTitle = legalMetadata.title;
+    description = legalMetadata.description;
+    rawCanonicalUrl = `${BASE_URL}/${legalView}`;
   }
 
   // ---------------------------------------------------------------------
@@ -3561,6 +3635,10 @@ export const updateSEO = (
         isVideo,
 
         isVideoGallery,
+
+        isLegalPage,
+
+        legalView,
 
         photos:
           galleryPhotos,
@@ -11826,13 +11904,42 @@ function App() {
   const getActiveContent = (field) =>
     translatedContent?.[field] || viewingArticle?.ai_article?.[field] || "";
 
+  const handleLegalViewChange = (view) => {
+    if (!LEGAL_PAGE_METADATA[view]) return;
+    setLegalView(view);
+    const nextPath = `/${view}`;
+    if (window.location.pathname.toLowerCase() !== nextPath) {
+      window.history.replaceState({ legalView: view }, '', nextPath);
+    }
+  };
+
+  const handleOpenLegalView = (view) => {
+    if (!LEGAL_PAGE_METADATA[view]) return;
+    setLegalView(view);
+    setIsPrivacyOpen(true);
+    const nextPath = `/${view}`;
+    if (window.location.pathname.toLowerCase() !== nextPath) {
+      window.history.pushState({ legalView: view }, '', nextPath);
+    }
+  };
+
   const handleCloseLegalModal = () => {
     setIsPrivacyOpen(false);
-    const path = window.location.pathname.toLowerCase().replace(/\/+$/, "") || "/";
-    const nextPath = ["/privacy", "/terms", "/about"].includes(path)
-      ? "/"
-      : window.location.pathname;
-    window.history.pushState({}, '', nextPath);
+    const currentUrl = new URL(window.location.href);
+    const currentPath = currentUrl.pathname.toLowerCase().replace(/\/+$/, '') || '/';
+    const isLegalPath = Object.keys(LEGAL_PAGE_METADATA)
+      .some((view) => currentPath === `/${view}`);
+    const isLegalQuery = LEGAL_PAGE_METADATA[currentUrl.searchParams.get('view')];
+
+    if (isLegalPath || isLegalQuery) {
+      currentUrl.pathname = '/';
+      currentUrl.searchParams.delete('view');
+      window.history.replaceState(
+        {},
+        '',
+        `${currentUrl.pathname}${currentUrl.search}${currentUrl.hash}`,
+      );
+    }
   };
 
   const handleAcceptCookies = () => {
@@ -11864,6 +11971,26 @@ function App() {
 
     window.addEventListener("popstate", syncCategoryFromLocation);
     return () => window.removeEventListener("popstate", syncCategoryFromLocation);
+  }, []);
+
+  useEffect(() => {
+    const syncLegalPageFromLocation = () => {
+      const url = new URL(window.location.href);
+      const path = url.pathname.toLowerCase().replace(/\/+$/, '') || '/';
+      const legalView = Object.keys(LEGAL_PAGE_METADATA).find((view) =>
+        path === `/${view}` || url.searchParams.get('view') === view,
+      );
+
+      if (legalView) {
+        setLegalView(legalView);
+        setIsPrivacyOpen(true);
+      } else {
+        setIsPrivacyOpen(false);
+      }
+    };
+
+    window.addEventListener('popstate', syncLegalPageFromLocation);
+    return () => window.removeEventListener('popstate', syncLegalPageFromLocation);
   }, []);
 
   useEffect(() => {
@@ -12344,7 +12471,9 @@ function App() {
       !isVideoDetailOpen &&
       (activeVideos.length > 0 || normalizedPath === "/videos");
 
-    if (isAddOpen) {
+    if (isPrivacyOpen) {
+      updateSEO(null, { isLegalPage: true, legalView });
+    } else if (isAddOpen) {
       updateSEO(null, { isSuggestSpot: true });
     } else if (isPlannerOpen) {
       updateSEO(null, { isPlanner: true });
@@ -12393,6 +12522,8 @@ function App() {
     activeId,
     viewingArticle,
     isArticleOpen,
+    isPrivacyOpen,
+    legalView,
     places,
     filterTag,
     debouncedSearch,
@@ -13533,9 +13664,7 @@ function App() {
                       className="text-[10px] font-black text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200 uppercase tracking-widest transition-colors"
                       onClick={(e) => {
                         e.preventDefault();
-                        setLegalView('privacy');
-                        setIsPrivacyOpen(true);
-                        window.history.pushState({}, '', '/privacy');
+                        handleOpenLegalView('privacy');
                       }}
                     >
                       {t('legal.privacy_title')}
@@ -13547,9 +13676,7 @@ function App() {
                       className="text-[10px] font-black text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200 uppercase tracking-widest transition-colors"
                       onClick={(e) => {
                         e.preventDefault();
-                        setLegalView('terms');
-                        setIsPrivacyOpen(true);
-                        window.history.pushState({}, '', '/terms');
+                        handleOpenLegalView('terms');
                       }}
                     >
                       {t('legal.terms_title')}
@@ -13561,9 +13688,7 @@ function App() {
                       className="text-[10px] font-black text-indigo-600 hover:text-indigo-800 dark:text-indigo-400 dark:hover:text-indigo-300 uppercase tracking-widest transition-colors"
                       onClick={(e) => {
                         e.preventDefault();
-                        setLegalView('about');
-                        setIsPrivacyOpen(true);
-                        window.history.pushState({}, '', '/about');
+                        handleOpenLegalView('about');
                       }}
                     >
                       {t('footer.about')}
@@ -15300,10 +15425,9 @@ function App() {
         ======================================================================= */}
           <LegalAndAboutModal
             isOpen={isPrivacyOpen}
-            /* 💡 Triggers the cleanup function that strips URL search query parameters (?view=...) from the address bar on close */
             onClose={handleCloseLegalModal}
             currentView={legalView}
-            setView={setLegalView}
+            setView={handleLegalViewChange}
           />
 
 
@@ -15328,8 +15452,7 @@ function App() {
                 <button
                   type="button"
                   onClick={() => {
-                    setLegalView('privacy');
-                    setIsPrivacyOpen(true);
+                    handleOpenLegalView('privacy');
                   }}
                   className="text-[9px] font-black uppercase text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 tracking-wider underline transition-colors"
                 >
